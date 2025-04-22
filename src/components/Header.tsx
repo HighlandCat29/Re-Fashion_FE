@@ -9,6 +9,8 @@ import RefashionIcon from '../assets/Refashion_icon.png';
 
 
 
+
+
 const Header = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   return (
@@ -16,7 +18,7 @@ const Header = () => {
       <header className="max-w-screen-2xl flex text-center justify-between items-center py-4 px-5 text-black mx-auto max-sm:px-5 max-[400px]:px-3">
         <HiBars3 className="text-2xl max-sm:text-xl mr-20 max-lg:mr-0 cursor-pointer" onClick={() => setIsSidebarOpen(true)} />
         <Link
-          to="/"
+          to="/home-collection"
           className="flex items-center gap-2 text-6xl font-light tracking-[1.08px] max-sm:text-3xl max-[400px]:text-2xl"
         >
           <img

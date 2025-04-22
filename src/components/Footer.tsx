@@ -31,7 +31,14 @@ const Footer = () => {
         </div>
         <div className="flex flex-col gap-8 my-20">
           <p className="flex justify-center items-center text-2xl gap-2 max-sm:text-xl">Worldwide / English <HiChevronDown /></p>
-          <h2 className="text-6xl font-light text-center max-sm:text-5xl">FASHION</h2>
+          <h2 className="text-6xl font-light text-center max-sm:text-5xl"><div>
+            <span className="text-sky-500 font-bold">Re</span>
+            <span className="text-orange-400 font-bold">fa</span>
+            <span className="text-lime-400 font-bold">shion</span>
+            <p className=" text-xl font-bold text-amber-900 max-sm:text-lr pl-[4px]">
+              From student for student
+            </p>
+          </div></h2>
           <p className="text-base text-center max-sm:text-sm">All rights reserved ©2024</p>
           <ul className="flex justify-center items-center gap-7 text-base max-sm:text-sm max-[350px]:flex-col max-[350px]:gap-5">
             <li>Cookie Policy</li>

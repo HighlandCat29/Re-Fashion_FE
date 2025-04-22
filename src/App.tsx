@@ -18,6 +18,8 @@ import { checkoutAction, searchAction } from "./actions/index";
 import { shopCategoryLoader } from "./pages/Shop";
 import { loader as orderHistoryLoader } from "./pages/OrderHistory";
 import { loader as singleOrderLoader } from "./pages/SingleOrderHistory";
+import HomeCollectionSection from "./components/HomeCollectionSection";
+import Header from "./components/Header";
 
 const router = createBrowserRouter([
   {
@@ -77,6 +79,10 @@ const router = createBrowserRouter([
         loader: orderHistoryLoader,
       },
       {
+        path: "home-collection",
+        element: <HomeCollectionSection />,
+      },
+      {
         path: "order-history/:id",
         element: <SingleOrderHistory />,
         loader: singleOrderLoader
@@ -88,5 +94,7 @@ const router = createBrowserRouter([
 function App() {
   return <RouterProvider router={router} />;
 }
+
+
 
 export default App;
