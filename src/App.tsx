@@ -19,7 +19,10 @@ import { shopCategoryLoader } from "./pages/Shop";
 import { loader as orderHistoryLoader } from "./pages/OrderHistory";
 import { loader as singleOrderLoader } from "./pages/SingleOrderHistory";
 import HomeCollectionSection from "./components/HomeCollectionSection";
+import { WishlistProvider } from "./components/WishlistContext";
 import Header from "./components/Header";
+import WishlistPage from "./components/WishlistPage";
+
 
 const router = createBrowserRouter([
   {
@@ -46,6 +49,9 @@ const router = createBrowserRouter([
       {
         path: "cart",
         element: <Cart />,
+      }, {
+        path: "wishlist",          // URL path /wishlist
+        element: <WishlistPage />, // Component to render
       },
       {
         path: "checkout",
@@ -92,9 +98,11 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <WishlistProvider>
+      <RouterProvider router={router} />
+    </WishlistProvider>
+  );
 }
-
-
 
 export default App;

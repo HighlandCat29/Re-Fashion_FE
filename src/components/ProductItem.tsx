@@ -1,5 +1,8 @@
 import { Link } from "react-router-dom";
 import { formatCategoryName } from "../utils/formatCategoryName";
+import { useWishlist } from "../components/WishlistContext"; // adjust the path
+import { Product } from "../appTypes/Product";
+
 
 const ProductItem = ({
   id,
@@ -7,13 +10,21 @@ const ProductItem = ({
   title,
   category,
   price,
+  popularity,
+  stock,
 }: {
   id: string;
   image: string;
   title: string;
   category: string;
   price: number;
+  popularity: number;
+  stock: number;
 }) => {
+  const { wishlist, addToWishlist, removeFromWishlist } = useWishlist();
+
+  const isInWishlist = wishlist.some((item) => item.id === id);
+
   return (
     <div className="w-[400px] flex flex-col gap-2 justify-center max-md:w-[300px]">
       <Link
@@ -47,6 +58,21 @@ const ProductItem = ({
         >
           Learn more
         </Link>
+
+        {/* Wishlist Button */}
+        <button
+          onClick={() =>
+            isInWishlist
+              ? removeFromWishlist(id)
+              : addToWishlist({ id, image, title, category, price, })
+          }
+          className={`mt-2 w-full h-12 text-xl font-normal tracking-[0.6px] flex items-center justify-center ${isInWishlist
+            ? "bg-red-500 text-white hover:bg-red-600"
+            : "bg-gray-200 text-black hover:bg-gray-300"
+            }`}
+        >
+          {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+        </button>
       </div>
     </div>
   );
