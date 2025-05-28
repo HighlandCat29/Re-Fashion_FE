@@ -12,34 +12,30 @@ const Login = () => {
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Get form data
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData);
-    // Check if form data is valid
+
     if (!checkLoginFormData(data)) return;
 
-    // Check if user with the email and password exists
-    const users = await customFetch.get("/users");
-    let userId: number = 0; // Initialize userId with a default value
-    const userExists = users.data.some(
-      (user: { id: number; email: string; password: string }) => {
-        if (user.email === data.email) {
-          userId = user.id;
-        }
-        return user.email === data.email && user.password === data.password;
-      }
-    );
+    try {
+      const response = await customFetch.post("/auth/token", {
+        email: data.email,
+        password: data.password,
+      });
 
-    // if user exists, show success message
-    if (userExists) {
-      toast.success("You logged in successfully");
-      localStorage.setItem("user", JSON.stringify({ id: userId, email: data.email }));
+      // Adjust based on actual response shape
+      const { token, user } = response.data;
+
+      // Save token and user info to localStorage
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("user", JSON.stringify(user));
 
       store.dispatch(setLoginStatus(true));
-      navigate("/user-profile");
-      return;
-    } else {
-      toast.error("Please enter correct email and password");
+      toast.success("You logged in successfully");
+      navigate("/");
+
+    } catch (error: any) {
+      toast.error("Login failed: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -47,7 +43,8 @@ const Login = () => {
     const user = localStorage.getItem("user");
     if (user) {
       toast.success("You are already logged in");
-      navigate("/user-profile");
+      navigate("/");
+
     }
   }, [navigate]);
 
@@ -62,7 +59,7 @@ const Login = () => {
         </h2>
         <div className="flex flex-col gap-2 w-full">
           <div className="flex flex-col gap-1">
-            <label htmlFor="name">Your email</label>
+            <label htmlFor="email">Your email</label>
             <input
               type="email"
               className="bg-white border border-black text-xl py-2 px-3 w-full outline-none max-[450px]:text-base"
@@ -71,7 +68,7 @@ const Login = () => {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="name">Your password</label>
+            <label htmlFor="password">Your password</label>
             <input
               type="password"
               className="bg-white border border-black text-xl py-2 px-3 w-full outline-none max-[450px]:text-base"
@@ -92,4 +89,5 @@ const Login = () => {
     </div>
   );
 };
+
 export default Login;
