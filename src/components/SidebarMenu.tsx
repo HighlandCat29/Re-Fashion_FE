@@ -6,6 +6,7 @@ import { useAppSelector } from "../hooks";
 import { setLoginStatus } from "../features/auth/authSlice";
 import { store } from "../store";
 
+
 const SidebarMenu = ({
   isSidebarOpen,
   setIsSidebarOpen,
@@ -75,6 +76,12 @@ const SidebarMenu = ({
               className="py-2 border-y border-secondaryBrown w-full block flex justify-center"
             >
               Search
+            </Link>
+            <Link
+              to="/user-profile"
+              className="py-2 border-y border-secondaryBrown w-full block flex justify-center"
+            >
+              User Profile
             </Link>
             {loginStatus ? (
               <>

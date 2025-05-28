@@ -17,7 +17,7 @@ const Login = () => {
     const data = Object.fromEntries(formData);
     // Check if form data is valid
     if (!checkLoginFormData(data)) return;
-    
+
     // Check if user with the email and password exists
     const users = await customFetch.get("/users");
     let userId: number = 0; // Initialize userId with a default value
@@ -29,11 +29,12 @@ const Login = () => {
         return user.email === data.email && user.password === data.password;
       }
     );
-    
+
     // if user exists, show success message
     if (userExists) {
       toast.success("You logged in successfully");
-      localStorage.setItem("user", JSON.stringify({...data, id: userId}));
+      localStorage.setItem("user", JSON.stringify({ id: userId, email: data.email }));
+
       store.dispatch(setLoginStatus(true));
       navigate("/user-profile");
       return;

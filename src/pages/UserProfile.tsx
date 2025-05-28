@@ -19,31 +19,36 @@ const UserProfile = () => {
   };
 
   const fetchUser = async (userId: number | string) => {
-    const response = await customFetch(`/users/${userId}`);
-    setUser(response.data);
+    try {
+      const response = await customFetch.get(`/users/${userId}`);
+      setUser(response.data);
+    } catch (error) {
+      toast.error("Failed to load user info");
+    }
   };
+
 
   const updateUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Get form data
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData);
-    // Check if form data is valid
+
     if (!checkUserProfileFormData(data)) return;
+
     const userId = JSON.parse(localStorage.getItem("user") || "{}").id;
     if (userId) {
       try {
         await customFetch.put(`/users/${userId}`, data);
+        toast.success("User updated successfully");
       } catch (e) {
         toast.error("User update failed");
-        return;
       }
-      toast.success("User updated successfully");
     } else {
       toast.error("Please login to view this page");
       navigate("/login");
     }
   };
+
 
   useEffect(() => {
     const userId = JSON.parse(localStorage.getItem("user") || "{}").id;

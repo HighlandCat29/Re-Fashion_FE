@@ -1,10 +1,11 @@
 import axios from "axios";
 
 const customFetch = axios.create({
-    baseURL: "http://localhost:3000",
+    baseURL:
+        "https://refashion-fqe8c7bfcgg5h0e7.southeastasia-01.azurewebsites.net/api",
     headers: {
-        Accept: "application/json"
-    }
-})
+        "Content-Type": "application/json",
+    },
+});
 
 export default customFetch;
