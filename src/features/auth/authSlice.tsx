@@ -17,7 +17,7 @@ export const authSlice = createSlice({
   reducers: {
     setLoginStatus: (state, action: PayloadAction<boolean>) => {
       state.loginStatus = action.payload;
-      
+
     },
   },
 });

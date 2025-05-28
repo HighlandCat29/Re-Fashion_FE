@@ -55,7 +55,9 @@ const SidebarMenu = ({
               to="/"
               className="text-4xl font-light tracking-[1.08px] max-sm:text-3xl max-[400px]:text-2xl"
             >
-              FASHION
+              <span className="text-sky-500 font-bold">Re</span>
+              <span className="text-orange-400 font-bold">fa</span>
+              <span className="text-lime-400 font-bold">shion</span>
             </Link>
           </div>
           <div className="flex flex-col items-center gap-1 mt-7">
