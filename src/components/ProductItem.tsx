@@ -1,8 +1,6 @@
 import { Link } from "react-router-dom";
 import { formatCategoryName } from "../utils/formatCategoryName";
-import { useWishlist } from "../components/WishlistContext"; // adjust the path
-import { Product } from "../appTypes/Product";
-
+import { useWishlist } from "../components/WishlistContext";
 
 const ProductItem = ({
   id,
@@ -10,16 +8,12 @@ const ProductItem = ({
   title,
   category,
   price,
-  popularity,
-  stock,
 }: {
   id: string;
   image: string;
   title: string;
   category: string;
   price: number;
-  popularity: number;
-  stock: number;
 }) => {
   const { wishlist, addToWishlist, removeFromWishlist } = useWishlist();
 
@@ -31,7 +25,7 @@ const ProductItem = ({
         to={`/product/${id}`}
         className="w-full h-[300px] max-md:h-[200px] overflow-hidden"
       >
-        <img src={`/src/assets/${image}`} alt={title} />
+        <img src={`/assets/${image}`} alt={title} loading="lazy" />
       </Link>
       <Link
         to={`/product/${id}`}
@@ -40,7 +34,7 @@ const ProductItem = ({
         <h2>{title}</h2>
       </Link>
       <p className="text-secondaryBrown text-lg tracking-wide text-center max-md:text-base">
-        {formatCategoryName(category)}{" "}
+        {formatCategoryName(category)}
       </p>
       <p className="text-black text-2xl text-center font-bold max-md:text-xl">
         ${price}
@@ -64,12 +58,13 @@ const ProductItem = ({
           onClick={() =>
             isInWishlist
               ? removeFromWishlist(id)
-              : addToWishlist({ id, image, title, category, price, })
+              : addToWishlist({ id, image, title, category, price })
           }
-          className={`mt-2 w-full h-12 text-xl font-normal tracking-[0.6px] flex items-center justify-center ${isInWishlist
-            ? "bg-red-500 text-white hover:bg-red-600"
-            : "bg-gray-200 text-black hover:bg-gray-300"
-            }`}
+          className={`mt-2 w-full h-12 text-xl font-normal tracking-[0.6px] flex items-center justify-center ${
+            isInWishlist
+              ? "bg-red-500 text-white hover:bg-red-600"
+              : "bg-gray-200 text-black hover:bg-gray-300"
+          }`}
         >
           {isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
         </button>
@@ -77,4 +72,5 @@ const ProductItem = ({
     </div>
   );
 };
+
 export default ProductItem;
