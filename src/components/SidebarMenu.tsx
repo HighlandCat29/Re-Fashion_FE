@@ -93,6 +93,7 @@ const SidebarMenu = ({
                     ]),
                 { to: "/cart", label: "Cart" },
                 { to: "/wishlist", label: "Wishlist" },
+                { to: "/news", label: "News" },
               ].map((item, index) => (
                 <div
                   key={index}

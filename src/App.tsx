@@ -13,6 +13,7 @@ import {
   SingleOrderHistory,
   SingleProduct,
   UserProfile,
+  NewsPage,
 } from "./pages";
 import { checkoutAction, searchAction } from "./actions/index";
 import { shopCategoryLoader } from "./pages/Shop";
@@ -22,8 +23,8 @@ import HomeCollectionSection from "./components/HomeCollectionSection";
 import { WishlistProvider } from "./components/WishlistContext";
 import Header from "./components/Header";
 import WishlistPage from "./components/WishlistPage";
-
-
+import SellProduct from "./pages/SellProduct";
+import AdminDashboard from "./pages/Admin/AdminDashboard"; // Import your AdminDashboard component
 const router = createBrowserRouter([
   {
     path: "/",
@@ -38,7 +39,11 @@ const router = createBrowserRouter([
         element: <Shop />,
       },
       {
-        path: "user-profile",  // URL path
+        path: "news",
+        element: <NewsPage />,
+      },
+      {
+        path: "user-profile", // URL path
         element: <UserProfile />,
       },
       {
@@ -53,8 +58,9 @@ const router = createBrowserRouter([
       {
         path: "cart",
         element: <Cart />,
-      }, {
-        path: "wishlist",          // URL path /wishlist
+      },
+      {
+        path: "wishlist", // URL path /wishlist
         element: <WishlistPage />, // Component to render
       },
       {
@@ -93,9 +99,20 @@ const router = createBrowserRouter([
         element: <HomeCollectionSection />,
       },
       {
+        path: "sell-product",
+        element: <SellProduct />,
+      },
+      {
         path: "order-history/:id",
         element: <SingleOrderHistory />,
-        loader: singleOrderLoader
+        loader: singleOrderLoader,
+      },
+      {
+        path: "admin",
+        element: <AdminDashboard />,
+        children: [
+          // admin subroutes
+        ],
       },
     ],
   },

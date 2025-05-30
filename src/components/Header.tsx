@@ -4,13 +4,19 @@ import {
   HiOutlineMagnifyingGlass,
   HiOutlineShoppingBag,
 } from "react-icons/hi2";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import SidebarMenu from "./SidebarMenu";
 import { useState } from "react";
 import RefashionIcon from "../assets/Refashion_icon.png";
 
 const Header = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  // Hide header on /admin route
+  if (location.pathname.startsWith("/admin")) {
+    return null;
+  }
 
   return (
     <>
