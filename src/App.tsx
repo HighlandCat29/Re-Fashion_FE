@@ -24,7 +24,9 @@ import { WishlistProvider } from "./components/WishlistContext";
 import Header from "./components/Header";
 import WishlistPage from "./components/WishlistPage";
 import SellProduct from "./pages/SellProduct";
-import AdminDashboard from "./pages/Admin/AdminDashboard"; // Import your AdminDashboard component
+import AdminManager from "./pages/Admin/AdminManager"; // Import your AdminDashboard component
+import CategoriesManagement from "./pages/Admin/Categories/CategoriesManagement";
+import AddCategories from "./pages/Admin/Categories/AddCategories";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -109,9 +111,13 @@ const router = createBrowserRouter([
       },
       {
         path: "admin",
-        element: <AdminDashboard />,
+        element: <AdminManager />,
         children: [
-          // admin subroutes
+          {
+            path: "categories",
+            element: <CategoriesManagement />,
+          },
+          { path: "categories/add", element: <AddCategories /> },
         ],
       },
     ],

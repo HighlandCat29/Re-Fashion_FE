@@ -23,14 +23,21 @@ const Login = () => {
         password: data.password,
       });
 
-      const { token, user } = response.data;
-
+      const { token, userId, role } = response.data.result;
+      console.log(role);
       localStorage.setItem("authToken", token);
-      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("user", JSON.stringify(userId));
 
       store.dispatch(setLoginStatus(true));
       toast.success("You logged in successfully");
-      navigate("/");
+      console.log(data.email, data.password, data.token);
+      if (role.roleId == "1") {
+        console.log(role.roleId);
+
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     } catch (error: any) {
       toast.error(
         "Login failed: " + (error.response?.data?.message || error.message)
@@ -92,7 +99,7 @@ const Login = () => {
         <Button type="submit" text="Login" mode="brown" />
 
         <p className="text-center text-gray-600 text-base">
-          Don’t have an account?{" "}
+          Don't have an account?{" "}
           <Link
             to="/register"
             className="text-secondaryBrown font-medium hover:underline transition"

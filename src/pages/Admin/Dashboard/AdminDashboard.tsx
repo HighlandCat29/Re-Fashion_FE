@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Button from "../../components/Button";
 import { Input } from "../../components/Input";
 import { Search, Trash2, Bookmark, Flag, UserCircle } from "lucide-react";
-
+import Sidebar from "../../components/Admin/Sidebar";
 const initialUsers = [
   {
     id: "#SE178",
@@ -82,48 +82,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex text-sm">
-      <aside className="w-64 bg-white p-4 border-r shadow-sm">
-        <div className="space-y-2 text-sm">
-          <div className="font-bold text-blue-600 text-lg">DashBoard</div>
-          <nav className="space-y-1 mt-2">
-            <div className="bg-gray-200 px-3 py-2 rounded-md">Users</div>
-            <div className="hover:bg-gray-100 px-3 py-2 rounded-md cursor-pointer">
-              Products
-            </div>
-            <div className="hover:bg-gray-100 px-3 py-2 rounded-md cursor-pointer">
-              Favourites
-            </div>
-            <div className="hover:bg-gray-100 px-3 py-2 rounded-md cursor-pointer">
-              Messenger
-            </div>
-            <div className="hover:bg-gray-100 px-3 py-2 rounded-md cursor-pointer">
-              Order Lists
-            </div>
-            <div className="hover:bg-gray-100 px-3 py-2 rounded-md cursor-pointer">
-              E-commerce
-            </div>
-            <div className="text-gray-500 mt-4">PAGES</div>
-            <div className="hover:bg-gray-100 px-3 py-2 rounded-md cursor-pointer">
-              File Manager
-            </div>
-            <div className="hover:bg-gray-100 px-3 py-2 rounded-md cursor-pointer">
-              Calendar
-            </div>
-            <div className="hover:bg-gray-100 px-3 py-2 rounded-md cursor-pointer">
-              Feed
-            </div>
-            <div className="hover:bg-gray-100 px-3 py-2 rounded-md cursor-pointer">
-              To-Do
-            </div>
-            <div className="hover:bg-gray-100 px-3 py-2 rounded-md cursor-pointer">
-              Contact
-            </div>
-            <div className="hover:bg-gray-100 px-3 py-2 rounded-md cursor-pointer">
-              Invoice
-            </div>
-          </nav>
-        </div>
-      </aside>
+      <Sidebar />
 
       <main className="flex-1 p-6">
         <div className="flex justify-between items-center mb-6">

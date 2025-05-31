@@ -27,7 +27,6 @@ const UserProfile = () => {
     }
   };
 
-
   const updateUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -48,7 +47,6 @@ const UserProfile = () => {
       navigate("/login");
     }
   };
-
 
   useEffect(() => {
     const userId = JSON.parse(localStorage.getItem("user") || "{}").id;
