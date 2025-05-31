@@ -1,18 +1,29 @@
-import React from "react";
+import React, { useState } from "react";
 import { UserCircle, LogOut } from "lucide-react";
 import { logout } from "../../api/Logout/index";
 import { useNavigate } from "react-router-dom";
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
+  const [activeItem, setActiveItem] = useState<string>("Dashboard");
 
   const handleLogout = async () => {
     await logout(navigate);
   };
 
-  const goToCategories = () => {
-    navigate("/admin/categories");
+  const handleNavClick = (label: string, path?: string) => {
+    setActiveItem(label);
+    if (path) navigate(path);
   };
+
+  const navItems = [
+    { label: "Dashboard", path: "/admin" },
+    { label: "Users", path: "/admin/users" },
+    { label: "Products", path: "/admin/products" },
+    { label: "Categories", path: "/admin/categories" },
+    { label: "Reports" },
+    { label: "Settings" },
+  ];
 
   return (
     <aside className="w-60 bg-white p-6 border-r hidden md:flex flex-col justify-between h-screen">
@@ -22,23 +33,19 @@ const Sidebar: React.FC = () => {
           <span className="font-bold text-lg">Admin Panel</span>
         </div>
         <nav className="flex flex-col gap-2 text-gray-700">
-          <span className="font-semibold text-blue-600">Dashboard</span>
-          <span className="bg-gray-200 px-2 py-1 rounded">Users</span>
-          <span className="hover:bg-gray-100 px-2 py-1 rounded cursor-pointer">
-            Products
-          </span>
-          <span
-            onClick={goToCategories}
-            className="hover:bg-gray-100 px-2 py-1 rounded cursor-pointer"
-          >
-            Categories
-          </span>
-          <span className="hover:bg-gray-100 px-2 py-1 rounded cursor-pointer">
-            Reports
-          </span>
-          <span className="hover:bg-gray-100 px-2 py-1 rounded cursor-pointer">
-            Settings
-          </span>
+          {navItems.map((item) => (
+            <span
+              key={item.label}
+              onClick={() => handleNavClick(item.label, item.path)}
+              className={`px-2 py-1 rounded cursor-pointer transition ${
+                activeItem === item.label
+                  ? "bg-blue-100 text-blue-700 font-semibold"
+                  : "hover:bg-gray-100"
+              }`}
+            >
+              {item.label}
+            </span>
+          ))}
         </nav>
       </div>
 

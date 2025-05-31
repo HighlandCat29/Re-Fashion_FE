@@ -5,6 +5,7 @@ export interface Category {
   id: string;
   name: string;
   description: string;
+  status: "active" | "inactive";
 }
 
 export const getCategories = async (): Promise<Category[] | null> => {
@@ -30,7 +31,6 @@ export const addCategory = async (
       name: category.name,
       description: category.description,
     });
-    console.log("thanh cong");
     if (response.status === 200 || response.status === 1000) {
       toast.success("Category added successfully!");
     } else {
@@ -39,6 +39,49 @@ export const addCategory = async (
   } catch (error: any) {
     toast.error(
       "Failed to add category: " +
+        (error.response?.data?.message || error.message)
+    );
+    throw error;
+  }
+};
+export const getCategoryById = async (id: string) => {
+  try {
+    const response = await customFetch.get(`/categories/${id}`);
+    return response.data.result;
+  } catch (error: any) {
+    toast.error(
+      "Failed to fetch category: " +
+        (error.response?.data?.message || error.message)
+    );
+    throw error;
+  }
+};
+
+export const updateCategory = async (id: string, category: Category) => {
+  try {
+    const response = await customFetch.put(`/categories/${id}`, category);
+    if (response.status === 200 || response.status === 1000) {
+      toast.success("Category updated successfully!");
+    }
+    return response.data.result;
+  } catch (error: any) {
+    toast.error(
+      "Failed to update category: " +
+        (error.response?.data?.message || error.message)
+    );
+    throw error;
+  }
+};
+export const deleteCategory = async (id: string) => {
+  try {
+    const response = await customFetch.delete(`/categories/${id}`);
+    if (response.status === 200 || response.status === 1000) {
+      toast.success("Category deleted successfully!");
+    }
+    return true;
+  } catch (error: any) {
+    toast.error(
+      "Failed to delete category: " +
         (error.response?.data?.message || error.message)
     );
     throw error;

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCategories, Category } from "../../../api/Categories/index";
+import { deleteCategory } from "../../../api/Categories/index"; // ✅ import delete function
 
 const CategoriesManagement = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -8,18 +9,31 @@ const CategoriesManagement = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const data = await getCategories();
-        if (data) setCategories(data);
-      } catch (err) {
-        console.error("Error fetching categories:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCategories();
+    fetchAllCategories();
   }, []);
+
+  const fetchAllCategories = async () => {
+    try {
+      const data = await getCategories();
+      if (data) setCategories(data);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this category?")) {
+      try {
+        await deleteCategory(id);
+        setCategories((prev) => prev.filter((cat) => cat.id !== id));
+      } catch (err) {
+        console.error("Failed to delete category:", err);
+        alert("Failed to delete category.");
+      }
+    }
+  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -56,6 +70,9 @@ const CategoriesManagement = () => {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
                     Description
                   </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
@@ -69,6 +86,22 @@ const CategoriesManagement = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">
                       {cat.description}
+                    </td>
+                    <td className="px-6 py-4 text-sm space-x-4">
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/categories/edit/${cat.id}`)
+                        }
+                        className="text-blue-600 hover:underline font-medium"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(cat.id)}
+                        className="text-red-600 hover:underline font-medium"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}

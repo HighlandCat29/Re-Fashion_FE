@@ -5,9 +5,16 @@ type AuthState = {
 };
 
 const initialState: AuthState = {
-  loginStatus: JSON.parse(localStorage.getItem("user") || "{}").id
-    ? true
-    : false,
+  loginStatus: (() => {
+    try {
+      const user = localStorage.getItem("user");
+      if (!user) return false;
+      const parsedUser = JSON.parse(user);
+      return !!parsedUser?.id;
+    } catch {
+      return false;
+    }
+  })(),
 };
 
 export const authSlice = createSlice({
@@ -17,7 +24,6 @@ export const authSlice = createSlice({
   reducers: {
     setLoginStatus: (state, action: PayloadAction<boolean>) => {
       state.loginStatus = action.payload;
-
     },
   },
 });
