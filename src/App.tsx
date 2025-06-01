@@ -27,8 +27,12 @@ import AdminManager from "./pages/Admin/AdminManager"; // Import your AdminDashb
 import CategoriesManagement from "./pages/Admin/Categories/CategoriesManagement";
 import AddCategories from "./pages/Admin/Categories/AddCategories";
 import EditCategories from "./pages/Admin/Categories/EditCategories";
-// import DeleteCategories from "./pages/Admin/Categories/DeleteCategories";
-
+import UsersManagement from "./pages/Admin/Users/UsersManagement";
+import AddUsers from "./pages/Admin/Users/AddUsers";
+import EditUsers from "./pages/Admin/Users/EditUsers";
+import ProductsManagement from "./pages/Admin/Products/ProductsManagement";
+import AddProducts from "./pages/Admin/Products/AddProducts";
+// import EditProducts from "./pages/Admin/Products/EditProducts";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -121,7 +125,18 @@ const router = createBrowserRouter([
           },
           { path: "categories/add", element: <AddCategories /> },
           { path: "categories/edit/:id", element: <EditCategories /> },
-          // { path: "categories/delete", element: <DeleteCategories /> },
+          {
+            path: "users",
+            element: <UsersManagement />,
+          },
+          { path: "users/add", element: <AddUsers /> },
+          { path: "users/edit/:id", element: <EditUsers /> },
+          {
+            path: "products",
+            element: <ProductsManagement />,
+          },
+          { path: "products/add", element: <AddProducts /> },
+          // { path: "products/edit/:id", element: <EditProducts /> },
         ],
       },
     ],
