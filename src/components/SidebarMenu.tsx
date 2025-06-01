@@ -15,6 +15,8 @@ const SidebarMenu = ({
   const { loginStatus } = useAppSelector((state) => state.auth);
   const navigate = useNavigate();
 
+  console.log("Current loginStatus:", loginStatus); // Debug log
+
   useEffect(() => {
     if (isSidebarOpen) {
       setIsAnimating(true);
@@ -39,10 +41,7 @@ const SidebarMenu = ({
     { to: "/news", label: "News" },
     ...(loginStatus
       ? [{ to: null, label: "Logout", action: handleLogoutClick }]
-      : [
-          { to: "/login", label: "Sign in" },
-          { to: "/register", label: "Sign up" },
-        ]),
+      : [{ to: "/login", label: "Login" }]),
   ];
 
   return (

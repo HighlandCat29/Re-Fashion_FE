@@ -39,13 +39,11 @@ const AddProducts = () => {
       try {
         const cats = await getCategories();
         const admins = await getAdminUsers();
-        console.log("Fetched admins:", admins);
         if (cats) setCategories(cats);
         if (admins) {
           const sellerUsers = admins.filter(
             (u: AdminUserResponse) => u.role.roleName === "SELLER"
           );
-          console.log("Filtered sellers:", sellerUsers);
           setSellers(sellerUsers);
         }
       } catch (error) {
@@ -76,15 +74,12 @@ const AddProducts = () => {
     if (file) {
       setImageFile(file);
       setUploadingImage(true);
-
       try {
-        // Create form data for Cloudinary upload
         const formData = new FormData();
         formData.append("file", file);
         formData.append("upload_preset", UPLOAD_PRESET);
         formData.append("cloud_name", "dnrxylpid");
 
-        // Upload to Cloudinary
         const response = await fetch(CLOUDINARY_UPLOAD_URL, {
           method: "POST",
           body: formData,
@@ -99,12 +94,11 @@ const AddProducts = () => {
           }));
           toast.success("Image uploaded successfully!");
         } else {
-          console.error("Cloudinary response:", data);
           throw new Error(data.error?.message || "Failed to upload image");
         }
       } catch (error) {
-        console.error("Error uploading image:", error);
-        toast.error("Failed to upload image. Please try again.");
+        console.error("Image upload error:", error);
+        toast.error("Failed to upload image.");
       } finally {
         setUploadingImage(false);
       }
@@ -114,9 +108,8 @@ const AddProducts = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate required fields
     if (!formData.sellerId) {
-      toast.error("Please select a seller from the dropdown.");
+      toast.error("Please select a seller.");
       return;
     }
     if (!formData.categoryId) {
@@ -124,24 +117,20 @@ const AddProducts = () => {
       return;
     }
     if (!formData.title) {
-      toast.error("Please enter a product title.");
+      toast.error("Please enter a title.");
       return;
     }
     if (!formData.price || formData.price <= 0) {
       toast.error("Please enter a valid price.");
       return;
     }
-    if (!formData.imageFile) {
-      toast.error("Please select a product image.");
-      return;
-    }
 
-    // Log the form data before submission
-    console.log("Submitting form data:", formData);
+    if (!formData.imageFile) {
+      toast("No image selected. Proceeding without product image.");
+    }
 
     setLoading(true);
     try {
-      // Create a new object with the form data, ensuring proper types
       const productData = {
         title: formData.title,
         description: formData.description || "",
@@ -150,7 +139,7 @@ const AddProducts = () => {
         size: formData.size || "",
         color: formData.color || "",
         price: Number(formData.price),
-        imageFile: formData.imageFile, // Using imageFile as per the interface
+        imageFile: formData.imageFile || null,
         categoryId: formData.categoryId,
         sellerId: formData.sellerId,
         isFeatured: Boolean(formData.isFeatured),
@@ -158,15 +147,12 @@ const AddProducts = () => {
         isActive: Boolean(formData.isActive),
       };
 
-      console.log("Sending product data:", productData);
       await addProduct(productData);
       toast.success("Product added!");
       navigate("/admin/products");
     } catch (error) {
       console.error("Error adding product:", error);
-      toast.error(
-        "Failed to add product. Please check the console for details."
-      );
+      toast.error("Failed to add product.");
     } finally {
       setLoading(false);
     }
@@ -246,7 +232,10 @@ const AddProducts = () => {
               className="w-full border p-2 rounded"
             >
               <option value="NEW">NEW</option>
-              <option value="USED">USED</option>
+              <option value="LIKE_NEW">LIKE_NEW</option>
+              <option value="GOOD">GOOD</option>
+              <option value="FAIR">FAIR</option>
+              <option value="POOR">POOR</option>
             </select>
           </div>
 
@@ -268,7 +257,6 @@ const AddProducts = () => {
             </select>
           </div>
 
-          {/* Seller Selection */}
           <div className="relative">
             <label className="block mb-1 text-sm font-medium">Seller</label>
             <input
@@ -307,7 +295,6 @@ const AddProducts = () => {
             )}
           </div>
 
-          {/* Image Upload */}
           <div>
             <label className="block mb-1 text-sm font-medium">
               Product Image
@@ -319,20 +306,19 @@ const AddProducts = () => {
               disabled={uploadingImage}
               className="w-full border p-2 rounded"
             />
-            {imageFile && (
-              <div className="mt-2">
-                <p className="text-xs text-gray-600">{imageFile.name}</p>
-                {uploadingImage && (
-                  <p className="text-xs text-blue-600">Uploading image...</p>
-                )}
-                {formData.imageFile && !uploadingImage && (
-                  <img
-                    src={formData.imageFile}
-                    alt="Preview"
-                    className="mt-2 max-w-xs rounded"
-                  />
-                )}
-              </div>
+            {uploadingImage && (
+              <p className="text-sm text-blue-500 mt-2">Uploading image...</p>
+            )}
+            {formData.imageFile ? (
+              <img
+                src={formData.imageFile}
+                alt="Preview"
+                className="mt-2 max-w-xs rounded"
+              />
+            ) : (
+              <p className="text-xs text-gray-400 mt-2 italic">
+                No image selected
+              </p>
             )}
           </div>
 

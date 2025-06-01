@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { handleDelete } from "./DeleteCategories";
-import { getCategories, Category } from "../../../api/Categories/index";
+import {
+  getCategories,
+  Category,
+  deleteCategory,
+} from "../../../api/Categories/index";
 
 const CategoriesManagement = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -22,7 +25,19 @@ const CategoriesManagement = () => {
       setLoading(false);
     }
   };
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this category?")) {
+      try {
+        await deleteCategory(id);
+        fetchAllCategories();
 
+        setCategories((prev) => prev.filter((cat) => cat.id !== id));
+      } catch (err) {
+        console.error("Failed to delete category:", err);
+        alert("Failed to delete category.");
+      }
+    }
+  };
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto bg-white p-6 rounded-xl shadow-md">

@@ -32,7 +32,10 @@ import AddUsers from "./pages/Admin/Users/AddUsers";
 import EditUsers from "./pages/Admin/Users/EditUsers";
 import ProductsManagement from "./pages/Admin/Products/ProductsManagement";
 import AddProducts from "./pages/Admin/Products/AddProducts";
-// import EditProducts from "./pages/Admin/Products/EditProducts";
+import EditProducts from "./pages/Admin/Products/EditProducts";
+import OrdersManagement from "./pages/Admin/Orders/OrdersManagement";
+// import AddOrders from "./pages/Admin/Orders/AddOrders";
+// import EditOrders from "./pages/Admin/Orders/EditOrders";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -136,7 +139,13 @@ const router = createBrowserRouter([
             element: <ProductsManagement />,
           },
           { path: "products/add", element: <AddProducts /> },
-          // { path: "products/edit/:id", element: <EditProducts /> },
+          { path: "products/edit/:id", element: <EditProducts /> },
+          {
+            path: "orders",
+            element: <OrdersManagement />,
+          },
+          // { path: "orders/add", element: <OrdersProducts /> },
+          // { path: "orders/edit/:id", element: <OrdersProducts /> },
         ],
       },
     ],

@@ -8,7 +8,7 @@ export interface Product {
   title: string;
   description: string;
   brand: string;
-  productCondition: "NEW" | "USED" | string;
+  productCondition: "NEW" | "LIKE_NEW" | "GOOD" | "FAIR" | "POOR" | string;
   size: string;
   color: string;
   price: number;
@@ -84,18 +84,22 @@ export const addProduct = async (
     const formData = new FormData();
 
     // Log the incoming product data
-    console.log("Product data being sent:", product);
+    console.log("Product data before FormData conversion:", product);
 
-    // Add all product fields to FormData
-    Object.entries(product).forEach(([key, value]) => {
-      if (key === "imageFile") {
-        // Handle image file - it should be a string URL from Cloudinary
-        formData.append(key, String(value));
-      } else {
-        // Convert all other values to strings
-        formData.append(key, String(value));
-      }
-    });
+    // Handle each field separately to ensure proper formatting
+    formData.append("title", product.title);
+    formData.append("description", product.description);
+    formData.append("brand", product.brand);
+    formData.append("productCondition", product.productCondition);
+    formData.append("size", product.size);
+    formData.append("color", product.color);
+    formData.append("price", product.price.toString());
+    formData.append("categoryId", product.categoryId);
+    formData.append("sellerId", product.sellerId);
+    formData.append("isFeatured", product.isFeatured.toString());
+    formData.append("featuredUntil", product.featuredUntil);
+    formData.append("isActive", product.isActive.toString());
+    formData.append("imageUrl", product.imageFile); // Changed from imageFile to imageUrl
 
     // Log the FormData contents
     console.log("FormData contents:");
@@ -109,7 +113,7 @@ export const addProduct = async (
       },
     });
 
-    if (response.status === 200 || response.status === 201) {
+    if (response.status === 200 || response.status === 1000) {
       toast.success("Product added successfully!");
     } else {
       console.error("Unexpected response:", response);
@@ -134,20 +138,30 @@ export const addProduct = async (
 // Update a product
 export const updateProduct = async (
   id: string,
-  product: Product
+  formData: FormData
 ): Promise<void> => {
   try {
-    const response = await customFetch.put(`/products/${id}`, product);
+    const response = await customFetch.put(`/products/${id}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     if (response.status === 200 || response.status === 1000) {
       toast.success("Product updated successfully!");
     } else {
       toast.error("Unexpected response when updating product.");
     }
-  } catch (error: any) {
-    toast.error(
-      "Failed to update product: " +
-        (error.response?.data?.message || error.message)
-    );
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      console.error("Error response:", error.response?.data);
+      toast.error(
+        "Failed to update product: " +
+          (error.response?.data?.message || error.message)
+      );
+    } else {
+      console.error("Unknown error:", error);
+      toast.error("Failed to update product: Unknown error occurred");
+    }
     throw error;
   }
 };
