@@ -1,53 +1,93 @@
+/* index.css */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* 
+  1) We apply a very light off-white as the base color.
+     You can tweak this hex (#e8e7e3 below) if it doesn’t
+     exactly match your texture’s true mid-tone.
+*/
 body {
+  @apply bg-[#e8e7e3];
+
+  /*
+    2) Use the original full-size subtle-paper.png (e.g. 5000×3000 px).
+       In dev, Vite will serve this from /src/assets/subtle-paper.png
+       (though in production it gets fingerprinted, so you’d need
+       to copy it into public/ if you truly want a static path).
+  */
+  background-image: url("/src/assets/subtle-paper.png");
+  background-repeat: repeat;
+
+  /*
+    3) Because the source image is huge, we force the browser to shrink
+       each tile down to exactly 256×256 on screen. This way, the grain
+       remains visible and no single tile covers too much area. Remove
+       or adjust this if you want a different on-screen scale:
+  */
+  background-size: 256px 256px;
+
+  /*
+    4) Let the background scroll naturally with the page
+       (do NOT use background-attachment: fixed here).
+  */
+  background-attachment: scroll;
+
+  /* 5) Make sure the <body> always fills at least the viewport */
+  position: relative;
+  min-height: 100vh;
+
+  /* 6) Keep your site’s global font */
   font-family: "Merriweather", serif;
 }
 
+
+/* —————————————————————————————————————————— */
+/* Your existing CSS rules remain unchanged below */
+/* —————————————————————————————————————————— */
+
 .banner {
   height: 800px;
-  background: linear-gradient(
-      0deg,
+  background: linear-gradient(0deg,
       rgba(0, 0, 0, 0.25) 0%,
-      rgba(0, 0, 0, 0.15) 100%
-    ),
+      rgba(0, 0, 0, 0.15) 100%),
     url("/src/assets/banner1.jpg") lightgray 50% / cover no-repeat;
   background-position: 10% 25%;
 }
 
 .shop-banner {
-  background: linear-gradient(
-      0deg,
+  background: linear-gradient(0deg,
       rgba(0, 0, 0, 0.25) 0%,
-      rgba(0, 0, 0, 0.25) 100%
-    ),
-    url("/src/assets/shopbanner1.png") lightgray 3.589px 1.817px / 100% 197.462%
-      no-repeat;
+      rgba(0, 0, 0, 0.25) 100%),
+    url("/src/assets/shopbanner1.png") lightgray 3.589px 1.817px / 100% 197.462% no-repeat;
 }
 
-/* Add these styles to your CSS file */
+/* Sidebar animation classes */
 .sidebar-enter {
   transform: translateX(-100%);
   transition: transform 0.3s ease-in-out;
 }
+
 .sidebar-enter-active {
   transform: translateX(0);
 }
+
 .sidebar-exit {
   transform: translateX(0);
   transition: transform 0.3s ease-in-out;
 }
+
 .sidebar-exit-active {
   transform: translateX(-100%);
 }
 
-
-.singleOrder-table td{
+/* Table styling for single order page */
+.singleOrder-table td {
   text-align: left;
 }
 
-.singleOrder-table th{
+.singleOrder-table th {
   text-align: left;
 }
