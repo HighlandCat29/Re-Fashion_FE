@@ -4,6 +4,7 @@ type AuthState = {
   loginStatus: boolean;
 };
 
+<<<<<<< HEAD
 
 const getUserFromStorage = (): boolean => {
   try {
@@ -18,6 +19,19 @@ const getUserFromStorage = (): boolean => {
     console.error("Invalid JSON in localStorage 'user':", error);
     return false;
   }
+=======
+const initialState: AuthState = {
+  loginStatus: (() => {
+    try {
+      const user = localStorage.getItem("user");
+      if (!user) return false;
+      const parsedUser = JSON.parse(user);
+      return !!parsedUser?.id;
+    } catch {
+      return false;
+    }
+  })(),
+>>>>>>> c7c3f1f18b9c9f81a610d74556076dd9515259c8
 };
 
 const initialState: AuthState = {
@@ -30,7 +44,6 @@ export const authSlice = createSlice({
   reducers: {
     setLoginStatus: (state, action: PayloadAction<boolean>) => {
       state.loginStatus = action.payload;
-
     },
   },
 });

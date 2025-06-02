@@ -6,8 +6,8 @@ import { formatDate } from "../utils/formatDate";
 
 export const loader = async () => {
   try {
-    const response = await customFetch.get("/orders");
-    
+    const response = await customFetch.get("/orders/history");
+
     return response.data;
   } catch (error) {
     console.error("Failed to fetch orders:", error);
@@ -18,7 +18,7 @@ export const loader = async () => {
 const OrderHistory = () => {
   const [user] = useState(JSON.parse(localStorage.getItem("user") || "{}"));
   const orders = useLoaderData() as Order[];
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,26 +43,34 @@ const OrderHistory = () => {
             </tr>
           </thead>
           <tbody>
-            {orders.map((order) => order?.user && order.user.id === user.id && (
-              <tr key={order.id}>
-                <td className="py-3 px-4 border-b text-center">{order.id}</td>
-                <td className="py-3 px-4 border-b text-center">{ formatDate(order.orderDate) }</td>
-                <td className="py-3 px-4 border-b text-center">
-                  ${order.subtotal + 5 + (order.subtotal / 5)}
-                </td>
-                <td className="py-3 px-4 border-b text-center">
-                  { order.orderStatus }
-                </td>
-                <td className="py-3 px-4 border-b text-center">
-                  <Link
-                    to={`/order-history/${order.id}`}
-                    className="text-blue-500 hover:underline"
-                  >
-                    View Details
-                  </Link>
-                </td>
-              </tr>
-            ))}
+            {orders.map(
+              (order) =>
+                order?.user &&
+                order.user.id === user.id && (
+                  <tr key={order.id}>
+                    <td className="py-3 px-4 border-b text-center">
+                      {order.id}
+                    </td>
+                    <td className="py-3 px-4 border-b text-center">
+                      {formatDate(order.orderDate)}
+                    </td>
+                    <td className="py-3 px-4 border-b text-center">
+                      ${order.subtotal + 5 + order.subtotal / 5}
+                    </td>
+                    <td className="py-3 px-4 border-b text-center">
+                      {order.orderStatus}
+                    </td>
+                    <td className="py-3 px-4 border-b text-center">
+                      <Link
+                        to={`/order-history/${order.id}`}
+                        className="text-blue-500 hover:underline"
+                      >
+                        View Details
+                      </Link>
+                    </td>
+                  </tr>
+                )
+            )}
           </tbody>
         </table>
       </div>
