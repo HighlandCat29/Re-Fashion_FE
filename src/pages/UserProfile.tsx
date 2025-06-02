@@ -9,9 +9,21 @@ import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../api/Logout";
 
-const currentUserId = JSON.parse(localStorage.getItem("user") || "null");
-
 const UserProfile = () => {
+  // ─── Safe‐parse localStorage “user” ───
+  let parsedUser: { id?: string } | null = null;
+  try {
+    const raw = localStorage.getItem("user");
+    if (raw && raw !== "undefined") {
+      parsedUser = JSON.parse(raw);
+    }
+  } catch {
+    parsedUser = null;
+  }
+  // If your “user” object in localStorage looks like { id: "123", … },
+  // this grabs the id; otherwise null
+  const currentUserId = parsedUser?.id ?? null;
+
   const [user, setUser] = useState<AdminUserResponse | null>(null);
   const [form, setForm] = useState<AdminUser | null>(null);
   const [editing, setEditing] = useState(false);
@@ -49,7 +61,7 @@ const UserProfile = () => {
     };
 
     fetchProfile();
-  }, []);
+  }, [currentUserId]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -186,8 +198,7 @@ const UserProfile = () => {
               {new Date(user.createdAt).toLocaleString()}
             </p>
             <p>
-              <strong>Email Verified:</strong>{" "}
-              {user.emailVerified ? "Yes" : "No"}
+              <strong>Email Verified:</strong> {user.emailVerified ? "Yes" : "No"}
             </p>
             <p>
               <strong>Verification Token:</strong> {user.verificationToken}
