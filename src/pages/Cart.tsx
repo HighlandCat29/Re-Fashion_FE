@@ -1,11 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../hooks";
-import {
-  removeProductFromTheCart,
-  ProductInCart,
-} from "../features/cart/cartSlice";
+import { removeProductFromTheCart } from "../features/cart/cartSlice";
 import { toast } from "react-hot-toast";
+import { formatPrice } from "../utils/formatPrice";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -74,7 +72,7 @@ const Cart = () => {
                     {item.productCondition.toLowerCase().replace("_", " ")}
                   </p>
                   <p className="mt-1 text-gray-900">
-                    {item.price.toLocaleString("vi-VN")} VNĐ
+                    {formatPrice(item.price)}
                   </p>
                 </div>
 
@@ -99,7 +97,7 @@ const Cart = () => {
             <div className="space-y-4">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span>{subtotal.toLocaleString("vi-VN")} VNĐ</span>
+                <span>{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
@@ -108,7 +106,7 @@ const Cart = () => {
               <div className="border-t pt-4">
                 <div className="flex justify-between font-medium text-gray-900">
                   <span>Total</span>
-                  <span>{subtotal.toLocaleString("vi-VN")} VNĐ</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
               </div>
               <button

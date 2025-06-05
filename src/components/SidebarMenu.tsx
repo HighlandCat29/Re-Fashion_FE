@@ -3,6 +3,8 @@ import { HiXMark } from "react-icons/hi2";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppSelector } from "../hooks";
 import { logout } from "../api/Logout/index";
+import { isAuthenticated } from "../utils/auth";
+import { toast } from "react-hot-toast";
 
 const SidebarMenu = ({
   isSidebarOpen,
@@ -29,6 +31,25 @@ const SidebarMenu = ({
   const handleLogoutClick = () => {
     setIsSidebarOpen(false);
     logout(navigate);
+  };
+
+  const handleNavigation = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    path: string
+  ) => {
+    if (
+      !isAuthenticated() &&
+      path !== "/login" &&
+      path !== "/register" &&
+      path !== "/search" &&
+      path !== "/shop" &&
+      path !== "/news"
+    ) {
+      e.preventDefault();
+      setIsSidebarOpen(false);
+      navigate("/login");
+      toast.error("Please login to access this feature");
+    }
   };
 
   const menuItems = [
@@ -102,7 +123,7 @@ const SidebarMenu = ({
                   ) : (
                     <Link
                       to={item.to!}
-                      onClick={() => setIsSidebarOpen(false)}
+                      onClick={(e) => handleNavigation(e, item.to!)}
                       className="block w-full text-center text-gray-700 font-medium hover:text-sky-500"
                     >
                       {item.label}

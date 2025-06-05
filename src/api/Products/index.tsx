@@ -21,19 +21,30 @@ export interface Product {
   isActive: boolean;
   categoryName: string;
   sellerUsername: string;
+  sellerCreatedAt?: string;
+  sellerTotalSales?: number;
+  sellerRating?: number;
 }
 
-// API response format
+// API response format for a single product
 export interface ProductResponse {
   code: number;
   message: string | null;
   result: Product;
 }
 
+// API response format for a list of products
+export interface ProductsListResponse {
+  code: number;
+  message: string | null;
+  result: Product[];
+}
+
 // Get all products
 export const getProducts = async (): Promise<Product[] | null> => {
   try {
     const response = await customFetch.get("/products");
+    // Assuming the result is an array of products
     return response.data.result;
   } catch (error: unknown) {
     const errorMessage =
@@ -47,11 +58,34 @@ export const getProducts = async (): Promise<Product[] | null> => {
 export const getProductById = async (id: string): Promise<Product | null> => {
   try {
     const response = await customFetch.get(`/products/${id}`);
+    // Assuming the result is a single product object
     return response.data.result;
   } catch (error: unknown) {
     const errorMessage =
       error instanceof Error ? error.message : "An error occurred";
     toast.error("Failed to fetch product: " + errorMessage);
+    return null;
+  }
+};
+
+// Get products by seller ID
+export const getProductsBySellerId = async (
+  sellerId: string
+): Promise<Product[] | null> => {
+  try {
+    const response = await customFetch.get(`/products/seller/${sellerId}`);
+    // Assuming the response structure is { code, message, result: Product[] }
+    if (response.data && Array.isArray(response.data.result)) {
+      // Filter out inactive products on the client side for now if needed, or handle in backend
+      // const activeProducts = response.data.result.filter(product => product.isActive);
+      return response.data.result;
+    }
+    return null; // Return null if result is not an array or response is invalid
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "An error occurred";
+    console.error(`Failed to fetch products for seller ${sellerId}:`, error);
+    toast.error(`Failed to fetch your listed products: ${errorMessage}`);
     return null;
   }
 };

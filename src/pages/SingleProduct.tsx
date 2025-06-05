@@ -3,8 +3,16 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getProductById } from "../api/Products";
 import { Product } from "../api/Products";
 import { toast } from "react-hot-toast";
-import { useAppDispatch } from "../hooks";
+import { useAppDispatch, useAppSelector } from "../hooks";
 import { addProductToTheCart } from "../features/cart/cartSlice";
+import { formatPrice } from "../utils/formatPrice";
+import { useWishlist } from "../components/WishlistContext";
+import {
+  addToWishlist,
+  getUserWishlists,
+  removeFromWishlist,
+} from "../api/Whishlists";
+import { HiOutlineHeart } from "react-icons/hi2";
 
 interface ProductInCart {
   id: string;
@@ -27,8 +35,15 @@ const SingleProduct = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
+  const {
+    wishlist: localWishlist,
+    addToWishlist: addToLocalWishlist,
+    removeFromWishlist: removeFromLocalWishlist,
+  } = useWishlist();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isInWishlist, setIsInWishlist] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -42,6 +57,17 @@ const SingleProduct = () => {
         const productData = await getProductById(id);
         if (productData) {
           setProduct(productData);
+          // Check if product is in wishlist
+          if (user?.id) {
+            const response = await getUserWishlists(user.id);
+            if (response?.result) {
+              setIsInWishlist(
+                response.result.some((item) => item.productId === id)
+              );
+            }
+          } else {
+            setIsInWishlist(localWishlist.some((item) => item.id === id));
+          }
         } else {
           toast.error("Product not found");
           navigate("/shop");
@@ -56,7 +82,7 @@ const SingleProduct = () => {
     };
 
     fetchProduct();
-  }, [id, navigate]);
+  }, [id, navigate, user?.id, localWishlist]);
 
   const handleAddToCart = () => {
     if (!product || !product.id) return;
@@ -80,6 +106,46 @@ const SingleProduct = () => {
 
     dispatch(addProductToTheCart(cartItem));
     toast.success("Added to cart!");
+  };
+
+  const handleWishlistToggle = async () => {
+    if (!product?.id) return;
+
+    if (!user?.id) {
+      // Handle local wishlist
+      if (isInWishlist) {
+        removeFromLocalWishlist(product.id);
+        setIsInWishlist(false);
+        toast.success("Removed from wishlist!");
+      } else {
+        addToLocalWishlist({
+          id: product.id,
+          image: product.imageUrls[0],
+          title: product.title,
+          category: product.categoryName || "",
+          price: product.price,
+        });
+        setIsInWishlist(true);
+        toast.success("Added to wishlist!");
+      }
+      window.dispatchEvent(new Event("wishlistUpdated"));
+      return;
+    }
+
+    try {
+      if (isInWishlist) {
+        await removeFromWishlist(user.id, product.id);
+        setIsInWishlist(false);
+        toast.success("Removed from wishlist!");
+      } else {
+        await addToWishlist({ userId: user.id, productId: product.id });
+        setIsInWishlist(true);
+        toast.success("Added to wishlist!");
+      }
+      window.dispatchEvent(new Event("wishlistUpdated"));
+    } catch (error) {
+      // Error is already handled in the API functions
+    }
   };
 
   if (loading) {
@@ -143,13 +209,26 @@ const SingleProduct = () => {
 
         {/* Product Info */}
         <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {product.title}
-            </h1>
-            <p className="mt-2 text-2xl text-gray-900">
-              {product.price.toLocaleString("vi-VN")} VNĐ
-            </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {product.title}
+              </h1>
+              <p className="mt-2 text-2xl text-gray-900">
+                {formatPrice(product.price)}
+              </p>
+            </div>
+            <button
+              onClick={handleWishlistToggle}
+              className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
+              title={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+            >
+              <HiOutlineHeart
+                className={`h-6 w-6 ${
+                  isInWishlist ? "text-red-500 fill-current" : "text-gray-400"
+                }`}
+              />
+            </button>
           </div>
 
           <div className="space-y-4">
@@ -187,13 +266,45 @@ const SingleProduct = () => {
             Add to Cart
           </button>
 
+          {/* Seller Information */}
           <div className="border-t pt-6">
-            <h3 className="text-sm font-medium text-gray-900">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
               Seller Information
             </h3>
-            <p className="mt-2 text-gray-600">
-              Sold by: {product.sellerUsername}
-            </p>
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                  <span className="text-xl font-semibold text-gray-600">
+                    {product.sellerUsername?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {product.sellerUsername}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Member since{" "}
+                    {new Date(
+                      product.sellerCreatedAt || ""
+                    ).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Total Sales</p>
+                  <p className="font-medium text-gray-900">
+                    {product.sellerTotalSales || 0}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Rating</p>
+                  <p className="font-medium text-gray-900">
+                    {product.sellerRating || "No ratings yet"}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

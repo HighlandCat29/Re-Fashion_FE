@@ -15,6 +15,8 @@ import { logout } from "../api/Logout";
 import { useWishlist } from "./WishlistContext";
 import { useAppSelector } from "../hooks";
 import { getUserWishlists } from "../api/Whishlists";
+import { isAuthenticated } from "../utils/auth";
+import { toast } from "react-hot-toast";
 
 const Header = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -125,6 +127,24 @@ const Header = () => {
     logout(navigate);
   };
 
+  const handleNavigation = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    path: string
+  ) => {
+    if (
+      !isAuthenticated() &&
+      path !== "/login" &&
+      path !== "/register" &&
+      path !== "/search" &&
+      path !== "/shop" &&
+      path !== "/news"
+    ) {
+      e.preventDefault();
+      navigate("/login");
+      toast.error("Please login to access this feature");
+    }
+  };
+
   // Don't render header on /admin routes
   if (location.pathname.startsWith("/admin")) {
     return null;
@@ -190,7 +210,12 @@ const Header = () => {
             {/* ───── Right Icons ───── */}
             <div className="flex items-center gap-6">
               {/* Search Icon */}
-              <Link to="/search" className="group relative" aria-label="Search">
+              <Link
+                to="/search"
+                className="group relative"
+                aria-label="Search"
+                onClick={(e) => handleNavigation(e, "/search")}
+              >
                 <HiOutlineMagnifyingGlass
                   className="
                     text-4xl text-gray-800 hover:text-sky-500
@@ -213,6 +238,7 @@ const Header = () => {
                 to="/wishlist"
                 className="group relative"
                 aria-label="Wishlist"
+                onClick={(e) => handleNavigation(e, "/wishlist")}
               >
                 <div className="relative">
                   <HiOutlineHeart
@@ -246,7 +272,12 @@ const Header = () => {
               </Link>
 
               {/* Cart Icon */}
-              <Link to="/cart" className="group relative" aria-label="Cart">
+              <Link
+                to="/cart"
+                className="group relative"
+                aria-label="Cart"
+                onClick={(e) => handleNavigation(e, "/cart")}
+              >
                 <div className="relative">
                   <HiOutlineShoppingBag
                     className="
@@ -278,29 +309,62 @@ const Header = () => {
                 </span>
               </Link>
 
+              {/* Sell Product Button */}
+              <Link
+                to="/sell-product"
+                className="hidden lg:block px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary hover:text-white transition-colors duration-300"
+                onClick={(e) => handleNavigation(e, "/sell-product")}
+              >
+                Sell Product
+              </Link>
+
               {/* User Icon & Dropdown */}
               <div className="relative" ref={dropdownRef}>
-                <button
-                  className="group relative"
-                  aria-label="User Menu"
-                  onClick={() => setShowProfileDropdown((prev) => !prev)}
-                >
-                  <HiOutlineUser
-                    className="
-                      text-3xl text-gray-800 hover:text-sky-500
-                      transition-colors duration-200
-                    "
-                  />
-                  <span
-                    className="
-                      absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
-                      text-xs text-white group-hover:block
-                      -translate-x-1/2
-                    "
+                {isLoggedIn ? (
+                  <button
+                    className="group relative"
+                    aria-label="User Menu"
+                    onClick={() => setShowProfileDropdown((prev) => !prev)}
                   >
-                    {isLoggedIn ? "Profile" : "Login"}
-                  </span>
-                </button>
+                    <HiOutlineUser
+                      className="
+                        text-3xl text-gray-800 hover:text-sky-500
+                        transition-colors duration-200
+                      "
+                    />
+                    <span
+                      className="
+                        absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
+                        text-xs text-white group-hover:block
+                        -translate-x-1/2
+                      "
+                    >
+                      Profile
+                    </span>
+                  </button>
+                ) : (
+                  <Link
+                    to="/login"
+                    className="group relative"
+                    aria-label="Login"
+                  >
+                    <HiOutlineUser
+                      className="
+                        text-3xl text-gray-800 hover:text-sky-500
+                        transition-colors duration-200
+                      "
+                    />
+                    <span
+                      className="
+                        absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
+                        text-xs text-white group-hover:block
+                        -translate-x-1/2
+                      "
+                    >
+                      Login
+                    </span>
+                  </Link>
+                )}
 
                 {/* Dropdown (logged in) */}
                 {isLoggedIn && showProfileDropdown && (
@@ -324,15 +388,6 @@ const Header = () => {
                       Logout
                     </button>
                   </div>
-                )}
-
-                {/* If not logged in, clicking user → /login */}
-                {!isLoggedIn && (
-                  <Link
-                    to="/login"
-                    className="absolute inset-0"
-                    aria-label="Login"
-                  />
                 )}
               </div>
             </div>

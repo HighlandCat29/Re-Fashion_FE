@@ -1,10 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  getUserWishlists,
-  removeFromWishlist,
-  WishlistResponse,
-} from "../api/Whishlists";
+import { getUserWishlists, removeFromWishlist } from "../api/Whishlists";
 import { getProductById } from "../api/Products";
 import { Product } from "../api/Products";
 import { useAppSelector } from "../hooks";
@@ -150,17 +146,18 @@ const WishlistPage: React.FC = () => {
         {wishlistProducts.map((product) => (
           <div
             key={product.id}
-            className="bg-white rounded-lg shadow-md overflow-hidden"
+            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
           >
-            <div className="relative">
+            <div className="relative group">
               <img
                 src={product.imageUrls[0]}
                 alt={product.title}
-                className="w-full h-48 object-cover"
+                className="w-full h-48 object-cover group-hover:opacity-90 transition-opacity duration-300"
               />
               <button
                 onClick={() => handleRemoveFromWishlist(product.id!)}
-                className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
+                className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors duration-200"
+                title="Remove from wishlist"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -175,19 +172,34 @@ const WishlistPage: React.FC = () => {
                   />
                 </svg>
               </button>
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300 flex items-center justify-center">
+                <button
+                  onClick={() => navigate(`/product/${product.id}`)}
+                  className="opacity-0 group-hover:opacity-100 bg-white text-gray-800 px-4 py-2 rounded-md shadow-md hover:bg-gray-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0"
+                >
+                  View Details
+                </button>
+              </div>
             </div>
             <div className="p-4">
-              <h3 className="text-lg font-semibold mb-2">{product.title}</h3>
+              <h3
+                className="text-lg font-semibold mb-2 hover:text-primary transition-colors duration-200 cursor-pointer"
+                onClick={() => navigate(`/product/${product.id}`)}
+              >
+                {product.title}
+              </h3>
               <p className="text-gray-600 text-sm mb-2">{product.brand}</p>
-              <p className="text-primary font-bold">
+              <p className="text-primary font-bold mb-4">
                 {formatPrice(product.price)}
               </p>
-              <button
-                onClick={() => navigate(`/product/${product.id}`)}
-                className="mt-4 w-full bg-primary text-white py-2 rounded-md hover:bg-primary-dark transition-colors"
-              >
-                View Details
-              </button>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500 capitalize">
+                  {product.productCondition.toLowerCase().replace("_", " ")}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {product.categoryName}
+                </span>
+              </div>
             </div>
           </div>
         ))}

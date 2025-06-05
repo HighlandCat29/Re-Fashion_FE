@@ -17,6 +17,7 @@ const ProductGrid = ({ products }: Props) => {
         const data = await getCategories();
         if (data) {
           setCategories(data);
+          console.log("Fetched categories:", data);
         }
       } catch (error) {
         console.error("Error fetching categories:", error);
@@ -27,9 +28,22 @@ const ProductGrid = ({ products }: Props) => {
     fetchCategories();
   }, []);
 
-  const getCategoryName = (categoryId: string) => {
-    const category = categories.find((cat) => cat.id === categoryId);
-    return category ? category.name : "Unknown Category";
+  const getCategoryName = (
+    categoryId: string | undefined,
+    product?: Product
+  ) => {
+    // If we have a categoryId, look it up in the categories list
+    if (categoryId) {
+      const category = categories.find((cat) => cat.id === categoryId);
+      if (category) return category.name;
+    }
+
+    // If no categoryId or not found, try to use the product's categoryName
+    if (product?.categoryName) {
+      return product.categoryName;
+    }
+
+    return "Unknown Category";
   };
 
   if (loading) {
@@ -70,22 +84,29 @@ const ProductGrid = ({ products }: Props) => {
   return (
     <div className="w-full">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-4">
-        {products.map((product) => (
-          <div
-            key={product.id}
-            className="transform transition-all duration-300 hover:scale-105"
-          >
-            <ProductItem
-              id={product.id!}
-              image={product.imageUrls[0]}
-              title={product.title}
-              category={getCategoryName(product.categoryId)}
-              price={product.price}
-              brand={product.brand}
-              condition={product.productCondition}
-            />
-          </div>
-        ))}
+        {products.map((product) => {
+          console.log(
+            `Product ID: ${product.id}, Category ID: ${
+              product.categoryId
+            }, Category Name: ${getCategoryName(product.categoryId, product)}`
+          );
+          return (
+            <div
+              key={product.id}
+              className="transform transition-all duration-300 hover:scale-105"
+            >
+              <ProductItem
+                id={product.id!}
+                image={product.imageUrls[0]}
+                title={product.title}
+                category={getCategoryName(product.categoryId, product)}
+                price={product.price}
+                brand={product.brand}
+                condition={product.productCondition}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

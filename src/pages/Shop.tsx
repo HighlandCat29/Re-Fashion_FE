@@ -33,6 +33,12 @@ const Shop = () => {
       try {
         const productsData = await getProducts();
         console.log("Fetched products:", productsData);
+        if (productsData && productsData.length > 0) {
+          console.log(
+            "CategoryId of first fetched product:",
+            productsData[0].categoryId
+          );
+        }
         if (productsData) {
           // Filter out inactive products
           const activeProducts = productsData.filter(

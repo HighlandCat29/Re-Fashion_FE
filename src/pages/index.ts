@@ -13,3 +13,4 @@ export { default as OrderHistory } from "./OrderHistory";
 export { default as SingleOrderHistory } from "./SingleOrderHistory";
 export { default as NewsPage } from "./NewsPage";
 export { default as WishlistPage } from "./WishlistPage";
+export { default as SellProduct } from "./SellProduct";
