@@ -15,7 +15,6 @@ const AddProducts = () => {
   const [sellers, setSellers] = useState<AdminUserResponse[]>([]);
   const [sellerSearch, setSellerSearch] = useState("");
   const [loading, setLoading] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -26,7 +25,7 @@ const AddProducts = () => {
     size: "",
     color: "",
     price: 0,
-    imageFile: "",
+    imageUrls: [] as string[],
     categoryId: "",
     sellerId: "",
     isFeatured: false,
@@ -38,11 +37,11 @@ const AddProducts = () => {
     const fetchInitialData = async () => {
       try {
         const cats = await getCategories();
-        const admins = await getAdminUsers();
+        const users = await getAdminUsers();
         if (cats) setCategories(cats);
-        if (admins) {
-          const sellerUsers = admins.filter(
-            (u: AdminUserResponse) => u.role.roleName === "SELLER"
+        if (users) {
+          const sellerUsers = users.filter(
+            (user) => user.role.roleName === "USER" && user.active
           );
           setSellers(sellerUsers);
         }
@@ -72,7 +71,6 @@ const AddProducts = () => {
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setImageFile(file);
       setUploadingImage(true);
       try {
         const formData = new FormData();
@@ -90,7 +88,7 @@ const AddProducts = () => {
         if (data.secure_url) {
           setFormData((prev) => ({
             ...prev,
-            imageFile: data.secure_url,
+            imageUrls: [data.secure_url],
           }));
           toast.success("Image uploaded successfully!");
         } else {
@@ -125,28 +123,40 @@ const AddProducts = () => {
       return;
     }
 
-    if (!formData.imageFile) {
+    if (formData.imageUrls.length === 0) {
       toast("No image selected. Proceeding without product image.");
     }
 
     setLoading(true);
     try {
       const productData = {
-        title: formData.title,
-        description: formData.description || "",
-        brand: formData.brand || "",
-        productCondition: formData.productCondition,
-        size: formData.size || "",
-        color: formData.color || "",
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        brand: formData.brand.trim(),
+        productCondition: formData.productCondition.toUpperCase(),
+        size: formData.size.trim(),
+        color: formData.color.trim(),
         price: Number(formData.price),
-        imageFile: formData.imageFile || null,
+        imageUrls: formData.imageUrls,
         categoryId: formData.categoryId,
         sellerId: formData.sellerId,
         isFeatured: Boolean(formData.isFeatured),
-        featuredUntil: formData.featuredUntil,
+        featuredUntil: formData.isFeatured
+          ? new Date(formData.featuredUntil).toISOString()
+          : null,
         isActive: Boolean(formData.isActive),
       };
 
+      if (
+        !productData.title ||
+        !productData.categoryId ||
+        !productData.sellerId
+      ) {
+        toast.error("Please fill in all required fields.");
+        return;
+      }
+
+      console.log("Submitting product data:", productData);
       await addProduct(productData);
       toast.success("Product added!");
       navigate("/admin/products");
@@ -259,39 +269,57 @@ const AddProducts = () => {
 
           <div className="relative">
             <label className="block mb-1 text-sm font-medium">Seller</label>
-            <input
-              type="text"
-              placeholder="Search seller by name or username"
-              value={sellerSearch}
-              onChange={(e) => setSellerSearch(e.target.value)}
-              className="w-full border p-2 rounded"
-            />
-            {sellerSearch && (
-              <div className="absolute z-10 bg-white border w-full max-h-40 overflow-y-auto rounded shadow mt-1">
-                {sellers
-                  .filter((s) =>
-                    `${s.username} ${s.fullName}`
-                      .toLowerCase()
-                      .includes(sellerSearch.toLowerCase())
-                  )
-                  .map((s) => (
-                    <div
-                      key={s.id}
-                      onClick={() => {
-                        setFormData((prev) => ({ ...prev, sellerId: s.id }));
-                        setSellerSearch(`${s.username} (${s.fullName})`);
-                      }}
-                      className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
-                    >
-                      {s.username} ({s.fullName})
-                    </div>
-                  ))}
-              </div>
-            )}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search seller by name or username"
+                value={sellerSearch}
+                onChange={(e) => setSellerSearch(e.target.value)}
+                className="w-full border p-2 rounded"
+              />
+              {sellerSearch && (
+                <div className="absolute z-10 bg-white border w-full max-h-40 overflow-y-auto rounded shadow mt-1">
+                  {sellers
+                    .filter((s) =>
+                      `${s.username} ${s.fullName}`
+                        .toLowerCase()
+                        .includes(sellerSearch.toLowerCase())
+                    )
+                    .map((s) => (
+                      <div
+                        key={s.id}
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            sellerId: s.id,
+                          }));
+                          setSellerSearch(`${s.username} (${s.fullName})`);
+                        }}
+                        className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
+                      >
+                        <div className="font-medium">{s.username}</div>
+                        <div className="text-gray-600 text-xs">
+                          {s.fullName} • {s.email}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
             {formData.sellerId && (
-              <p className="text-xs text-green-600 mt-1">
-                Selected seller ID: <strong>{formData.sellerId}</strong>
-              </p>
+              <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
+                <p className="text-sm text-green-700">
+                  Selected seller:{" "}
+                  <strong>
+                    {sellers.find((s) => s.id === formData.sellerId)?.username}
+                  </strong>
+                </p>
+                {sellers.find((s) => s.id === formData.sellerId) && (
+                  <p className="text-xs text-green-600 mt-1">
+                    {sellers.find((s) => s.id === formData.sellerId)?.fullName}
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
@@ -309,9 +337,9 @@ const AddProducts = () => {
             {uploadingImage && (
               <p className="text-sm text-blue-500 mt-2">Uploading image...</p>
             )}
-            {formData.imageFile ? (
+            {formData.imageUrls.length > 0 ? (
               <img
-                src={formData.imageFile}
+                src={formData.imageUrls[0]}
                 alt="Preview"
                 className="mt-2 max-w-xs rounded"
               />

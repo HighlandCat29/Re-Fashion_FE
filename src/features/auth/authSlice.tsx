@@ -1,7 +1,16 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+interface User {
+  id: string;
+  role: {
+    roleId: string;
+    roleName: string;
+  };
+}
+
 type AuthState = {
   loginStatus: boolean;
+  user: User | null;
 };
 
 const initialState: AuthState = {
@@ -15,6 +24,15 @@ const initialState: AuthState = {
       return false;
     }
   })(),
+  user: (() => {
+    try {
+      const user = localStorage.getItem("user");
+      if (!user) return null;
+      return JSON.parse(user);
+    } catch {
+      return null;
+    }
+  })(),
 };
 
 export const authSlice = createSlice({
@@ -25,9 +43,13 @@ export const authSlice = createSlice({
     setLoginStatus: (state, action: PayloadAction<boolean>) => {
       state.loginStatus = action.payload;
     },
+    setUser: (state, action: PayloadAction<User | null>) => {
+      state.user = action.payload;
+      state.loginStatus = !!action.payload;
+    },
   },
 });
 
-export const { setLoginStatus } = authSlice.actions;
+export const { setLoginStatus, setUser } = authSlice.actions;
 
 export default authSlice.reducer;

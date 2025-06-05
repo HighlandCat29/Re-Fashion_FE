@@ -9,7 +9,20 @@ export interface Role {
   description: string;
   active: boolean;
 }
-
+export interface UserResponse {
+  id: string;
+  username: string;
+  email: string;
+  role: Role;
+  fullName: string;
+  phoneNumber: string;
+  address: string;
+  profilePicture: string;
+  createdAt: string;
+  emailVerified: boolean;
+  active: boolean;
+  verificationToken: string;
+}
 export interface AdminUserResponse {
   id: string;
   username: string;
@@ -38,6 +51,32 @@ export interface AdminUser {
 }
 
 /** API Functions **/
+export const getUsers = async (): Promise<UserResponse[] | null> => {
+  try {
+    const response = await customFetch.get("/users");
+    return response.data.result;
+  } catch (error: any) {
+    toast.error(
+      "Failed to fetch users: " +
+        (error.response?.data?.message || error.message)
+    );
+    return null;
+  }
+};
+
+// Get user by ID
+export const getUserById = async (id: string): Promise<UserResponse | null> => {
+  try {
+    const response = await customFetch.get(`/users/${id}`);
+    return response.data.result;
+  } catch (error: any) {
+    toast.error(
+      "Failed to fetch user: " +
+        (error.response?.data?.message || error.message)
+    );
+    return null;
+  }
+};
 
 // Get all admin users
 export const getAdminUsers = async (): Promise<AdminUserResponse[] | null> => {
@@ -129,20 +168,14 @@ export const getRoles = async (): Promise<Role[]> => {
   return [
     {
       roleId: "1",
-      roleName: "Admin",
+      roleName: "ADMIN",
       description: "Administrator with full access",
       active: true,
     },
     {
       roleId: "2",
-      roleName: "Buyer",
-      description: "Regular user who can purchase items",
-      active: true,
-    },
-    {
-      roleId: "3",
-      roleName: "Seller",
-      description: "User who can sell items",
+      roleName: "USER",
+      description: "Regular user who can purchase and sell items",
       active: true,
     },
   ];

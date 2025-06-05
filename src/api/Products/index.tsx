@@ -12,108 +12,91 @@ export interface Product {
   size: string;
   color: string;
   price: number;
-  imageFile: string;
   categoryId: string;
   sellerId: string;
   isFeatured: boolean;
-  featuredUntil: string; // ISO date string
+  featuredUntil: string | null; // Allow null for non-featured products
+  imageUrls: string[];
+  createdAt?: string;
   isActive: boolean;
 }
 
-// API response format for a single product
+// API response format
 export interface ProductResponse {
   code: number;
-  message: string;
-  result: {
-    id: string;
-    title: string;
-    description: string;
-    brand: string;
-    productCondition: string;
-    size: string;
-    color: string;
-    price: number;
-    imageUrl: string;
-    categoryName: string;
-    sellerUsername: string;
-    isFeatured: boolean;
-    featuredUntil: string;
-    imageFile: string;
-    createdAt: string;
-    isActive: boolean;
-  };
+  message: string | null;
+  result: Product;
 }
 
 // Get all products
-export const getProducts = async (): Promise<
-  ProductResponse["result"][] | null
-> => {
+export const getProducts = async (): Promise<Product[] | null> => {
   try {
     const response = await customFetch.get("/products");
     return response.data.result;
-  } catch (error: any) {
-    toast.error(
-      "Failed to fetch products: " +
-        (error.response?.data?.message || error.message)
-    );
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "An error occurred";
+    toast.error("Failed to fetch products: " + errorMessage);
     return null;
   }
 };
 
 // Get a product by ID
-export const getProductById = async (
-  id: string
-): Promise<ProductResponse["result"] | null> => {
+export const getProductById = async (id: string): Promise<Product | null> => {
   try {
     const response = await customFetch.get(`/products/${id}`);
     return response.data.result;
-  } catch (error: any) {
-    toast.error(
-      "Failed to fetch product: " +
-        (error.response?.data?.message || error.message)
-    );
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "An error occurred";
+    toast.error("Failed to fetch product: " + errorMessage);
     return null;
   }
 };
 
 // Add a product
 export const addProduct = async (
-  product: Omit<Product, "id">
+  product: Omit<Product, "id" | "createdAt">
 ): Promise<void> => {
   try {
-    const formData = new FormData();
+    // Format the data to match server expectations
+    const formattedProduct = {
+      title: product.title.trim(),
+      description: product.description.trim(),
+      brand: product.brand.trim(),
+      productCondition: product.productCondition.toUpperCase(),
+      size: product.size.trim(),
+      color: product.color.trim(),
+      price: Number(product.price),
+      categoryId: product.categoryId,
+      sellerId: product.sellerId,
+      isFeatured: Boolean(product.isFeatured),
+      featuredUntil:
+        product.isFeatured && product.featuredUntil
+          ? new Date(product.featuredUntil).toISOString()
+          : null,
+      imageUrls: Array.isArray(product.imageUrls) ? product.imageUrls : [],
+      isActive: Boolean(product.isActive),
+    };
 
-    // Log the incoming product data
-    console.log("Product data before FormData conversion:", product);
+    console.log("Sending formatted product:", formattedProduct);
 
-    // Handle each field separately to ensure proper formatting
-    formData.append("title", product.title);
-    formData.append("description", product.description);
-    formData.append("brand", product.brand);
-    formData.append("productCondition", product.productCondition);
-    formData.append("size", product.size);
-    formData.append("color", product.color);
-    formData.append("price", product.price.toString());
-    formData.append("categoryId", product.categoryId);
-    formData.append("sellerId", product.sellerId);
-    formData.append("isFeatured", product.isFeatured.toString());
-    formData.append("featuredUntil", product.featuredUntil);
-    formData.append("isActive", product.isActive.toString());
-    formData.append("imageUrl", product.imageFile); // Changed from imageFile to imageUrl
-
-    // Log the FormData contents
-    console.log("FormData contents:");
-    for (const pair of formData.entries()) {
-      console.log(pair[0] + ": " + pair[1]);
-    }
-
-    const response = await customFetch.post("/products", formData, {
+    // Send the request with JSON data
+    const response = await customFetch.post("/products", formattedProduct, {
       headers: {
-        "Content-Type": "multipart/form-data",
+        "Content-Type": "application/json",
       },
     });
 
-    if (response.status === 200 || response.status === 1000) {
+    if (response.data) {
+      console.log("Server response:", response.data);
+    }
+
+    if (
+      response.status === 200 ||
+      response.status === 1000 ||
+      response.status === 1073741824
+    ) {
       toast.success("Product added successfully!");
     } else {
       console.error("Unexpected response:", response);
@@ -123,6 +106,7 @@ export const addProduct = async (
     if (error instanceof AxiosError) {
       console.error("Error response:", error.response?.data);
       console.error("Error config:", error.config);
+      console.error("Request data:", error.config?.data);
       toast.error(
         "Failed to add product: " +
           (error.response?.data?.message || error.message)
@@ -138,15 +122,33 @@ export const addProduct = async (
 // Update a product
 export const updateProduct = async (
   id: string,
-  formData: FormData
+  product: Partial<Omit<Product, "id" | "createdAt">>
 ): Promise<void> => {
   try {
+    const formData = new FormData();
+
+    // Only append fields that are provided
+    Object.entries(product).forEach(([key, value]) => {
+      if (value !== undefined) {
+        if (Array.isArray(value)) {
+          value.forEach((item) => formData.append(key, item));
+        } else {
+          formData.append(key, value.toString());
+        }
+      }
+    });
+
     const response = await customFetch.put(`/products/${id}`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
-    if (response.status === 200 || response.status === 1000) {
+
+    if (
+      response.status === 200 ||
+      response.status === 1000 ||
+      response.status === 1073741824
+    ) {
       toast.success("Product updated successfully!");
     } else {
       toast.error("Unexpected response when updating product.");
@@ -170,16 +172,19 @@ export const updateProduct = async (
 export const deleteProduct = async (id: string): Promise<void> => {
   try {
     const response = await customFetch.delete(`/products/${id}`);
-    if (response.status === 200 || response.status === 1000) {
+    if (
+      response.status === 200 ||
+      response.status === 1000 ||
+      response.status === 1073741824
+    ) {
       toast.success("Product deleted successfully!");
     } else {
       toast.error("Unexpected response when deleting product.");
     }
-  } catch (error: any) {
-    toast.error(
-      "Failed to delete product: " +
-        (error.response?.data?.message || error.message)
-    );
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "An error occurred";
+    toast.error("Failed to delete product: " + errorMessage);
     throw error;
   }
 };

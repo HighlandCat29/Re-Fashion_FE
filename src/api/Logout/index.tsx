@@ -1,26 +1,26 @@
 import customFetch from "../../axios/custom";
 import { toast } from "react-hot-toast";
 import { store } from "../../store";
-import { setLoginStatus } from "../../features/auth/authSlice";
+import { setUser } from "../../features/auth/authSlice";
 
 export const logout = async (navigate: (path: string) => void) => {
   try {
-    // Gửi yêu cầu logout (token sẽ được gửi thông qua interceptor nếu bạn cấu hình)
+    // Send logout request (token will be sent via interceptor if configured)
     await customFetch.post("/auth/logout");
 
-    // Xoá localStorage
+    // Clear localStorage
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
 
-    // Cập nhật Redux state
-    store.dispatch(setLoginStatus(false));
+    // Update Redux state
+    store.dispatch(setUser(null));
 
-    // Chuyển hướng về trang đăng nhập
+    // Redirect to login page
     toast.success("Logged out successfully");
     navigate("/login");
-  } catch (error: any) {
-    toast.error(
-      "Logout failed: " + (error.response?.data?.message || error.message)
-    );
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "An error occurred";
+    toast.error("Logout failed: " + errorMessage);
   }
 };

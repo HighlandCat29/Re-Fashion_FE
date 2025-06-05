@@ -6,7 +6,7 @@ import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
 import { checkLoginFormData } from "../utils/checkLoginFormData";
 import customFetch from "../axios/custom";
 import toast from "react-hot-toast";
-import { setLoginStatus } from "../features/auth/authSlice";
+import { setUser } from "../features/auth/authSlice";
 import { store } from "../store";
 
 const Login = () => {
@@ -32,10 +32,11 @@ const Login = () => {
 
       // Save token + user to localStorage
       localStorage.setItem("authToken", token);
-      localStorage.setItem("user", JSON.stringify(userId));
+      const userData = { id: userId, role };
+      localStorage.setItem("user", JSON.stringify(userData));
 
       // Update Redux state
-      store.dispatch(setLoginStatus(true));
+      store.dispatch(setUser(userData));
       toast.success("You logged in successfully");
 
       // Redirect based on role
@@ -44,10 +45,10 @@ const Login = () => {
       } else {
         navigate("/");
       }
-    } catch (error: any) {
-      toast.error(
-        "Login failed: " + (error.response?.data?.message || error.message)
-      );
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "An error occurred";
+      toast.error("Login failed: " + errorMessage);
     }
   };
 
@@ -65,7 +66,10 @@ const Login = () => {
       <div className="max-w-md w-full px-4">
         {/* Sign‐in card */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          <form onSubmit={handleLogin} className="px-8 py-10 flex flex-col gap-6">
+          <form
+            onSubmit={handleLogin}
+            className="px-8 py-10 flex flex-col gap-6"
+          >
             {/* “Sign in” heading */}
             <h2 className="text-2xl font-semibold text-center text-gray-800">
               Sign in
@@ -73,7 +77,10 @@ const Login = () => {
 
             {/* Email input */}
             <div className="flex flex-col gap-1">
-              <label htmlFor="email" className="text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium text-gray-700"
+              >
                 Your email
               </label>
               <input
@@ -168,7 +175,9 @@ const Login = () => {
         {/* Divider with “New to our community” */}
         <div className="flex items-center my-8">
           <div className="flex-grow border-t border-gray-300" />
-          <span className="px-4 text-sm text-gray-600">New to our community</span>
+          <span className="px-4 text-sm text-gray-600">
+            New to our community
+          </span>
           <div className="flex-grow border-t border-gray-300" />
         </div>
 

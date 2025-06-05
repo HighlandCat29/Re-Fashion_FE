@@ -36,8 +36,7 @@ import ProductsManagement from "./pages/Admin/Products/ProductsManagement";
 import AddProducts from "./pages/Admin/Products/AddProducts";
 import EditProducts from "./pages/Admin/Products/EditProducts";
 import OrdersManagement from "./pages/Admin/Orders/OrdersManagement";
-// import AddOrders from "./pages/Admin/Orders/AddOrders";
-// import EditOrders from "./pages/Admin/Orders/EditOrders";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 
 const router = createBrowserRouter([
   {
@@ -57,26 +56,106 @@ const router = createBrowserRouter([
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
       { path: "order-confirmation", element: <OrderConfirmation /> },
-      { path: "order-history", element: <OrderHistory />, loader: orderHistoryLoader },
+      {
+        path: "order-history",
+        element: <OrderHistory />,
+        loader: orderHistoryLoader,
+      },
       { path: "home-collection", element: <HomeCollectionSection /> },
       { path: "sell-product", element: <SellProduct /> },
-      { path: "order-history/:id", element: <SingleOrderHistory />, loader: singleOrderLoader },
+      {
+        path: "order-history/:id",
+        element: <SingleOrderHistory />,
+        loader: singleOrderLoader,
+      },
       {
         path: "admin",
-        element: <AdminManager />,
+        element: (
+          <ProtectedAdminRoute>
+            <AdminManager />
+          </ProtectedAdminRoute>
+        ),
         children: [
-          { path: "categories", element: <CategoriesManagement /> },
-          { path: "categories/add", element: <AddCategories /> },
-          { path: "categories/edit/:id", element: <EditCategories /> },
-          { path: "users", element: <UsersManagement /> },
-          { path: "users/add", element: <AddUsers /> },
-          { path: "users/edit/:id", element: <EditUsers /> },
-          { path: "products", element: <ProductsManagement /> },
-          { path: "products/add", element: <AddProducts /> },
-          { path: "products/edit/:id", element: <EditProducts /> },
-          { path: "orders", element: <OrdersManagement /> },
-          // { path: "orders/add", element: <AddOrders /> },
-          // { path: "orders/edit/:id", element: <EditOrders /> },
+          {
+            path: "categories",
+            element: (
+              <ProtectedAdminRoute>
+                <CategoriesManagement />
+              </ProtectedAdminRoute>
+            ),
+          },
+          {
+            path: "categories/add",
+            element: (
+              <ProtectedAdminRoute>
+                <AddCategories />
+              </ProtectedAdminRoute>
+            ),
+          },
+          {
+            path: "categories/edit/:id",
+            element: (
+              <ProtectedAdminRoute>
+                <EditCategories />
+              </ProtectedAdminRoute>
+            ),
+          },
+          {
+            path: "users",
+            element: (
+              <ProtectedAdminRoute>
+                <UsersManagement />
+              </ProtectedAdminRoute>
+            ),
+          },
+          {
+            path: "users/add",
+            element: (
+              <ProtectedAdminRoute>
+                <AddUsers />
+              </ProtectedAdminRoute>
+            ),
+          },
+          {
+            path: "users/edit/:id",
+            element: (
+              <ProtectedAdminRoute>
+                <EditUsers />
+              </ProtectedAdminRoute>
+            ),
+          },
+          {
+            path: "products",
+            element: (
+              <ProtectedAdminRoute>
+                <ProductsManagement />
+              </ProtectedAdminRoute>
+            ),
+          },
+          {
+            path: "products/add",
+            element: (
+              <ProtectedAdminRoute>
+                <AddProducts />
+              </ProtectedAdminRoute>
+            ),
+          },
+          {
+            path: "products/edit/:id",
+            element: (
+              <ProtectedAdminRoute>
+                <EditProducts />
+              </ProtectedAdminRoute>
+            ),
+          },
+          {
+            path: "orders",
+            element: (
+              <ProtectedAdminRoute>
+                <OrdersManagement />
+              </ProtectedAdminRoute>
+            ),
+          },
         ],
       },
     ],

@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
-import {
-  getAdminUserById,
-  updateAdminUser,
-  AdminUserResponse,
-  AdminUser,
-} from "../api/Users/index";
+import { getUserById, UserResponse } from "../api/Users/index";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../api/Logout";
 
+interface UserForm {
+  fullName: string;
+  username: string;
+  email: string;
+  phoneNumber: string;
+  address: string;
+}
+
 const UserProfile = () => {
-  // ─── Safe‐parse localStorage “user” ───
+  // ─── Safe‐parse localStorage "user" ───
   let parsedUser: { id?: string } | null = null;
   try {
     const raw = localStorage.getItem("user");
@@ -20,12 +23,10 @@ const UserProfile = () => {
   } catch {
     parsedUser = null;
   }
-  // If your “user” object in localStorage looks like { id: "123", … },
-  // this grabs the id; otherwise null
   const currentUserId = parsedUser?.id ?? null;
 
-  const [user, setUser] = useState<AdminUserResponse | null>(null);
-  const [form, setForm] = useState<AdminUser | null>(null);
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [form, setForm] = useState<UserForm | null>(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -42,19 +43,17 @@ const UserProfile = () => {
       }
 
       try {
-        const data = await getAdminUserById(currentUserId);
-        setUser(data);
-        setForm({
-          roleId: data.role.roleId,
-          username: data.username,
-          email: data.email,
-          password: "",
-          confirmPassword: "",
-          fullName: data.fullName,
-          phoneNumber: data.phoneNumber,
-          address: data.address,
-          active: data.active,
-        });
+        const data = await getUserById(currentUserId);
+        if (data) {
+          setUser(data);
+          setForm({
+            username: data.username,
+            email: data.email,
+            fullName: data.fullName,
+            phoneNumber: data.phoneNumber,
+            address: data.address,
+          });
+        }
       } catch (err) {
         toast.error("Failed to load profile.");
       }
@@ -71,18 +70,13 @@ const UserProfile = () => {
     setForm({ ...form, [name]: value });
   };
 
-  const handleCheckbox = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    if (!form) return;
-    setForm({ ...form, [name]: checked });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form || !user) return;
     setLoading(true);
     try {
-      await updateAdminUser(user.id, form);
+      // TODO: Implement updateUser function in API
+      // await updateUser(user.id, form);
       toast.success("Profile updated!");
       setEditing(false);
     } catch (err) {
@@ -198,21 +192,9 @@ const UserProfile = () => {
               {new Date(user.createdAt).toLocaleString()}
             </p>
             <p>
-              <strong>Email Verified:</strong> {user.emailVerified ? "Yes" : "No"}
+              <strong>Email Verified:</strong>{" "}
+              {user.emailVerified ? "Yes" : "No"}
             </p>
-            <p>
-              <strong>Verification Token:</strong> {user.verificationToken}
-            </p>
-            <div className="flex items-center gap-2 mt-2">
-              <input
-                type="checkbox"
-                name="active"
-                checked={form.active}
-                onChange={handleCheckbox}
-                disabled={!editing}
-              />
-              <label className="text-sm">Active</label>
-            </div>
           </div>
         </section>
 
