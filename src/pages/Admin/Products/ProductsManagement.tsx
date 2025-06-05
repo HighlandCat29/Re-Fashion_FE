@@ -18,14 +18,10 @@ const ProductsManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchAllData();
-  }, []);
-
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      const [productsData, categoriesData, sellersData] = await Promise.all([
+      const [productsData, categoriesData, usersData] = await Promise.all([
         getProducts(),
         getCategories(),
         getAdminUsers(),
@@ -34,70 +30,77 @@ const ProductsManagement = () => {
       console.log("Raw API responses:", {
         products: productsData,
         categories: categoriesData,
-        sellers: sellersData,
+        sellers: usersData,
       });
 
       if (productsData) {
         console.log("First product data structure:", productsData[0]);
         setProducts(productsData);
-      } else {
-        console.error("No products data received");
       }
 
       if (categoriesData) {
         console.log("Categories data structure:", categoriesData);
         setCategories(categoriesData);
-      } else {
-        console.error("No categories data received");
       }
 
-      if (sellersData) {
-        // Filter for active users with USER role
-        const sellerUsers = sellersData.filter(
+      if (usersData) {
+        console.log("Sellers data structure:", usersData);
+        const sellerUsers = usersData.filter(
           (user) => user.role.roleName === "USER" && user.active
         );
-        console.log("Sellers data structure:", sellerUsers);
         setSellers(sellerUsers);
-      } else {
-        console.error("No sellers data received");
       }
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      toast.error("Failed to load data. Please try again.");
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast.error("Failed to load data.");
     } finally {
       setLoading(false);
     }
   };
 
-  const getCategoryName = (categoryName: string) => {
-    console.log("Category lookup - Input value:", categoryName);
-    console.log("Category lookup - Type:", typeof categoryName);
+  useEffect(() => {
+    fetchAllData();
+  }, []);
+
+  // Add a listener for navigation events
+  useEffect(() => {
+    const handleRouteChange = () => {
+      fetchAllData();
+    };
+
+    window.addEventListener("popstate", handleRouteChange);
+    return () => {
+      window.removeEventListener("popstate", handleRouteChange);
+    };
+  }, []);
+
+  const getCategoryName = (product: Product) => {
+    console.log("Category lookup - Product object:", product);
     console.log("Category lookup - Available categories:", categories);
-    // Try to find by name first
-    let category = categories.find((cat) => cat.name === categoryName);
-    // If not found, try to find by id
-    if (!category) {
-      category = categories.find((cat) => cat.id === categoryName);
+    // Prioritize finding by ID
+    let category = categories.find((cat) => cat.id === product.categoryId);
+    // If not found by ID, try by name (fallback)
+    if (!category && product.categoryName) {
+      category = categories.find((cat) => cat.name === product.categoryName);
     }
     console.log("Category lookup - Found category:", category);
-    return category?.name || categoryName || "Unknown Category";
+    return category?.name || product.categoryName || "Unknown Category";
   };
 
-  const getSellerName = (sellerUsername: string) => {
-    console.log("Seller lookup - Input value:", sellerUsername);
-    console.log("Seller lookup - Type:", typeof sellerUsername);
+  const getSellerName = (product: Product) => {
+    console.log("Seller lookup - Product object:", product);
     console.log("Seller lookup - Available sellers:", sellers);
-    // Try to find by username first
-    let seller = sellers.find((s) => s.username === sellerUsername);
-    // If not found, try to find by id
-    if (!seller) {
-      seller = sellers.find((s) => s.id === sellerUsername);
+    // Prioritize finding by ID
+    let seller = sellers.find((s) => s.id === product.sellerId);
+    // If not found by ID, try by username (fallback)
+    if (!seller && product.sellerUsername) {
+      seller = sellers.find((s) => s.username === product.sellerUsername);
     }
     console.log("Seller lookup - Found seller:", seller);
     if (seller) {
       return `${seller.username} (${seller.fullName})`;
     }
-    return sellerUsername || "Unknown Seller";
+    return product.sellerUsername || "Unknown Seller";
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -211,7 +214,7 @@ const ProductsManagement = () => {
                       </td>
 
                       <td className="px-6 py-4 text-sm text-gray-700">
-                        {getSellerName(product.sellerUsername)}
+                        {getSellerName(product)}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span
@@ -325,13 +328,13 @@ const ProductsManagement = () => {
                         Category:
                       </span>
                       <span className="text-gray-800">
-                        {getCategoryName(selectedProduct.categoryName)}
+                        {getCategoryName(selectedProduct)}
                       </span>
                     </p>
                     <p className="flex justify-between">
                       <span className="font-medium text-gray-600">Seller:</span>
                       <span className="text-gray-800">
-                        {getSellerName(selectedProduct.sellerUsername)}
+                        {getSellerName(selectedProduct)}
                       </span>
                     </p>
                   </div>

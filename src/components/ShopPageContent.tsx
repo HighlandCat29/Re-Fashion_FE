@@ -5,16 +5,7 @@ import {
   ShowingPagination,
 } from "../components";
 import { useState, useMemo } from "react";
-
-type Product = {
-  id: string;
-  title: string;
-  image: string;
-  category: string;
-  price: number;
-  popularity: number;
-  stock: number;
-};
+import { Product } from "../api/Products";
 
 type Props = {
   category: string;
@@ -34,9 +25,7 @@ const ShopPageContent = ({ category, page, products }: Props) => {
     if (sortCriteria === "price-asc") {
       sorted.sort((a, b) => a.price - b.price);
     } else if (sortCriteria === "price-desc") {
-      sorted.sort((a, b) => b.price - a.price);
-    } else if (sortCriteria === "popularity") {
-      sorted.sort((a, b) => b.popularity - a.popularity);
+      sorted.sort((a, b) => b.price - b.price);
     }
     return sorted;
   }, [products, sortCriteria]);
@@ -44,8 +33,13 @@ const ShopPageContent = ({ category, page, products }: Props) => {
   // Paginate products
   const paginatedProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return sortedProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return sortedProducts.slice(startIndex, endIndex);
   }, [sortedProducts, currentPage]);
+
+  // Calculate total filtered products and products shown on current page
+  const totalFilteredProducts = sortedProducts.length;
+  const currentProductsCount = paginatedProducts.length;
 
   return (
     <>
@@ -66,6 +60,8 @@ const ShopPageContent = ({ category, page, products }: Props) => {
         page={currentPage}
         category={category}
         setCurrentPage={setCurrentPage}
+        totalFilteredProducts={totalFilteredProducts}
+        currentProductsCount={currentProductsCount}
       />
     </>
   );

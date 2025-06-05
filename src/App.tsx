@@ -16,6 +16,7 @@ import {
   SingleProduct,
   UserProfile,
   NewsPage,
+  WishlistPage,
 } from "./pages";
 import { checkoutAction, searchAction } from "./actions/index";
 import { shopCategoryLoader } from "./pages/Shop";
@@ -23,7 +24,6 @@ import { loader as orderHistoryLoader } from "./pages/OrderHistory";
 import { loader as singleOrderLoader } from "./pages/SingleOrderHistory";
 import HomeCollectionSection from "./components/HomeCollectionSection";
 import { WishlistProvider } from "./components/WishlistContext";
-import WishlistPage from "./components/WishlistPage";
 import SellProduct from "./pages/SellProduct";
 import AdminManager from "./pages/Admin/AdminManager";
 import CategoriesManagement from "./pages/Admin/Categories/CategoriesManagement";

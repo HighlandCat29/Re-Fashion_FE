@@ -1,13 +1,16 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { Product } from "../../api/Products";
 
 type ShopState = {
   totalProducts: number;
   showingProducts: number;
+  products: Product[];
 };
 
 const initialState: ShopState = {
   totalProducts: 0,
   showingProducts: 0,
+  products: [],
 };
 
 export const shopSlice = createSlice({
@@ -21,9 +24,13 @@ export const shopSlice = createSlice({
     setShowingProducts: (state, action: PayloadAction<number>) => {
       state.showingProducts = action.payload;
     },
+    setProducts: (state, action: PayloadAction<Product[]>) => {
+      state.products = action.payload;
+    },
   },
 });
 
-export const { setTotalProducts, setShowingProducts } = shopSlice.actions;
+export const { setTotalProducts, setShowingProducts, setProducts } =
+  shopSlice.actions;
 
 export default shopSlice.reducer;

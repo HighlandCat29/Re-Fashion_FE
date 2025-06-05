@@ -1,5 +1,22 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+export interface ProductInCart {
+  id: string;
+  title: string;
+  price: number;
+  imageUrl: string;
+  quantity: number;
+  sellerId: string;
+  size: string;
+  color: string;
+  stock: number;
+  image: string;
+  brand: string;
+  productCondition: string;
+  category: string;
+  popularity: number;
+}
+
 type CartState = {
   productsInCart: ProductInCart[];
   subtotal: number;

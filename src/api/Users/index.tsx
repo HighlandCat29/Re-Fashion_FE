@@ -1,5 +1,6 @@
 import customFetch from "../../axios/custom";
 import { toast } from "react-hot-toast";
+import { AxiosError } from "axios";
 
 /** Types **/
 
@@ -55,11 +56,14 @@ export const getUsers = async (): Promise<UserResponse[] | null> => {
   try {
     const response = await customFetch.get("/users");
     return response.data.result;
-  } catch (error: any) {
-    toast.error(
-      "Failed to fetch users: " +
-        (error.response?.data?.message || error.message)
-    );
+  } catch (error: unknown) {
+    let errorMessage = "An unknown error occurred";
+    if (error instanceof AxiosError) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    toast.error("Failed to fetch users: " + errorMessage);
     return null;
   }
 };
@@ -69,11 +73,14 @@ export const getUserById = async (id: string): Promise<UserResponse | null> => {
   try {
     const response = await customFetch.get(`/users/${id}`);
     return response.data.result;
-  } catch (error: any) {
-    toast.error(
-      "Failed to fetch user: " +
-        (error.response?.data?.message || error.message)
-    );
+  } catch (error: unknown) {
+    let errorMessage = "An unknown error occurred";
+    if (error instanceof AxiosError) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    toast.error("Failed to fetch user: " + errorMessage);
     return null;
   }
 };
@@ -83,11 +90,14 @@ export const getAdminUsers = async (): Promise<AdminUserResponse[] | null> => {
   try {
     const response = await customFetch.get("/admin/users");
     return response.data.result;
-  } catch (error: any) {
-    toast.error(
-      "Failed to fetch admin users: " +
-        (error.response?.data?.message || error.message)
-    );
+  } catch (error: unknown) {
+    let errorMessage = "An unknown error occurred";
+    if (error instanceof AxiosError) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    toast.error("Failed to fetch admin users: " + errorMessage);
     return null;
   }
 };
@@ -99,11 +109,14 @@ export const getAdminUserById = async (
   try {
     const response = await customFetch.get(`/admin/users/${id}`);
     return response.data.result;
-  } catch (error: any) {
-    toast.error(
-      "Failed to fetch admin user: " +
-        (error.response?.data?.message || error.message)
-    );
+  } catch (error: unknown) {
+    let errorMessage = "An unknown error occurred";
+    if (error instanceof AxiosError) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    toast.error("Failed to fetch admin user: " + errorMessage);
     throw error;
   }
 };
@@ -117,11 +130,14 @@ export const addAdminUser = async (user: AdminUser): Promise<void> => {
     } else {
       toast.error("Unexpected response when adding admin user.");
     }
-  } catch (error: any) {
-    toast.error(
-      "Failed to add admin user: " +
-        (error.response?.data?.message || error.message)
-    );
+  } catch (error: unknown) {
+    let errorMessage = "An unknown error occurred";
+    if (error instanceof AxiosError) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    toast.error("Failed to add admin user: " + errorMessage);
     throw error;
   }
 };
@@ -137,11 +153,14 @@ export const updateAdminUser = async (
       toast.success("Admin user updated successfully!");
     }
     return response.data.result;
-  } catch (error: any) {
-    toast.error(
-      "Failed to update admin user: " +
-        (error.response?.data?.message || error.message)
-    );
+  } catch (error: unknown) {
+    let errorMessage = "An unknown error occurred";
+    if (error instanceof AxiosError) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    toast.error("Failed to update admin user: " + errorMessage);
     throw error;
   }
 };
@@ -154,11 +173,14 @@ export const deleteAdminUser = async (id: string): Promise<boolean> => {
       toast.success("Admin user deleted successfully!");
     }
     return true;
-  } catch (error: any) {
-    toast.error(
-      "Failed to delete admin user: " +
-        (error.response?.data?.message || error.message)
-    );
+  } catch (error: unknown) {
+    let errorMessage = "An unknown error occurred";
+    if (error instanceof AxiosError) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    toast.error("Failed to delete admin user: " + errorMessage);
     throw error;
   }
 };

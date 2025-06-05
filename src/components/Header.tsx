@@ -5,19 +5,76 @@ import {
   HiOutlineUser,
   HiOutlineMagnifyingGlass,
   HiOutlineShoppingBag,
+  HiOutlineHeart,
 } from "react-icons/hi2";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import SidebarMenu from "./SidebarMenu";
 import RefashionIcon from "../assets/Refashion_icon.png";
 import { logout } from "../api/Logout";
+import { useWishlist } from "./WishlistContext";
+import { useAppSelector } from "../hooks";
+import { getUserWishlists } from "../api/Whishlists";
 
 const Header = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const { wishlist: localWishlist } = useWishlist();
+  const { user } = useAppSelector((state) => state.auth);
+  const { productsInCart } = useAppSelector((state) => state.cart);
   const location = useLocation();
+  const navigate = useNavigate();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Calculate total items in cart
+  const cartItemCount = productsInCart.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
+
+  // Update wishlist count when local wishlist changes or user logs in/out
+  useEffect(() => {
+    const updateWishlistCount = async () => {
+      if (user?.id) {
+        try {
+          const response = await getUserWishlists(user.id);
+          if (response?.result) {
+            setWishlistCount(response.result.length);
+          }
+        } catch (error) {
+          console.error("Failed to fetch wishlist count:", error);
+        }
+      } else {
+        setWishlistCount(localWishlist.length);
+      }
+    };
+
+    updateWishlistCount();
+  }, [user?.id, localWishlist]);
+
+  // Listen for custom event when wishlist is updated
+  useEffect(() => {
+    const handleWishlistUpdate = () => {
+      if (user?.id) {
+        getUserWishlists(user.id).then((response) => {
+          if (response?.result) {
+            setWishlistCount(response.result.length);
+          }
+        });
+      } else {
+        setWishlistCount(localWishlist.length);
+      }
+    };
+
+    window.addEventListener("wishlistUpdated", handleWishlistUpdate);
+    return () => {
+      window.removeEventListener("wishlistUpdated", handleWishlistUpdate);
+    };
+  }, [user?.id, localWishlist]);
+
   const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     // If we're already on "/", scroll to top
     if (location.pathname === "/") {
@@ -28,8 +85,6 @@ const Header = () => {
       navigate("/");
     }
   };
-  const navigate = useNavigate();
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown if clicking outside
   useEffect(() => {
@@ -42,8 +97,7 @@ const Header = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Update login state & close dropdown on route change
@@ -71,7 +125,7 @@ const Header = () => {
     logout(navigate);
   };
 
-  // Don’t render header on /admin routes
+  // Don't render header on /admin routes
   if (location.pathname.startsWith("/admin")) {
     return null;
   }
@@ -82,21 +136,21 @@ const Header = () => {
         className={`
           fixed top-0 inset-x-0 z-50
           transition-colors duration-300 ease-in-out
-          ${isScrolled
-            ? "bg-white/90 backdrop-blur-md shadow-lg"
-            : "bg-transparent"
+          ${
+            isScrolled
+              ? "bg-white/90 backdrop-blur-md shadow-lg"
+              : "bg-transparent"
           }
         `}
       >
-        <div className="mx-auto max-w-screen-2xl px-6">
-          <div className="relative flex h-24 items-center">
+        <div className="container mx-auto px-4">
+          <div className="relative flex h-24 items-center justify-between">
             {/* ───── Sidebar Toggle (Left) ───── */}
             <button
               aria-label="Toggle Sidebar"
               className="
                 text-3xl text-gray-800 hover:text-sky-500
                 transition-colors duration-200
-                mr-8
               "
               onClick={() => setIsSidebarOpen(true)}
             >
@@ -118,9 +172,7 @@ const Header = () => {
                 />
                 <div className="flex flex-col items-start leading-tight">
                   <div className="flex -space-x-0">
-                    <span className="text-sky-500 font-bold text-5xl">
-                      Re
-                    </span>
+                    <span className="text-sky-500 font-bold text-5xl">Re</span>
                     <span className="text-orange-400 font-bold text-5xl">
                       fa
                     </span>
@@ -136,7 +188,7 @@ const Header = () => {
             </div>
 
             {/* ───── Right Icons ───── */}
-            <div className="ml-auto flex items-center space-x-8">
+            <div className="flex items-center gap-6">
               {/* Search Icon */}
               <Link to="/search" className="group relative" aria-label="Search">
                 <HiOutlineMagnifyingGlass
@@ -156,14 +208,65 @@ const Header = () => {
                 </span>
               </Link>
 
+              {/* Wishlist Icon */}
+              <Link
+                to="/wishlist"
+                className="group relative"
+                aria-label="Wishlist"
+              >
+                <div className="relative">
+                  <HiOutlineHeart
+                    className="
+                      text-3xl text-gray-800 hover:text-sky-500
+                      transition-colors duration-200
+                    "
+                  />
+                  {wishlistCount > 0 && (
+                    <span
+                      className="
+                      absolute -top-2 -right-2
+                      bg-red-500 text-white text-xs
+                      rounded-full w-5 h-5
+                      flex items-center justify-center
+                    "
+                    >
+                      {wishlistCount}
+                    </span>
+                  )}
+                </div>
+                <span
+                  className="
+                    absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
+                    text-xs text-white group-hover:block
+                    -translate-x-1/2
+                  "
+                >
+                  Wishlist
+                </span>
+              </Link>
+
               {/* Cart Icon */}
               <Link to="/cart" className="group relative" aria-label="Cart">
-                <HiOutlineShoppingBag
-                  className="
-                    text-3xl text-gray-800 hover:text-sky-500
-                    transition-colors duration-200
-                  "
-                />
+                <div className="relative">
+                  <HiOutlineShoppingBag
+                    className="
+                      text-3xl text-gray-800 hover:text-sky-500
+                      transition-colors duration-200
+                    "
+                  />
+                  {cartItemCount > 0 && (
+                    <span
+                      className="
+                        absolute -top-2 -right-2
+                        bg-red-500 text-white text-xs
+                        rounded-full w-5 h-5
+                        flex items-center justify-center
+                      "
+                    >
+                      {cartItemCount}
+                    </span>
+                  )}
+                </div>
                 <span
                   className="
                     absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1

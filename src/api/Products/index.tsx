@@ -19,6 +19,8 @@ export interface Product {
   imageUrls: string[];
   createdAt?: string;
   isActive: boolean;
+  categoryName: string;
+  sellerUsername: string;
 }
 
 // API response format
@@ -56,7 +58,7 @@ export const getProductById = async (id: string): Promise<Product | null> => {
 
 // Add a product
 export const addProduct = async (
-  product: Omit<Product, "id" | "createdAt">
+  product: Omit<Product, "id" | "createdAt" | "categoryName" | "sellerUsername">
 ): Promise<void> => {
   try {
     // Format the data to match server expectations
@@ -125,43 +127,87 @@ export const updateProduct = async (
   product: Partial<Omit<Product, "id" | "createdAt">>
 ): Promise<void> => {
   try {
-    const formData = new FormData();
+    // Format the data to match server expectations
+    const formattedProduct = {
+      title: product.title?.trim(),
+      description: product.description?.trim(),
+      brand: product.brand?.trim(),
+      productCondition: product.productCondition?.toUpperCase(),
+      size: product.size?.trim(),
+      color: product.color?.trim(),
+      price: Number(product.price),
+      categoryId: product.categoryId,
+      sellerId: product.sellerId,
+      isFeatured: Boolean(product.isFeatured),
+      featuredUntil:
+        product.isFeatured && product.featuredUntil
+          ? new Date(product.featuredUntil).toISOString()
+          : null,
+      imageUrls: Array.isArray(product.imageUrls) ? product.imageUrls : [],
+      isActive: Boolean(product.isActive),
+    };
 
-    // Only append fields that are provided
-    Object.entries(product).forEach(([key, value]) => {
-      if (value !== undefined) {
-        if (Array.isArray(value)) {
-          value.forEach((item) => formData.append(key, item));
-        } else {
-          formData.append(key, value.toString());
-        }
-      }
-    });
+    console.log("=== Update Product Request ===");
+    console.log("Product ID:", id);
+    console.log("Original product data:", product);
+    console.log("Formatted product data:", formattedProduct);
+    console.log("Request URL:", `/products/${id}`);
+    console.log("Request Method: PUT");
 
-    const response = await customFetch.put(`/products/${id}`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
+    // Validate required fields
     if (
-      response.status === 200 ||
-      response.status === 1000 ||
-      response.status === 1073741824
+      !formattedProduct.title ||
+      !formattedProduct.categoryId ||
+      !formattedProduct.sellerId
     ) {
-      toast.success("Product updated successfully!");
+      throw new Error("Title, category, and seller are required");
+    }
+
+    const response = await customFetch.put(`/products/${id}`, formattedProduct);
+
+    console.log("=== Update Product Response ===");
+    console.log("Response Status:", response.status);
+    console.log("Response Headers:", response.headers);
+    console.log("Response Data:", response.data);
+
+    // Check if the response contains the updated product
+    if (response.data && response.data.result) {
+      const updatedProduct = response.data.result;
+      console.log("Updated product:", updatedProduct);
+
+      // Verify the update was successful
+      if (updatedProduct.id === id) {
+        console.log("Update verified - product ID matches");
+        toast.success("Product updated successfully!");
+      } else {
+        console.error("Update verification failed - product ID mismatch");
+        toast.error(
+          "Product update may have failed - please verify the changes"
+        );
+      }
     } else {
-      toast.error("Unexpected response when updating product.");
+      console.error("No product data in response");
+      console.error("Response data:", response.data);
+      toast.error("Failed to verify product update");
     }
   } catch (error) {
+    console.error("=== Update Product Error ===");
     if (error instanceof AxiosError) {
-      console.error("Error response:", error.response?.data);
-      toast.error(
-        "Failed to update product: " +
-          (error.response?.data?.message || error.message)
-      );
+      console.error("Error Type: AxiosError");
+      console.error("Error Status:", error.response?.status);
+      console.error("Error Headers:", error.response?.headers);
+      console.error("Error Data:", error.response?.data);
+      console.error("Error Config:", error.config);
+      console.error("Request Data:", error.config?.data);
+      console.error("Request URL:", error.config?.url);
+      console.error("Request Method:", error.config?.method);
+
+      const errorMessage = error.response?.data?.message || error.message;
+      console.error("Error Message:", errorMessage);
+      toast.error(`Failed to update product: ${errorMessage}`);
     } else {
-      console.error("Unknown error:", error);
+      console.error("Error Type: Unknown");
+      console.error("Error:", error);
       toast.error("Failed to update product: Unknown error occurred");
     }
     throw error;
