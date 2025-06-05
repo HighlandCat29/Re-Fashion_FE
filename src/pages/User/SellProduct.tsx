@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Input } from "../components/Input";
-import Button from "../components/Button";
-import { Textarea } from "../components/Textarea";
-import { useAppSelector } from "../hooks";
-import { addProduct } from "../api/Products";
-import { getCategories, Category } from "../api/Categories";
+import { Input } from "../../components/Input";
+import Button from "../../components/Button";
+import { Textarea } from "../../components/Textarea";
+import { useAppSelector } from "../../hooks";
+import { addProduct } from "../../api/Products";
+import { getCategories, Category } from "../../api/Categories";
 import { toast } from "react-hot-toast";
-import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../config/cloudinary";
+import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../../config/cloudinary";
+import { useNavigate } from "react-router-dom";
 
 const SellProduct: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);

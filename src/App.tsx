@@ -18,6 +18,7 @@ import {
   NewsPage,
   WishlistPage,
   SellProduct,
+  SellProductList,
 } from "./pages";
 import { checkoutAction, searchAction } from "./actions/index";
 import { shopCategoryLoader } from "./pages/Shop";
@@ -64,10 +65,18 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "cart",
+        path: "sell-product",
         element: (
           <AuthGuard>
-            <Cart />
+            <SellProduct />
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "sell-product-list",
+        element: (
+          <AuthGuard>
+            <SellProductList />
           </AuthGuard>
         ),
       },
@@ -76,6 +85,14 @@ const router = createBrowserRouter([
         element: (
           <AuthGuard>
             <WishlistPage />
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "cart",
+        element: (
+          <AuthGuard>
+            <Cart />
           </AuthGuard>
         ),
       },
@@ -89,14 +106,6 @@ const router = createBrowserRouter([
         action: checkoutAction,
       },
       {
-        path: "order-confirmation",
-        element: (
-          <AuthGuard>
-            <OrderConfirmation />
-          </AuthGuard>
-        ),
-      },
-      {
         path: "order-history",
         element: (
           <AuthGuard>
@@ -104,14 +113,6 @@ const router = createBrowserRouter([
           </AuthGuard>
         ),
         loader: orderHistoryLoader,
-      },
-      {
-        path: "sell-product",
-        element: (
-          <AuthGuard>
-            <SellProduct />
-          </AuthGuard>
-        ),
       },
       {
         path: "order-history/:id",

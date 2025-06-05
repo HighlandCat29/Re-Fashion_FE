@@ -311,7 +311,7 @@ const Header = () => {
 
               {/* Sell Product Button */}
               <Link
-                to="/sell-product"
+                to="sell-product-list"
                 className="hidden lg:block px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary hover:text-white transition-colors duration-300"
                 onClick={(e) => handleNavigation(e, "/sell-product")}
               >

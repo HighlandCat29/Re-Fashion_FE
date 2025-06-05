@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { getUserById, UserResponse } from "../api/Users/index";
+import { getUserById, UserResponse } from "../../api/Users/index";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { logout } from "../api/Logout";
-import { useAppSelector } from "../hooks";
-import { getProductsBySellerId, Product } from "../api/Products";
+import { logout } from "../../api/Logout";
+import { useAppSelector } from "../../hooks";
+import { getProductsBySellerId, Product } from "../../api/Products";
+import { formatPrice } from "../../utils/formatPrice";
 
 interface UserForm {
   fullName: string;
@@ -26,6 +27,7 @@ const UserProfile = () => {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [userProducts, setUserProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserResponse | null>(null);
 
   const navigate = useNavigate();
 
@@ -55,6 +57,7 @@ const UserProfile = () => {
             phoneNumber: data.phoneNumber,
             address: data.address,
           });
+          setUserProfile(data);
         }
       } catch (err) {
         console.error("Failed to load profile:", err);
@@ -261,9 +264,17 @@ const UserProfile = () => {
 
       {/* My Listed Products Section */}
       <section className="mt-10">
-        <h3 className="text-xl font-semibold mb-4 text-black">
-          Current's Selling Product
-        </h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold text-black">
+            Current's Selling Product
+          </h3>
+          <button
+            onClick={() => navigate("/sell-product-list")}
+            className="text-primary hover:text-primary-dark font-medium"
+          >
+            View All Products →
+          </button>
+        </div>
         {loadingProducts ? (
           <p>Loading products...</p>
         ) : userProducts.length === 0 ? (
@@ -280,10 +291,10 @@ const UserProfile = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {userProducts.map((product) => (
+            {userProducts.slice(0, 4).map((product) => (
               <div
                 key={product.id}
-                className="border rounded-lg overflow-hidden shadow-sm"
+                className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300"
               >
                 <img
                   src={product.imageUrls[0] || "/default-product.png"}
@@ -296,9 +307,25 @@ const UserProfile = () => {
                   </h4>
                   <p className="text-sm text-gray-600">{product.brand}</p>
                   <p className="text-md font-bold text-primary mt-2">
-                    ${product.price.toFixed(2)}
+                    {formatPrice(product.price)}
                   </p>
-                  {/* Add more product details or actions like Edit/Delete here */}
+                  <div className="mt-2 flex justify-between items-center">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        product.isActive
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {product.isActive ? "Active" : "Inactive"}
+                    </span>
+                    <button
+                      onClick={() => navigate(`/product/${product.id}`)}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
+                      View Details
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
