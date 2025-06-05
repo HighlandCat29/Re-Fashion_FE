@@ -27,7 +27,7 @@ const UserProfile = () => {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [userProducts, setUserProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserResponse | null>(null);
+  const [, setUserProfile] = useState<UserResponse | null>(null);
 
   const navigate = useNavigate();
 

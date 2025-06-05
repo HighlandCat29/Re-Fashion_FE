@@ -24,6 +24,7 @@ export interface Product {
   sellerCreatedAt?: string;
   sellerTotalSales?: number;
   sellerRating?: number;
+  status: "PENDING" | "APPROVED" | "REJECTED";
 }
 
 // API response format for a single product
@@ -43,7 +44,7 @@ export interface ProductsListResponse {
 // Get all products
 export const getProducts = async (): Promise<Product[] | null> => {
   try {
-    const response = await customFetch.get("/products");
+    const response = await customFetch.get("/admin/products");
     // Assuming the result is an array of products
     return response.data.result;
   } catch (error: unknown) {
@@ -113,16 +114,21 @@ export const addProduct = async (
           : null,
       imageUrls: Array.isArray(product.imageUrls) ? product.imageUrls : [],
       isActive: Boolean(product.isActive),
+      status: product.status?.trim() || "",
     };
 
     console.log("Sending formatted product:", formattedProduct);
 
     // Send the request with JSON data
-    const response = await customFetch.post("/products", formattedProduct, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await customFetch.post(
+      "/admin/products",
+      formattedProduct,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     if (response.data) {
       console.log("Server response:", response.data);
@@ -188,7 +194,19 @@ export const updateProduct = async (
     console.log("Request URL:", `/products/${id}`);
     console.log("Request Method: PUT");
 
-    const response = await customFetch.put(`/products/${id}`, formattedProduct);
+    // Validate required fields
+    if (
+      !formattedProduct.title ||
+      !formattedProduct.categoryId ||
+      !formattedProduct.sellerId
+    ) {
+      throw new Error("Title, category, and seller are required");
+    }
+
+    const response = await customFetch.put(
+      `/admin/products/${id}/review`,
+      formattedProduct
+    );
 
     console.log("=== Update Product Response ===");
     console.log("Response Status:", response.status);
@@ -256,6 +274,39 @@ export const deleteProduct = async (id: string): Promise<void> => {
     const errorMessage =
       error instanceof Error ? error.message : "An error occurred";
     toast.error("Failed to delete product: " + errorMessage);
+    throw error;
+  }
+};
+
+// Change product status
+export const changeProductStatus = async (
+  id: string,
+  status: "PENDING" | "APPROVED" | "REJECTED",
+  note: string = "Status updated by admin"
+): Promise<void> => {
+  try {
+    const response = await customFetch.put(`/admin/products/${id}/review`, {
+      status,
+      note,
+    });
+    if (response.data) {
+      toast.success(`Product ${status.toLowerCase()} successfully`);
+    }
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      console.error("Error response:", error.response?.data);
+      console.error("Error config:", error.config);
+      console.error("Request data:", error.config?.data);
+      toast.error(
+        `Failed to ${status.toLowerCase()} product: ` +
+          (error.response?.data?.message || error.message)
+      );
+    } else {
+      console.error("Unknown error:", error);
+      toast.error(
+        `Failed to ${status.toLowerCase()} product: Unknown error occurred`
+      );
+    }
     throw error;
   }
 };

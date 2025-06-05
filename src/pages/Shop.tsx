@@ -32,20 +32,25 @@ const Shop = () => {
     const fetchProducts = async () => {
       try {
         const productsData = await getProducts();
-        console.log("Fetched products:", productsData);
+        console.log("Raw API Response:", productsData);
         if (productsData && productsData.length > 0) {
-          console.log(
-            "CategoryId of first fetched product:",
-            productsData[0].categoryId
-          );
+          console.log("First product details:", {
+            id: productsData[0].id,
+            title: productsData[0].title,
+            categoryId: productsData[0].categoryId,
+            isActive: productsData[0].isActive,
+          });
         }
         if (productsData) {
           // Filter out inactive products
           const activeProducts = productsData.filter(
             (product) => product.isActive
           );
+          console.log("Active products count:", activeProducts.length);
           console.log("Active products:", activeProducts);
           dispatch(setProducts(activeProducts));
+        } else {
+          console.log("No products data received from API");
         }
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -59,10 +64,12 @@ const Shop = () => {
   // Filter products by category
   const filteredProducts = useMemo(() => {
     console.log("Current category:", category);
+    console.log("All products count:", products.length);
     console.log("All products:", products);
     const filtered = products.filter(
-      (product) => product.categoryId?.toLowerCase() === category
+      (product) => product.categoryId?.toLowerCase() === category?.toLowerCase()
     );
+    console.log("Filtered products count:", filtered.length);
     console.log("Filtered products:", filtered);
     return filtered;
   }, [category, products]);

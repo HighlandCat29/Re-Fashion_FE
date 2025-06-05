@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { addProduct } from "../../../api/Products";
+import { addProduct } from "../../../api/Products/adminIndex";
 import { getCategories, Category } from "../../../api/Categories";
 import { getAdminUsers, AdminUserResponse } from "../../../api/Users/index";
 import { toast } from "react-hot-toast";

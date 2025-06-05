@@ -7,7 +7,6 @@ import { addProduct } from "../../api/Products";
 import { getCategories, Category } from "../../api/Categories";
 import { toast } from "react-hot-toast";
 import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../../config/cloudinary";
-import { useNavigate } from "react-router-dom";
 
 const SellProduct: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);

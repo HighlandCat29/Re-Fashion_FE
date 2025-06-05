@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getProductById, Product } from "../api/Products";
+import { getProductById } from "../api/Products/adminIndex";
+import { Product } from "../api/Products/adminIndex";
 import { useAppDispatch, useAppSelector } from "../hooks";
 import { addProductToTheCart } from "../features/cart/cartSlice";
 import { toast } from "react-hot-toast";
@@ -24,6 +25,7 @@ const SingleProduct = () => {
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [userProfile, setUserProfile] = useState<UserResponse | null>(null);
+  const [sellerProfile, setSellerProfile] = useState<UserResponse | null>(null);
 
   const {
     wishlist: localWishlist,
@@ -48,6 +50,24 @@ const SingleProduct = () => {
 
     fetchUserProfile();
   }, [userId]);
+
+  // Fetch seller profile
+  useEffect(() => {
+    const fetchSellerProfile = async () => {
+      if (!product?.sellerId) return;
+
+      try {
+        const data = await getUserById(product.sellerId);
+        if (data) {
+          setSellerProfile(data);
+        }
+      } catch (err) {
+        console.error("Error fetching seller profile:", err);
+      }
+    };
+
+    fetchSellerProfile();
+  }, [product?.sellerId]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -120,7 +140,10 @@ const SingleProduct = () => {
         id: product.id,
         title: product.title,
         price: product.price,
-        image: product.imageUrls[0],
+        image:
+          product.imageUrls && product.imageUrls.length > 0
+            ? product.imageUrls[0]
+            : "",
         quantity: 1,
       })
     );
@@ -264,12 +287,14 @@ const SingleProduct = () => {
             <div className="flex items-center space-x-2">
               <span
                 className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  product.isActive
+                  product.status === "APPROVED"
                     ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
+                    : product.status === "REJECTED"
+                    ? "bg-red-100 text-red-800"
+                    : "bg-yellow-100 text-yellow-800"
                 }`}
               >
-                {product.isActive ? "In Stock" : "Out of Stock"}
+                {product.status || "PENDING"}
               </span>
               {product.isFeatured && (
                 <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
@@ -348,6 +373,41 @@ const SingleProduct = () => {
               </button>
             </div>
           </div>
+
+          {/* Seller's Profile Section */}
+          {sellerProfile && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">
+                Seller Information
+              </h3>
+              <dl className="mt-2 space-y-2">
+                {sellerProfile.username && (
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Username</dt>
+                    <dd className="text-gray-900">{sellerProfile.username}</dd>
+                  </div>
+                )}
+                {/* Add other seller details here if available in UserResponse and needed */}
+                {sellerProfile.fullName && (
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Full Name</dt>
+                    <dd className="text-gray-900">{sellerProfile.fullName}</dd>
+                  </div>
+                )}
+                {sellerProfile.email && (
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Email</dt>
+                    <dd className="text-gray-900">{sellerProfile.email}</dd>
+                  </div>
+                )}
+                {/* Example: Adding a link to seller's other products if applicable */}
+                {/* <div className="flex justify-between">
+                  <dt className="text-gray-500">Other Products</dt>
+                  <dd className="text-gray-900"><a href={`/shop?seller=${sellerProfile.id}`} className="text-blue-600 hover:underline">View all by {sellerProfile.username}</a></dd>
+                </div> */}
+              </dl>
+            </div>
+          )}
         </div>
       </div>
     </div>

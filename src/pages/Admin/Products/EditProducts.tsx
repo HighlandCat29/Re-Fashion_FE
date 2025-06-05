@@ -12,9 +12,9 @@ import {
 const EditProducts = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [, setCategories] = useState<Category[]>([]);
   const [sellers, setSellers] = useState<AdminUserResponse[]>([]);
-  const [sellerSearch, setSellerSearch] = useState("");
+  const [, setSellerSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [initialProduct, setInitialProduct] = useState<Product | null>(null);
@@ -140,14 +140,6 @@ const EditProducts = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.sellerId) {
-      toast.error("Please select a seller.");
-      return;
-    }
-    if (!formData.categoryId) {
-      toast.error("Please select a category.");
-      return;
-    }
     if (!formData.title) {
       toast.error("Please enter a title.");
       return;
@@ -180,15 +172,6 @@ const EditProducts = () => {
           : null,
         isActive: Boolean(formData.isActive),
       };
-
-      if (
-        !productData.title ||
-        !productData.categoryId ||
-        !productData.sellerId
-      ) {
-        toast.error("Please fill in all required fields.");
-        return;
-      }
 
       if (!id) {
         toast.error("Product ID is missing.");
@@ -286,80 +269,6 @@ const EditProducts = () => {
               <option value="FAIR">FAIR</option>
               <option value="POOR">POOR</option>
             </select>
-          </div>
-
-          <div>
-            <label className="block mb-1 text-sm font-medium">Category</label>
-            <select
-              name="categoryId"
-              value={formData.categoryId}
-              onChange={handleChange}
-              required
-              className="w-full border p-2 rounded"
-            >
-              <option value="">-- Select Category --</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="relative">
-            <label className="block mb-1 text-sm font-medium">Seller</label>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search seller by name or username"
-                value={sellerSearch}
-                onChange={(e) => setSellerSearch(e.target.value)}
-                className="w-full border p-2 rounded"
-              />
-              {sellerSearch && (
-                <div className="absolute z-10 bg-white border w-full max-h-40 overflow-y-auto rounded shadow mt-1">
-                  {sellers
-                    .filter((s) =>
-                      `${s.username} ${s.fullName}`
-                        .toLowerCase()
-                        .includes(sellerSearch.toLowerCase())
-                    )
-                    .map((s) => (
-                      <div
-                        key={s.id}
-                        onClick={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            sellerId: s.id,
-                          }));
-                          setSellerSearch(`${s.username} (${s.fullName})`);
-                        }}
-                        className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
-                      >
-                        <div className="font-medium">{s.username}</div>
-                        <div className="text-gray-600 text-xs">
-                          {s.fullName} • {s.email}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
-            {formData.sellerId && (
-              <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
-                <p className="text-sm text-green-700">
-                  Selected seller:{" "}
-                  <strong>
-                    {sellers.find((s) => s.id === formData.sellerId)?.username}
-                  </strong>
-                </p>
-                {sellers.find((s) => s.id === formData.sellerId) && (
-                  <p className="text-xs text-green-600 mt-1">
-                    {sellers.find((s) => s.id === formData.sellerId)?.fullName}
-                  </p>
-                )}
-              </div>
-            )}
           </div>
 
           <div>
