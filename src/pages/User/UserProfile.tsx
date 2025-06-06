@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../../api/Logout";
 import { useAppSelector } from "../../hooks";
-import { getProductsBySellerId, Product } from "../../api/Products";
+import { getProductsBySellerId, Product } from "../../api/Products/adminIndex";
 import { formatPrice } from "../../utils/formatPrice";
 
 interface UserForm {
@@ -311,11 +311,10 @@ const UserProfile = () => {
                   </p>
                   <div className="mt-2 flex justify-between items-center">
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        product.isActive
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${product.isActive
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                        }`}
                     >
                       {product.isActive ? "Active" : "Inactive"}
                     </span>

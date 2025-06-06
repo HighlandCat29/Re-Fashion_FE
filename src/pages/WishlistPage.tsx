@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUserWishlists, removeFromWishlist } from "../api/Whishlists";
-import { getProductById } from "../api/Products";
+import { getProductById } from "../api/Products/adminIndex";
 import { Product } from "../api/Products";
 import { useAppSelector } from "../hooks";
 import { useWishlist } from "../components/WishlistContext";

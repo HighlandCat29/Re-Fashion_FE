@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import ProductGrid from "./ProductGrid";
 import ProductGridWrapper from "./ProductGridWrapper";
 import { useAppDispatch } from "../hooks";
-import { getProducts } from "../api/Products";
+import { getProducts } from "../api/Products/adminIndex";
 import { setProducts } from "../features/shop/shopSlice";
 import toast from "react-hot-toast";
 

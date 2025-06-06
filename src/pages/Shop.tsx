@@ -6,7 +6,7 @@ import {
 import { ShopBanner, ShopPageContent } from "../components";
 import { useEffect, useMemo } from "react";
 import toast from "react-hot-toast";
-import { getProducts } from "../api/Products";
+import { getProducts } from "../api/Products/adminIndex";
 import { useAppDispatch, useAppSelector } from "../hooks";
 import { setProducts } from "../features/shop/shopSlice";
 
