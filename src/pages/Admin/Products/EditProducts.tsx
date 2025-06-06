@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getProductById, updateProduct, Product } from "../../../api/Products";
+import { getProductById, updateProduct, Product } from "../../../api/Products/adminIndex";
 import { getCategories, Category } from "../../../api/Categories";
 import { getAdminUsers, AdminUserResponse } from "../../../api/Users/index";
 import { toast } from "react-hot-toast";

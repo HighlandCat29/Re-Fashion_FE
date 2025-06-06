@@ -3,7 +3,7 @@ import { Input } from "../../components/Input";
 import Button from "../../components/Button";
 import { Textarea } from "../../components/Textarea";
 import { useAppSelector } from "../../hooks";
-import { addProduct } from "../../api/Products";
+import { addProduct } from "../../api/Products/adminIndex";
 import { getCategories, Category } from "../../api/Categories";
 import { toast } from "react-hot-toast";
 import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../../config/cloudinary";

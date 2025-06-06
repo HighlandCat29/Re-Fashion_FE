@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ProductItem from "./ProductItem";
-import { Product } from "../api/Products";
+import { Product } from "../api/Products/adminIndex";
 import { Category, getCategories } from "../api/Categories";
 
 type Props = {
@@ -86,8 +86,7 @@ const ProductGrid = ({ products }: Props) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-4">
         {products.map((product) => {
           console.log(
-            `Product ID: ${product.id}, Category ID: ${
-              product.categoryId
+            `Product ID: ${product.id}, Category ID: ${product.categoryId
             }, Category Name: ${getCategoryName(product.categoryId, product)}`
           );
           return (

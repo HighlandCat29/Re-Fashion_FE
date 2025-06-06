@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getProductsBySellerId, Product } from "../../api/Products";
+import { getProductsBySellerId, Product } from "../../api/Products/adminIndex";
 import { useAppSelector } from "../../hooks";
 import { toast } from "react-hot-toast";
 import { formatPrice } from "../../utils/formatPrice";
@@ -117,11 +117,10 @@ const SellProductList = () => {
                     Edit
                   </button>
                   <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      product.isActive
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${product.isActive
                         ? "bg-green-100 text-green-800"
                         : "bg-red-100 text-red-800"
-                    }`}
+                      }`}
                   >
                     {product.isActive ? "Active" : "Inactive"}
                   </span>
