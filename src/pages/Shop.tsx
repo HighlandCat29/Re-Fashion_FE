@@ -1,3 +1,5 @@
+// src/pages/Shop.tsx
+
 import {
   LoaderFunctionArgs,
   useLoaderData,
@@ -6,80 +8,71 @@ import {
 import { ShopBanner, ShopPageContent } from "../components";
 import { useEffect, useMemo } from "react";
 import toast from "react-hot-toast";
-import { getProducts } from "../api/Products/adminIndex";
+import { getProducts, Product } from "../api/Products/adminIndex";
 import { useAppDispatch, useAppSelector } from "../hooks";
 import { setProducts } from "../features/shop/shopSlice";
 
 export const shopCategoryLoader = async ({ params }: LoaderFunctionArgs) => {
   const { category } = params;
-  console.log("Shop category loader - category:", category);
-
-  if (!category) {
-    throw new Response("Category not found", { status: 404 });
-  }
-
+  if (!category) throw new Response("Category not found", { status: 404 });
   return category;
 };
 
+// Helper function to turn "Suits & Blazers" into "suits-and-blazers"
+const slugify = (str: string) =>
+  str
+    .toLowerCase()
+    // replace & with "and"
+    .replace(/\s*&\s*/g, " and ")
+    // replace any non-alphanumeric sequence with a hyphen
+    .replace(/[^a-z0-9]+/g, "-")
+    // trim leading/trailing hyphens
+    .replace(/^-+|-+$/g, "");
+
 const Shop = () => {
-  const category = useLoaderData() as string;
+  const category = useLoaderData() as string; // e.g. "tops" or "suits-and-blazers"
   const [searchParams] = useSearchParams();
-  const page = parseInt(searchParams.get("page") || "1");
+  const page = parseInt(searchParams.get("page") || "1", 10);
+
   const dispatch = useAppDispatch();
   const { products } = useAppSelector((state) => state.shop);
 
+  // 1) Fetch *all* products into Redux (just like before)
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const productsData = await getProducts();
-        console.log("Raw API Response:", productsData);
-        if (productsData && productsData.length > 0) {
-          console.log("First product details:", {
-            id: productsData[0].id,
-            title: productsData[0].title,
-            categoryId: productsData[0].categoryId,
-            isActive: productsData[0].isActive,
-          });
-        }
         if (productsData) {
-          // Filter out inactive products
           const activeProducts = productsData.filter(
-            (product) => product.isActive
+            (p) => p.isActive
           );
-          console.log("Active products count:", activeProducts.length);
-          console.log("Active products:", activeProducts);
           dispatch(setProducts(activeProducts));
-        } else {
-          console.log("No products data received from API");
         }
       } catch (error) {
         console.error("Error fetching products:", error);
         toast.error("Failed to load products");
       }
     };
-
     fetchProducts();
   }, [dispatch]);
 
-  // Filter products by category
+  // 2) Filter by slugified categoryName instead of categoryId
   const filteredProducts = useMemo(() => {
-    console.log("Current category:", category);
-    console.log("All products count:", products.length);
-    console.log("All products:", products);
-    const filtered = products.filter(
-      (product) => product.categoryId?.toLowerCase() === category?.toLowerCase()
-    );
-    console.log("Filtered products count:", filtered.length);
-    console.log("Filtered products:", filtered);
-    return filtered;
+    return products.filter((p: Product) => {
+      if (!p.categoryName) return false;
+      const productSlug = slugify(p.categoryName);
+      return productSlug === category.toLowerCase();
+    });
   }, [category, products]);
 
+  // 3) Validate page param
   useEffect(() => {
     if (isNaN(page) || page < 1) {
       toast.error("Invalid page number, defaulting to page 1.");
     }
   }, [page]);
 
+  // 4) Show spinner while we haven’t yet loaded any products from Redux
   if (products.length === 0) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -88,6 +81,7 @@ const Shop = () => {
     );
   }
 
+  // 5) If no products match that category slug, show “No products found”
   if (filteredProducts.length === 0) {
     return (
       <div className="max-w-screen-2xl mx-auto px-4 pt-12 pb-20">
@@ -104,6 +98,7 @@ const Shop = () => {
     );
   }
 
+  // 6) Otherwise, render the banner + paginated content with the filtered products
   return (
     <div className="max-w-screen-2xl mx-auto px-4 pt-12 pb-20">
       <ShopBanner category={category} />

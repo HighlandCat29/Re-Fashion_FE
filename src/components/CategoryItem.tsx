@@ -1,28 +1,36 @@
+// src/components/CategoryItem.tsx
+
+import React from "react";
 import { Link } from "react-router-dom";
 
-const CategoryItem = ({
+interface CategoryItemProps {
+  /** Prettified title, e.g. "Special Edition" (for display under the image) */
+  categoryTitle: string;
+  /** Full URL string or relative path to the thumbnail, e.g. "https://.../abc.jpg" */
+  image: string;
+  /** URL slug for category, e.g. "special-edition" */
+  link: string;
+}
+
+const CategoryItem: React.FC<CategoryItemProps> = ({
   categoryTitle,
   image,
   link,
-}: {
-  categoryTitle: string;
-  image: string;
-  link: string;
 }) => {
   return (
-    <div className="w-[600px] relative max-[1250px]:w-[400px] max-[1250px]:h-[400px] max-sm:w-[300px] max-sm:h-[300px]">
-      <Link to={`/shop/${link}`}>
+    <Link to={`/shop/${link}`} className="block group">
+      <div className="w-60 h-72 overflow-hidden rounded-lg shadow-md">
         <img
-          src={`/assets/${image}`}
-          className="h-full w-full"
-          loading="lazy"
+          src={image}
           alt={categoryTitle}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
-        <div className="bg-secondaryBrown text-white absolute bottom-0 w-full h-16 flex justify-center items-center max-sm:h-12">
-          <h3 className="text-2xl max-sm:text-xl">{categoryTitle}</h3>
-        </div>
-      </Link>
-    </div>
+      </div>
+      <h3 className="mt-3 text-center text-xl font-medium text-gray-800">
+        {categoryTitle}
+      </h3>
+    </Link>
   );
 };
+
 export default CategoryItem;
