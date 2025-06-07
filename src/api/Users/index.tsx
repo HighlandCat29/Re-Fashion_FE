@@ -164,6 +164,27 @@ export const updateAdminUser = async (
     throw error;
   }
 };
+export const updateUser = async (
+  id: string,
+  user: AdminUser
+): Promise<AdminUserResponse> => {
+  try {
+    const response = await customFetch.put(`/users/${id}`, user);
+    if ([200, 1000, 1073741824].includes(response.status)) {
+      toast.success("Admin user updated successfully!");
+    }
+    return response.data.result;
+  } catch (error: unknown) {
+    let errorMessage = "An unknown error occurred";
+    if (error instanceof AxiosError) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    toast.error("Failed to update admin user: " + errorMessage);
+    throw error;
+  }
+};
 
 // Delete admin user
 export const deleteAdminUser = async (id: string): Promise<boolean> => {

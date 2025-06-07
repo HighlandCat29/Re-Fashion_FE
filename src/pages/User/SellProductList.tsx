@@ -47,7 +47,7 @@ const SellProductList = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">My Products</h1>
+        <h1 className="text-2xl font-bold text-gray-900">My Sell's Products</h1>
         <button
           onClick={() => navigate("/sell-product")}
           className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
@@ -117,12 +117,15 @@ const SellProductList = () => {
                     Edit
                   </button>
                   <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${product.isActive
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      product.status === "APPROVED"
                         ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                      }`}
+                        : product.status === "REJECTED"
+                        ? "bg-red-100 text-red-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}
                   >
-                    {product.isActive ? "Active" : "Inactive"}
+                    {product.status}
                   </span>
                 </div>
               </div>

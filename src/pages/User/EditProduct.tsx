@@ -1,59 +1,74 @@
-import React, { useState, useEffect } from "react";
-import { Input } from "../../components/Input";
-import Button from "../../components/Button";
-import { Textarea } from "../../components/Textarea";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { getProductById, updateProduct, Product } from "../../api/Products";
 import { useAppSelector } from "../../hooks";
-import { addProduct } from "../../api/Products/index";
-import { getCategories, Category } from "../../api/Categories";
 import { toast } from "react-hot-toast";
 import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../../config/cloudinary";
-import { useNavigate } from "react-router-dom";
 
-const SellProduct: React.FC = () => {
-  const { user } = useAppSelector((state) => state.auth);
+const EditProduct = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
-
+  const { user } = useAppSelector((state) => state.auth);
+  const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     brand: "",
-    productCondition: "NEW",
+    productCondition: "",
     size: "",
     color: "",
     price: "",
-    categoryId: "",
     imageUrls: [] as string[],
   });
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loadingCategories, setLoadingCategories] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
-
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchData = async () => {
+      if (!id) {
+        toast.error("Product ID is missing");
+        navigate("/sell-product-list");
+        return;
+      }
+
       try {
-        const data = await getCategories();
-        if (data) {
-          setCategories(data);
+        // Fetch product
+        const productData = await getProductById(id);
+        if (productData) {
+          setProduct(productData);
+          setFormData({
+            title: productData.title,
+            description: productData.description,
+            brand: productData.brand,
+            productCondition: productData.productCondition,
+            size: productData.size,
+            color: productData.color,
+            price: productData.price.toString(),
+            imageUrls: productData.imageUrls,
+          });
         }
       } catch (error) {
-        console.error("Error fetching categories:", error);
-        toast.error("Failed to load categories.");
+        console.error("Failed to fetch data:", error);
+        toast.error("Failed to load product details");
       } finally {
-        setLoadingCategories(false);
+        setLoading(false);
       }
     };
-    fetchCategories();
-  }, []);
 
-  const handleInputChange = (
+    fetchData();
+  }, [id, navigate]);
+
+  const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,17 +111,13 @@ const SellProduct: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.id) {
-      toast.error("You must be logged in to sell a product.");
-      return;
-    }
+    if (!id || !user?.id) return;
 
     if (
       !formData.title ||
       !formData.description ||
       !formData.brand ||
       !formData.price ||
-      !formData.categoryId ||
       formData.imageUrls.length === 0
     ) {
       toast.error(
@@ -117,29 +128,16 @@ const SellProduct: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const productPayload = {
-        title: formData.title,
-        description: formData.description,
-        brand: formData.brand,
-        productCondition: formData.productCondition,
-        size: formData.size,
-        color: formData.color,
-        price: parseFloat(formData.price),
-        categoryId: formData.categoryId,
+      await updateProduct(id, {
+        ...formData,
+        price: Number(formData.price),
         sellerId: user.id,
-        isFeatured: false,
-        featuredUntil: null,
-        imageUrls: formData.imageUrls,
-        isActive: true,
-        status: "PENDING" as const,
-      };
-
-      await addProduct(productPayload);
-      toast.success("Product listed successfully!");
-      // Navigate to sell product list
+      });
+      toast.success("Product updated successfully!");
       navigate("/sell-product-list");
     } catch (error) {
-      console.error("Error submitting product:", error);
+      console.error("Failed to update product:", error);
+      toast.error("Failed to update product");
     } finally {
       setSubmitting(false);
     }
@@ -147,10 +145,32 @@ const SellProduct: React.FC = () => {
 
   const conditions = ["NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"];
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600 text-lg">Product not found</p>
+        <button
+          onClick={() => navigate("/sell-product-list")}
+          className="mt-4 bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors"
+        >
+          Back to My Products
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 mt-24">
       <h1 className="text-3xl font-bold mb-8 text-gray-800 text-center">
-        Sell Your Product
+        Edit Your Product
       </h1>
 
       <form
@@ -248,19 +268,41 @@ const SellProduct: React.FC = () => {
               >
                 Product Name
               </label>
-              <Input
+              <input
+                type="text"
                 id="title"
                 name="title"
-                maxLength={100}
                 value={formData.title}
-                onChange={handleInputChange}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter product name"
               />
-              <div className="text-right text-sm text-gray-500">
-                {formData.title.length}/100
-              </div>
             </div>
 
+            {/* Description */}
+            <div>
+              <label
+                htmlFor="description"
+                className="block text-lg font-semibold mb-2 text-gray-700"
+              >
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                required
+                rows={4}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Describe your product"
+              />
+            </div>
+          </div>
+
+          {/* Right Column: Details */}
+          <div className="space-y-6">
             {/* Brand */}
             <div>
               <label
@@ -269,48 +311,16 @@ const SellProduct: React.FC = () => {
               >
                 Brand
               </label>
-              <Input
+              <input
+                type="text"
                 id="brand"
                 name="brand"
-                maxLength={50}
                 value={formData.brand}
-                onChange={handleInputChange}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter brand name"
               />
-              <div className="text-right text-sm text-gray-500">
-                {formData.brand.length}/50
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Details and Description */}
-          <div className="space-y-6">
-            {/* Category */}
-            <div>
-              <label
-                htmlFor="categoryId"
-                className="block text-lg font-semibold mb-2 text-gray-700"
-              >
-                Category
-              </label>
-              {loadingCategories ? (
-                <p>Loading categories...</p>
-              ) : (
-                <select
-                  id="categoryId"
-                  name="categoryId"
-                  value={formData.categoryId}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
-                >
-                  <option value="">Select a category</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              )}
             </div>
 
             {/* Condition */}
@@ -325,12 +335,13 @@ const SellProduct: React.FC = () => {
                 id="productCondition"
                 name="productCondition"
                 value={formData.productCondition}
-                onChange={handleInputChange}
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {conditions.map((condition) => (
                   <option key={condition} value={condition}>
-                    {condition}
+                    {condition.replace("_", " ")}
                   </option>
                 ))}
               </select>
@@ -344,13 +355,15 @@ const SellProduct: React.FC = () => {
               >
                 Size
               </label>
-              <Input
+              <input
+                type="text"
                 id="size"
                 name="size"
-                maxLength={20}
                 value={formData.size}
-                onChange={handleInputChange}
-                placeholder="e.g., M, 10, 32x34"
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter size"
               />
             </div>
 
@@ -362,84 +375,62 @@ const SellProduct: React.FC = () => {
               >
                 Color
               </label>
-              <Input
+              <input
+                type="text"
                 id="color"
                 name="color"
-                maxLength={30}
                 value={formData.color}
-                onChange={handleInputChange}
-                placeholder="e.g., Red, Blue, Black"
-              />
-            </div>
-
-            {/* Price Input */}
-            <div>
-              <label className="block text-lg font-semibold mb-2 text-gray-700">
-                Price (VND)
-              </label>
-              <Input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleInputChange}
-                placeholder="Enter price in VND"
+                onChange={handleChange}
                 required
-                min="0"
-                step="1000"
-                className="w-full"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter color"
               />
-              {formData.price && (
-                <p className="mt-1 text-sm text-gray-500">
-                  {new Intl.NumberFormat("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                  }).format(parseFloat(formData.price))}
-                </p>
-              )}
             </div>
 
-            {/* Description */}
+            {/* Price */}
             <div>
               <label
-                htmlFor="description"
+                htmlFor="price"
                 className="block text-lg font-semibold mb-2 text-gray-700"
               >
-                Description
+                Price
               </label>
-              <Textarea
-                id="description"
-                name="description"
-                rows={6}
-                maxLength={500}
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Describe your product..."
+              <input
+                type="number"
+                id="price"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                required
+                min="0"
+                step="0.01"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter price"
               />
-              <div className="text-right text-sm text-gray-500">
-                {formData.description.length}/500
-              </div>
             </div>
           </div>
         </div>
 
         {/* Submit Button */}
-        <div className="mt-8">
-          <Button
+        <div className="flex justify-end space-x-4">
+          <button
+            type="button"
+            onClick={() => navigate("/sell-product-list")}
+            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Cancel
+          </button>
+          <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-3 px-6 rounded-md"
-            mode="brown"
-            text={submitting ? "Saving..." : "Create"}
-            style={{
-              display: "block",
-              zIndex: 9999,
-              width: "200px",
-              height: "50px",
-            }}
-          />
+            disabled={submitting}
+            className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? "Saving..." : "Save Changes"}
+          </button>
         </div>
       </form>
     </div>
   );
 };
 
-export default SellProduct;
+export default EditProduct;

@@ -58,7 +58,6 @@ export const getProducts = async (): Promise<Product[] | null> => {
 export const getProductById = async (id: string): Promise<Product | null> => {
   try {
     const response = await customFetch.get(`/products/${id}`);
-    // Assuming the result is a single product object
     return response.data.result;
   } catch (error: unknown) {
     const errorMessage =

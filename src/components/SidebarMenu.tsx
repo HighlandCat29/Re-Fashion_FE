@@ -55,7 +55,6 @@ const SidebarMenu = ({
   const menuItems = [
     { to: "/", label: "Home" },
     { to: "/shop", label: "Shop" },
-    { to: "/search", label: "Search" },
     { to: "/user-profile", label: "User Profile" },
     { to: "/cart", label: "Cart" },
     { to: "/wishlist", label: "Wishlist" },

@@ -1,4 +1,4 @@
-import axios from "axios";
+import customFetch from "../../axios/custom";
 import { toast } from "react-hot-toast";
 import { AxiosError } from "axios";
 
@@ -6,6 +6,9 @@ import { AxiosError } from "axios";
 export interface OrderItem {
   productId: string;
   quantity: number;
+  price: number;
+  productName: string;
+  productImage: string;
 }
 
 export interface CreateOrderRequest {
@@ -13,6 +16,7 @@ export interface CreateOrderRequest {
   sellerId: string;
   shippingAddress: string;
   items: OrderItem[];
+  note?: string;
 }
 
 export interface Order {
@@ -25,50 +29,24 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
   items: OrderItem[];
+  note?: string;
+  buyerName?: string;
+  sellerName?: string;
 }
 
 export interface OrderResponse {
-  data: Order;
-  message: string;
-  status: number;
+  code: number;
+  message: string | null;
+  result: Order;
+}
+
+export interface OrdersResponse {
+  code: number;
+  message: string | null;
+  result: Order[];
 }
 
 // API Functions
-const API_URL =
-  "https://refashion-fqe8c7bfcgg5h0e7.southeastasia-01.azurewebsites.net/api";
-
-// Get auth token from localStorage
-const getAuthToken = () => {
-  const token = localStorage.getItem("authToken");
-  if (!token) {
-    console.warn("No auth token found in localStorage");
-    return "";
-  }
-  return `Bearer ${token}`;
-};
-
-// Create axios instance with default config
-const axiosInstance = axios.create({
-  baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// Add request interceptor to include auth token
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const token = getAuthToken();
-    if (token) {
-      config.headers.Authorization = token;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
 export const createOrder = async (
   orderData: CreateOrderRequest
 ): Promise<Order | null> => {
@@ -95,19 +73,23 @@ export const createOrder = async (
       if (
         !item.productId ||
         typeof item.quantity !== "number" ||
-        item.quantity <= 0
+        item.quantity <= 0 ||
+        typeof item.price !== "number" ||
+        item.price <= 0
       ) {
-        toast.error("Each item must have a valid product ID and quantity");
+        toast.error(
+          "Each item must have a valid product ID, quantity, and price"
+        );
         return null;
       }
     }
 
-    const response = await axiosInstance.post<OrderResponse>(
+    const response = await customFetch.post<OrderResponse>(
       "/orders",
       orderData
     );
     toast.success("Order created successfully!");
-    return response.data.data;
+    return response.data.result;
   } catch (error) {
     if (error instanceof AxiosError) {
       toast.error(error.response?.data?.message || "Failed to create order");
@@ -118,12 +100,10 @@ export const createOrder = async (
   }
 };
 
-export const getOrders = async (userId: string): Promise<Order[] | null> => {
+export const getOrders = async (): Promise<Order[] | null> => {
   try {
-    const response = await axiosInstance.get<{ data: Order[] }>(
-      `/orders/history/${userId}`
-    );
-    return response.data.data;
+    const response = await customFetch.get<OrdersResponse>(`/orders/history`);
+    return response.data.result;
   } catch (error) {
     if (error instanceof AxiosError) {
       toast.error(error.response?.data?.message || "Failed to fetch orders");
@@ -136,10 +116,8 @@ export const getOrders = async (userId: string): Promise<Order[] | null> => {
 
 export const getOrderById = async (orderId: string): Promise<Order | null> => {
   try {
-    const response = await axiosInstance.get<OrderResponse>(
-      `/orders/${orderId}`
-    );
-    return response.data.data;
+    const response = await customFetch.get<OrderResponse>(`/orders/${orderId}`);
+    return response.data.result;
   } catch (error) {
     if (error instanceof AxiosError) {
       toast.error(
@@ -152,19 +130,41 @@ export const getOrderById = async (orderId: string): Promise<Order | null> => {
   }
 };
 
+export const getOrderStatus = async (
+  orderId: string
+): Promise<Order["status"] | null> => {
+  try {
+    const response = await customFetch.get<OrderResponse>(
+      `/orders/${orderId}/status`
+    );
+    return response.data.result.status;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      toast.error(
+        error.response?.data?.message || "Failed to fetch order status"
+      );
+    } else {
+      toast.error("An unexpected error occurred");
+    }
+    return null;
+  }
+};
+
 export const updateOrderStatus = async (
   orderId: string,
-  status: Order["status"]
+  status: Order["status"],
+  note?: string
 ): Promise<Order | null> => {
   try {
-    const response = await axiosInstance.patch<OrderResponse>(
+    const response = await customFetch.patch<OrderResponse>(
       `/orders/${orderId}/status`,
       {
         status,
+        note,
       }
     );
     toast.success("Order status updated successfully!");
-    return response.data.data;
+    return response.data.result;
   } catch (error) {
     if (error instanceof AxiosError) {
       toast.error(
@@ -179,7 +179,7 @@ export const updateOrderStatus = async (
 
 export const deleteOrder = async (orderId: string): Promise<boolean> => {
   try {
-    await axiosInstance.delete(`/orders/${orderId}`);
+    await customFetch.delete(`/orders/${orderId}`);
     toast.success("Order deleted successfully!");
     return true;
   } catch (error) {
@@ -195,8 +195,8 @@ export const deleteOrder = async (orderId: string): Promise<boolean> => {
 // Admin functions
 export const getAllOrders = async (): Promise<Order[] | null> => {
   try {
-    const response = await axiosInstance.get<{ data: Order[] }>("/orders");
-    return response.data.data;
+    const response = await customFetch.get<OrdersResponse>("/orders");
+    return response.data.result;
   } catch (error) {
     if (error instanceof AxiosError) {
       toast.error(error.response?.data?.message || "Failed to fetch orders");
@@ -211,13 +211,33 @@ export const getOrdersByStatus = async (
   status: Order["status"]
 ): Promise<Order[] | null> => {
   try {
-    const response = await axiosInstance.get<{ data: Order[] }>(
+    const response = await customFetch.get<OrdersResponse>(
       `/orders/status/${status}`
     );
-    return response.data.data;
+    return response.data.result;
   } catch (error) {
     if (error instanceof AxiosError) {
       toast.error(error.response?.data?.message || "Failed to fetch orders");
+    } else {
+      toast.error("An unexpected error occurred");
+    }
+    return null;
+  }
+};
+
+export const getOrdersBySellerId = async (
+  sellerId: string
+): Promise<Order[] | null> => {
+  try {
+    const response = await customFetch.get<OrdersResponse>(
+      `/orders/seller/${sellerId}`
+    );
+    return response.data.result;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      toast.error(
+        error.response?.data?.message || "Failed to fetch orders by seller ID"
+      );
     } else {
       toast.error("An unexpected error occurred");
     }

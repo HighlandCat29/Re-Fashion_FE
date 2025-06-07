@@ -15,3 +15,4 @@ export { default as NewsPage } from "./NewsPage";
 export { default as WishlistPage } from "./WishlistPage";
 export { default as SellProduct } from "./User/SellProduct";
 export { default as SellProductList } from "./User/SellProductList";
+export { default as EditProduct } from "./User/EditProduct";

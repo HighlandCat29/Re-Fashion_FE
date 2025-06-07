@@ -155,35 +155,25 @@ const ProductsManagement = () => {
                         >
                           View Details
                         </button>
-                        {product.status !== "APPROVED" && (
-                          <button
-                            onClick={() =>
-                              handleStatusChange(product.id!, "APPROVED")
-                            }
-                            className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
-                          >
-                            Approve
-                          </button>
-                        )}
-                        {product.status !== "REJECTED" && (
-                          <button
-                            onClick={() =>
-                              handleStatusChange(product.id!, "REJECTED")
-                            }
-                            className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
-                          >
-                            Reject
-                          </button>
-                        )}
-                        {product.status !== "PENDING" && (
-                          <button
-                            onClick={() =>
-                              handleStatusChange(product.id!, "PENDING")
-                            }
-                            className="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-xs"
-                          >
-                            Pending
-                          </button>
+                        {product.status === "PENDING" && (
+                          <>
+                            <button
+                              onClick={() =>
+                                handleStatusChange(product.id!, "APPROVED")
+                              }
+                              className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleStatusChange(product.id!, "REJECTED")
+                              }
+                              className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                            >
+                              Reject
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -275,35 +265,31 @@ const ProductsManagement = () => {
                       </span>
                     </p>
                     <div className="mt-2 flex gap-2">
-                      {selectedProduct.status !== "APPROVED" && (
-                        <button
-                          onClick={() =>
-                            handleStatusChange(selectedProduct.id!, "APPROVED")
-                          }
-                          className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-                        >
-                          Approve
-                        </button>
-                      )}
-                      {selectedProduct.status !== "REJECTED" && (
-                        <button
-                          onClick={() =>
-                            handleStatusChange(selectedProduct.id!, "REJECTED")
-                          }
-                          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
-                        >
-                          Reject
-                        </button>
-                      )}
-                      {selectedProduct.status !== "PENDING" && (
-                        <button
-                          onClick={() =>
-                            handleStatusChange(selectedProduct.id!, "PENDING")
-                          }
-                          className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm"
-                        >
-                          Set Pending
-                        </button>
+                      {selectedProduct.status === "PENDING" && (
+                        <>
+                          <button
+                            onClick={() =>
+                              handleStatusChange(
+                                selectedProduct.id!,
+                                "APPROVED"
+                              )
+                            }
+                            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleStatusChange(
+                                selectedProduct.id!,
+                                "REJECTED"
+                              )
+                            }
+                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                          >
+                            Reject
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>

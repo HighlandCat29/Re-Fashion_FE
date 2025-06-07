@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../hooks";
 import { removeProductFromTheCart } from "../features/cart/cartSlice";
 import { toast } from "react-hot-toast";
-import { formatPrice } from "../utils/formatPrice";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -31,7 +30,7 @@ const Cart = () => {
           <p className="mt-2 text-gray-600">Your cart is empty</p>
           <button
             onClick={() => navigate("/shop")}
-            className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            className="mt-4 bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors"
           >
             Continue Shopping
           </button>
@@ -50,7 +49,7 @@ const Cart = () => {
             {productsInCart.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center gap-4 p-4 bg-white rounded-lg shadow-sm"
+                className="flex items-center gap-4 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
               >
                 {/* Product Image */}
                 <div className="w-24 h-24 flex-shrink-0">
@@ -64,24 +63,33 @@ const Cart = () => {
                 {/* Product Details */}
                 <div className="flex-grow">
                   <h3 className="font-medium text-gray-900">{item.title}</h3>
-                  <p className="text-sm text-gray-500">
-                    {item.brand} • {item.size} • {item.color}
+                  <p className="mt-1 text-primary font-medium">
+                    {item.price.toLocaleString("vi-VN")} ₫
                   </p>
                   <p className="text-sm text-gray-500">
-                    Condition:{" "}
-                    {item.productCondition.toLowerCase().replace("_", " ")}
-                  </p>
-                  <p className="mt-1 text-gray-900">
-                    {formatPrice(item.price)}
+                    Quantity: {item.quantity}
                   </p>
                 </div>
 
                 {/* Remove Button */}
                 <button
                   onClick={() => handleRemoveItem(item.id)}
-                  className="text-red-600 hover:text-red-800"
+                  className="text-red-600 hover:text-red-800 transition-colors"
                 >
-                  Remove
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
                 </button>
               </div>
             ))}
@@ -97,7 +105,7 @@ const Cart = () => {
             <div className="space-y-4">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span>{formatPrice(subtotal)}</span>
+                <span>{subtotal.toLocaleString("vi-VN")} ₫</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
@@ -106,12 +114,12 @@ const Cart = () => {
               <div className="border-t pt-4">
                 <div className="flex justify-between font-medium text-gray-900">
                   <span>Total</span>
-                  <span>{formatPrice(subtotal)}</span>
+                  <span>{subtotal.toLocaleString("vi-VN")} ₫</span>
                 </div>
               </div>
               <button
                 onClick={handleCheckout}
-                className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors"
+                className="w-full bg-primary text-white py-2 rounded-md hover:bg-primary-dark transition-colors"
               >
                 Proceed to Checkout
               </button>

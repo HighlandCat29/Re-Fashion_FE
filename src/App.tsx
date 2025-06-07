@@ -7,7 +7,6 @@ import {
   HomeLayout,
   Landing,
   Login,
-  OrderConfirmation,
   OrderHistory,
   Register,
   Search,
@@ -19,6 +18,7 @@ import {
   WishlistPage,
   SellProduct,
   SellProductList,
+  EditProduct,
 } from "./pages";
 import { checkoutAction, searchAction } from "./actions/index";
 import { shopCategoryLoader } from "./pages/Shop";
@@ -77,6 +77,14 @@ const router = createBrowserRouter([
         element: (
           <AuthGuard>
             <SellProductList />
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "edit-product/:id",
+        element: (
+          <AuthGuard>
+            <EditProduct />
           </AuthGuard>
         ),
       },

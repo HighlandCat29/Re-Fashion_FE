@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import ProductGrid from "./ProductGrid";
 import ProductGridWrapper from "./ProductGridWrapper";
 import { useAppDispatch } from "../hooks";
-import { getProducts } from "../api/Products/adminIndex";
+import { getProducts } from "../api/Products/index";
 import { setProducts } from "../features/shop/shopSlice";
 import toast from "react-hot-toast";
 
@@ -14,11 +14,11 @@ const HomeCollectionSection = () => {
       try {
         const productsData = await getProducts();
         if (productsData) {
-          // Filter out inactive products and limit to 6
-          const activeProducts = productsData
-            .filter((product) => product.isActive)
+          // Filter only approved products and limit to 6
+          const approvedProducts = productsData
+            .filter((product) => product.status === "APPROVED")
             .slice(0, 6);
-          dispatch(setProducts(activeProducts));
+          dispatch(setProducts(approvedProducts));
         }
       } catch (error) {
         console.error("Error fetching products:", error);

@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
-import {
-  getAllOrders,
-  getOrdersByStatus,
-  updateOrderStatus,
-  Order,
-} from "../../../api/Orders";
+import { getAllOrders, updateOrderStatus, Order } from "../../../api/Orders";
 import { toast } from "react-hot-toast";
+
+type SortField = "status" | "createdAt" | "totalAmount";
+type SortDirection = "asc" | "desc";
 
 const OrdersManagement = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -15,25 +13,28 @@ const OrdersManagement = () => {
   );
   const [userType, setUserType] = useState<"ALL" | "BUYER" | "SELLER">("ALL");
   const [userId, setUserId] = useState("");
+  const [sortField, setSortField] = useState<SortField>("createdAt");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   useEffect(() => {
     fetchOrders();
-  }, [selectedStatus]);
+  }, []);
 
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const data =
-        selectedStatus === "ALL"
-          ? await getAllOrders()
-          : await getOrdersByStatus(selectedStatus);
+      const data = await getAllOrders();
 
       if (data) {
         setOrders(data);
+      } else {
+        setOrders([]);
+        toast.error("No orders data received");
       }
     } catch (error) {
       console.error("Error fetching orders:", error);
       toast.error("Failed to fetch orders");
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -58,20 +59,30 @@ const OrdersManagement = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("vi-VN", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    try {
+      return new Date(dateString).toLocaleDateString("vi-VN", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
+    }
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
+    try {
+      return new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+      }).format(amount);
+    } catch (error) {
+      console.error("Error formatting currency:", error);
+      return "Invalid amount";
+    }
   };
 
   const getStatusColor = (status: Order["status"]) => {
@@ -82,19 +93,65 @@ const OrdersManagement = () => {
       DELIVERED: "bg-green-100 text-green-800",
       CANCELLED: "bg-red-100 text-red-800",
     };
-    return colors[status];
+    return colors[status] || "bg-gray-100 text-gray-800";
   };
 
-  // Filter orders based on user type and ID
-  const filteredOrders = orders.filter((order) => {
-    if (userType === "ALL") return true;
-    if (userType === "BUYER" && userId) {
-      return order.buyerId.toLowerCase().includes(userId.toLowerCase());
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
     }
-    if (userType === "SELLER" && userId) {
-      return order.sellerId.toLowerCase().includes(userId.toLowerCase());
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return "↕";
+    return sortDirection === "asc" ? "↑" : "↓";
+  };
+
+  // Filter orders based on user type, ID, and selected status
+  const filteredOrders =
+    orders?.filter((order) => {
+      if (!order) return false;
+
+      // Filter by selected status
+      if (selectedStatus !== "ALL" && order.status !== selectedStatus) {
+        return false;
+      }
+
+      // Filter by user type and ID
+      if (userType === "ALL") return true;
+      if (userType === "BUYER" && userId) {
+        return order.buyerId?.toLowerCase().includes(userId.toLowerCase());
+      }
+      if (userType === "SELLER" && userId) {
+        return order.sellerId?.toLowerCase().includes(userId.toLowerCase());
+      }
+      return true;
+    }) || [];
+
+  // Sort orders
+  const sortedOrders = [...filteredOrders].sort((a, b) => {
+    if (!a || !b) return 0;
+
+    let comparison = 0;
+    switch (sortField) {
+      case "status":
+        comparison = a.status.localeCompare(b.status);
+        break;
+      case "createdAt":
+        comparison =
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        break;
+      case "totalAmount":
+        comparison = a.totalAmount - b.totalAmount;
+        break;
+      default:
+        comparison = 0;
     }
-    return true;
+
+    return sortDirection === "asc" ? comparison : -comparison;
   });
 
   return (
@@ -165,7 +222,7 @@ const OrdersManagement = () => {
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
           </div>
-        ) : filteredOrders.length === 0 ? (
+        ) : !sortedOrders || sortedOrders.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-gray-500">No orders found</p>
           </div>
@@ -186,14 +243,23 @@ const OrdersManagement = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Items
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Amount
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort("totalAmount")}
+                  >
+                    Total Amount {getSortIcon("totalAmount")}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort("status")}
+                  >
+                    Status {getSortIcon("status")}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created At
+                  <th
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort("createdAt")}
+                  >
+                    Created At {getSortIcon("createdAt")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -201,7 +267,7 @@ const OrdersManagement = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredOrders.map((order) => (
+                {sortedOrders.map((order) => (
                   <tr key={order.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {order.id}
@@ -213,7 +279,7 @@ const OrdersManagement = () => {
                       {order.sellerId}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.items.length} items
+                      {order.items?.length || 0} items
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatCurrency(order.totalAmount)}

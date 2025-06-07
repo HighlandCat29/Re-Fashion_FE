@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getUserById, UserResponse } from "../../api/Users/index";
+import { getUserById, UserResponse, updateUser } from "../../api/Users/index";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../../api/Logout";
@@ -8,9 +8,10 @@ import { getProductsBySellerId, Product } from "../../api/Products/adminIndex";
 import { formatPrice } from "../../utils/formatPrice";
 
 interface UserForm {
-  fullName: string;
   username: string;
-  email: string;
+  password: string;
+  confirmPassword: string;
+  fullName: string;
   phoneNumber: string;
   address: string;
 }
@@ -22,7 +23,14 @@ const UserProfile = () => {
   const currentUserId = loggedInUser?.id ?? null;
 
   const [user, setUser] = useState<UserResponse | null>(null);
-  const [form, setForm] = useState<UserForm | null>(null);
+  const [form, setForm] = useState<UserForm>({
+    username: "",
+    password: "",
+    confirmPassword: "",
+    fullName: "",
+    phoneNumber: "",
+    address: "",
+  });
   const [editing, setEditing] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [userProducts, setUserProducts] = useState<Product[]>([]);
@@ -52,7 +60,8 @@ const UserProfile = () => {
           setUser(data);
           setForm({
             username: data.username,
-            email: data.email,
+            password: "",
+            confirmPassword: "",
             fullName: data.fullName,
             phoneNumber: data.phoneNumber,
             address: data.address,
@@ -102,19 +111,31 @@ const UserProfile = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    if (!form) return;
-    setForm({ ...form, [name]: value });
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form || !user) return;
+    if (!user) return;
+
+    // Validate password match
+    if (form.password && form.password !== form.confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
     setLoadingProfile(true);
     try {
-      // TODO: Implement updateUser function in API
-      // await updateUser(user.id, form);
-      toast.success("Profile updated!");
+      await updateUser(user.id, {
+        ...form,
+        roleId: user.role.roleId,
+        email: user.email,
+        active: user.active,
+      });
+      toast.success("Profile updated successfully!");
       setEditing(false);
+      // Reset password fields
+      setForm((prev) => ({ ...prev, password: "", confirmPassword: "" }));
     } catch (err) {
       console.error("Failed to update profile:", err);
       toast.error("Failed to update profile.");
@@ -127,7 +148,7 @@ const UserProfile = () => {
     // Show loading for profile data
     return <p className="text-center mt-10">Loading profile...</p>;
 
-  if (!user || !form)
+  if (!user)
     // Show message if no user data after loading
     return (
       <p className="text-center mt-10">Profile not found or not logged in.</p>
@@ -161,11 +182,31 @@ const UserProfile = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6 mb-8">
         <section>
-          <h3 className="text-xl font-semibold mb-4 text-black">
-            Contact Information
-          </h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold text-black">
+              Profile Information
+            </h3>
+            <button
+              type="button"
+              onClick={() => setEditing(!editing)}
+              className="text-blue-600 hover:text-blue-800 font-medium"
+            >
+              {editing ? "Cancel" : "Edit Profile"}
+            </button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Removed Account Info from form as username/email might not be editable here */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Username
+              </label>
+              <input
+                name="username"
+                value={form.username}
+                onChange={handleChange}
+                disabled={!editing}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 disabled:bg-gray-100"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Full Name
@@ -190,7 +231,7 @@ const UserProfile = () => {
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 disabled:bg-gray-100"
               />
             </div>
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700">
                 Address
               </label>
@@ -202,28 +243,44 @@ const UserProfile = () => {
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 disabled:bg-gray-100"
               />
             </div>
+            {editing && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                  />
+                </div>
+              </>
+            )}
           </div>
         </section>
 
-        {/* Removed System Info section as it's display only */}
-        {/* Display Account and System Info outside the form */}
         <section className="space-y-4">
           <h3 className="text-xl font-semibold mb-2 text-black">
             Account Details
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
             <p>
-              <strong>Username:</strong> {user.username}
-            </p>
-            <p>
               <strong>Email:</strong> {user.email}
-            </p>
-            <p>
-              <strong>Role:</strong> {user.role.roleName}
-            </p>
-            <p>
-              <strong>Created At:</strong>{" "}
-              {new Date(user.createdAt).toLocaleString()}
             </p>
             <p>
               <strong>Email Verified:</strong>{" "}
@@ -232,99 +289,67 @@ const UserProfile = () => {
           </div>
         </section>
 
-        <div className="flex justify-end gap-3 pt-4">
-          {editing ? (
-            <>
-              <button
-                type="submit"
-                disabled={loadingProfile}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loadingProfile ? "Saving..." : "Save Changes"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditing(false)}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg"
-              >
-                Cancel
-              </button>
-            </>
-          ) : (
+        {editing && (
+          <div className="flex justify-end gap-3 pt-4">
             <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+              type="submit"
+              disabled={loadingProfile}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Edit Profile
-            </button>
-          )}
-        </div>
-      </form>
-
-      {/* My Listed Products Section */}
-      <section className="mt-10">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-black">
-            Current's Selling Product
-          </h3>
-          <button
-            onClick={() => navigate("/sell-product-list")}
-            className="text-primary hover:text-primary-dark font-medium"
-          >
-            View All Products →
-          </button>
-        </div>
-        {loadingProducts ? (
-          <p>Loading products...</p>
-        ) : userProducts.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-600">
-              You haven't listed any products yet.
-            </p>
-            <button
-              onClick={() => navigate("/sell-product")}
-              className="mt-4 px-6 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
-            >
-              List a Product
+              {loadingProfile ? "Saving..." : "Save Changes"}
             </button>
           </div>
+        )}
+      </form>
+
+      {/* Current's Selling Products Section */}
+      <section className="mt-8">
+        <h3 className="text-xl font-semibold text-black mb-4">
+          Current's Selling Products
+        </h3>
+        {loadingProducts ? (
+          <p className="text-center py-4">Loading products...</p>
+        ) : userProducts.length === 0 ? (
+          <p className="text-center py-4 text-gray-500">
+            No products listed yet.
+          </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {userProducts.slice(0, 4).map((product) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {userProducts.map((product) => (
               <div
                 key={product.id}
-                className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300"
+                className="border rounded-lg p-4 hover:shadow-md transition-shadow"
               >
-                <img
-                  src={product.imageUrls[0] || "/default-product.png"}
-                  alt={product.title}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-4">
-                  <h4 className="text-lg font-semibold mb-1">
-                    {product.title}
-                  </h4>
-                  <p className="text-sm text-gray-600">{product.brand}</p>
-                  <p className="text-md font-bold text-primary mt-2">
-                    {formatPrice(product.price)}
-                  </p>
-                  <div className="mt-2 flex justify-between items-center">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${product.isActive
+                <div className="aspect-w-16 aspect-h-9 mb-3">
+                  <img
+                    src={product.imageUrls[0] || "/placeholder-image.jpg"}
+                    alt={product.title}
+                    className="object-cover rounded-lg w-full h-48"
+                  />
+                </div>
+                <h4 className="font-medium text-lg mb-2">{product.title}</h4>
+                <p className="text-gray-600 mb-2">{product.brand}</p>
+                <p className="text-primary font-semibold mb-2">
+                  {formatPrice(product.price)}
+                </p>
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`px-2 py-1 rounded text-sm ${
+                      product.status === "APPROVED"
                         ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                        }`}
-                    >
-                      {product.isActive ? "Active" : "Inactive"}
-                    </span>
-                    <button
-                      onClick={() => navigate(`/product/${product.id}`)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    >
-                      View Details
-                    </button>
-                  </div>
+                        : product.status === "REJECTED"
+                        ? "bg-red-100 text-red-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}
+                  >
+                    {product.status}
+                  </span>
+                  <button
+                    onClick={() => navigate(`/product/${product.id}`)}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    View Details
+                  </button>
                 </div>
               </div>
             ))}

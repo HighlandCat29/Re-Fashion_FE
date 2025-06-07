@@ -48,6 +48,8 @@ const Header = () => {
           }
         } catch (error) {
           console.error("Failed to fetch wishlist count:", error);
+          // Reset wishlist count if token is expired
+          setWishlistCount(0);
         }
       } else {
         setWishlistCount(localWishlist.length);
@@ -61,11 +63,17 @@ const Header = () => {
   useEffect(() => {
     const handleWishlistUpdate = () => {
       if (user?.id) {
-        getUserWishlists(user.id).then((response) => {
-          if (response?.result) {
-            setWishlistCount(response.result.length);
-          }
-        });
+        getUserWishlists(user.id)
+          .then((response) => {
+            if (response?.result) {
+              setWishlistCount(response.result.length);
+            }
+          })
+          .catch((error) => {
+            console.error("Failed to fetch wishlist count:", error);
+            // Reset wishlist count if token is expired
+            setWishlistCount(0);
+          });
       } else {
         setWishlistCount(localWishlist.length);
       }
@@ -105,9 +113,52 @@ const Header = () => {
   // Update login state & close dropdown on route change
   useEffect(() => {
     const user = localStorage.getItem("user");
-    setIsLoggedIn(!!user);
+    const isUserLoggedIn = !!user;
+    setIsLoggedIn(isUserLoggedIn);
     setShowProfileDropdown(false);
+
+    // Reset wishlist count when user logs in/out
+    if (!isUserLoggedIn) {
+      setWishlistCount(0);
+    }
   }, [location]);
+
+  // Add token expiration check
+  useEffect(() => {
+    const checkTokenExpiration = () => {
+      const user = localStorage.getItem("user");
+      if (!user) {
+        setWishlistCount(0);
+        return;
+      }
+
+      try {
+        const userData = JSON.parse(user);
+        if (userData.token) {
+          const tokenExpiration = new Date(userData.tokenExpiration).getTime();
+          const currentTime = new Date().getTime();
+
+          if (currentTime >= tokenExpiration) {
+            // Token expired, reset wishlist count
+            setWishlistCount(0);
+            localStorage.removeItem("user");
+            setIsLoggedIn(false);
+            toast.error("Your session has expired. Please login again.");
+            navigate("/login");
+          }
+        }
+      } catch (error) {
+        console.error("Error checking token expiration:", error);
+        setWishlistCount(0);
+      }
+    };
+
+    // Check token expiration every minute
+    const intervalId = setInterval(checkTokenExpiration, 60000);
+    checkTokenExpiration(); // Initial check
+
+    return () => clearInterval(intervalId);
+  }, [navigate]);
 
   // Track scroll, toggle background glow
   useEffect(() => {
@@ -156,9 +207,10 @@ const Header = () => {
         className={`
           fixed top-0 inset-x-0 z-50
           transition-colors duration-300 ease-in-out
-          ${isScrolled
-            ? "bg-white/90 backdrop-blur-md shadow-lg"
-            : "bg-transparent"
+          ${
+            isScrolled
+              ? "bg-white/90 backdrop-blur-md shadow-lg"
+              : "bg-transparent"
           }
         `}
       >
@@ -210,10 +262,10 @@ const Header = () => {
             <div className="flex items-center gap-6">
               {/* Search Icon */}
               <Link
-                to="/search"
+                to="/shop"
                 className="group relative"
-                aria-label="Search"
-                onClick={(e) => handleNavigation(e, "/search")}
+                aria-label="Shop"
+                onClick={(e) => handleNavigation(e, "/shop")}
               >
                 <HiOutlineMagnifyingGlass
                   className="

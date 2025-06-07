@@ -8,11 +8,17 @@ interface ProductGridWrapperProps {
   /** Other props may be passed, e.g. sortCriteria/category/page, but 
       we really only care about injecting `products` into children below. */
   children:
-  | ReactElement<{ products: Product[] }>
-  | ReactElement<{ products: Product[] }>[];
+    | ReactElement<{ products: Product[] }>
+    | ReactElement<{ products: Product[] }>[];
+  searchQuery?: string;
+  page?: number;
 }
 
-const ProductGridWrapper: React.FC<ProductGridWrapperProps> = ({ children }) => {
+const ProductGridWrapper: React.FC<ProductGridWrapperProps> = ({
+  children,
+  searchQuery,
+  page,
+}) => {
   // 1) Pull from Redux as a fallback
   const reduxProducts = useAppSelector((state) => state.shop.products);
 
