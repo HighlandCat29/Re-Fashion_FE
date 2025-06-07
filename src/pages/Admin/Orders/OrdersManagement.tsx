@@ -45,12 +45,18 @@ const OrdersManagement = () => {
     newStatus: Order["status"]
   ) => {
     try {
+      console.log(
+        `Attempting to update order ${orderId} to status: ${newStatus}`
+      );
       const updatedOrder = await updateOrderStatus(orderId, newStatus);
+      console.log("Updated order response:", updatedOrder);
       if (updatedOrder) {
         setOrders(
           orders.map((order) => (order.id === orderId ? updatedOrder : order))
         );
         toast.success("Order status updated successfully");
+      } else {
+        toast.error("Failed to update order status: No updated order received");
       }
     } catch (error) {
       console.error("Error updating order status:", error);

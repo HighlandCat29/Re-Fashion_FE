@@ -1,28 +1,81 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAppDispatch, useAppSelector } from "../hooks";
-import { removeProductFromTheCart } from "../features/cart/cartSlice";
+import { useAppSelector } from "../hooks";
 import { toast } from "react-hot-toast";
+import { getCartByUserId, removeCartItem, Cart as CartType } from "../api/Cart";
+import { formatPrice } from "../utils/formatPrice";
 
 const Cart = () => {
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
-  const { productsInCart, subtotal } = useAppSelector((state) => state.cart);
+  const { user } = useAppSelector((state) => state.auth);
+  const [cart, setCart] = useState<CartType | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleRemoveItem = (id: string) => {
-    dispatch(removeProductFromTheCart({ id }));
-    toast.success("Item removed from cart");
+  useEffect(() => {
+    const fetchUserCart = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        setCart(null); // Clear cart if no user
+        return;
+      }
+      setLoading(true);
+      try {
+        const userCart = await getCartByUserId(user.id);
+        setCart(userCart);
+      } catch (error) {
+        console.error("Error fetching cart:", error);
+        toast.error("Failed to load cart. Please try again later.");
+        setCart(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserCart();
+  }, [user?.id]);
+
+  const handleRemoveItem = async (productId: string) => {
+    if (!user?.id) {
+      toast.error("Please log in to manage your cart.");
+      return;
+    }
+
+    if (!cart?.id) {
+      toast.error("Cart not found. Please try refreshing the page.");
+      return;
+    }
+
+    try {
+      const updatedCart = await removeCartItem(user.id, productId);
+      if (updatedCart) {
+        setCart(updatedCart);
+        toast.success("Item removed from cart");
+      } else {
+        toast.error("Failed to remove item from cart.");
+      }
+    } catch (error) {
+      console.error("Error removing item from cart:", error);
+      toast.error("An error occurred while removing item.");
+    }
   };
 
   const handleCheckout = () => {
-    if (productsInCart.length === 0) {
+    if (!cart || !cart.items || cart.items.length === 0) {
       toast.error("Your cart is empty");
       return;
     }
     navigate("/checkout");
   };
 
-  if (productsInCart.length === 0) {
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!cart || !cart.items || cart.items.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="text-center">
@@ -39,6 +92,11 @@ const Cart = () => {
     );
   }
 
+  const calculatedTotalAmount = cart.items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
       <h2 className="text-2xl font-semibold text-gray-800 mb-8">Your Cart</h2>
@@ -46,25 +104,27 @@ const Cart = () => {
         {/* Cart Items */}
         <div className="lg:col-span-2">
           <div className="space-y-4">
-            {productsInCart.map((item) => (
+            {cart.items.map((item) => (
               <div
-                key={item.id}
+                key={item.productId}
                 className="flex items-center gap-4 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
               >
                 {/* Product Image */}
                 <div className="w-24 h-24 flex-shrink-0">
                   <img
-                    src={item.image}
-                    alt={item.title}
+                    src={item.productImage}
+                    alt={item.productName}
                     className="w-full h-full object-cover rounded-md"
                   />
                 </div>
 
                 {/* Product Details */}
                 <div className="flex-grow">
-                  <h3 className="font-medium text-gray-900">{item.title}</h3>
+                  <h3 className="font-medium text-gray-900">
+                    {item.productName}
+                  </h3>
                   <p className="mt-1 text-primary font-medium">
-                    {item.price.toLocaleString("vi-VN")} ₫
+                    {formatPrice(item.price)}
                   </p>
                   <p className="text-sm text-gray-500">
                     Quantity: {item.quantity}
@@ -73,7 +133,7 @@ const Cart = () => {
 
                 {/* Remove Button */}
                 <button
-                  onClick={() => handleRemoveItem(item.id)}
+                  onClick={() => handleRemoveItem(item.productId)}
                   className="text-red-600 hover:text-red-800 transition-colors"
                 >
                   <svg
@@ -105,7 +165,7 @@ const Cart = () => {
             <div className="space-y-4">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span>{subtotal.toLocaleString("vi-VN")} ₫</span>
+                <span>{formatPrice(calculatedTotalAmount)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
@@ -114,7 +174,7 @@ const Cart = () => {
               <div className="border-t pt-4">
                 <div className="flex justify-between font-medium text-gray-900">
                   <span>Total</span>
-                  <span>{subtotal.toLocaleString("vi-VN")} ₫</span>
+                  <span>{formatPrice(calculatedTotalAmount)}</span>
                 </div>
               </div>
               <button

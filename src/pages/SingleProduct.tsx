@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getProductById } from "../api/Products/adminIndex";
-import { Product } from "../api/Products/adminIndex";
-import { useAppDispatch, useAppSelector } from "../hooks";
-import { addProductToTheCart } from "../features/cart/cartSlice";
+import { getProductById } from "../api/Products/index";
+import { Product } from "../api/Products";
+import { useAppSelector } from "../hooks";
 import { toast } from "react-hot-toast";
 import { useWishlist } from "../components/WishlistContext";
 import {
@@ -12,11 +11,12 @@ import {
   removeFromWishlist,
 } from "../api/Whishlists";
 import { getUserById, UserResponse } from "../api/Users";
+import { addToCart } from "../api/Cart";
+import { formatPrice } from "../utils/formatPrice";
 
 const SingleProduct = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const userId = user?.id;
 
@@ -126,7 +126,7 @@ const SingleProduct = () => {
     fetchProduct();
   }, [id, userId, userProfile, localWishlist, navigate]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product) return;
 
     if (!userId) {
@@ -135,19 +135,38 @@ const SingleProduct = () => {
       return;
     }
 
-    dispatch(
-      addProductToTheCart({
-        id: product.id,
-        title: product.title,
-        price: product.price,
-        image:
-          product.imageUrls && product.imageUrls.length > 0
-            ? product.imageUrls[0]
-            : "",
-        quantity: 1,
-      })
-    );
-    toast.success("Added to cart!");
+    if (!product.id) {
+      toast.error("Product ID is missing.");
+      return;
+    }
+
+    if (
+      !product.imageUrls ||
+      product.imageUrls.length === 0 ||
+      !product.imageUrls[0]
+    ) {
+      toast.error("Product image not available for cart.");
+      return;
+    }
+
+    try {
+      const addedToCart = await addToCart(
+        userId,
+        product.id,
+        1, // Default quantity to 1
+        product.price,
+        product.title,
+        product.imageUrls[0]
+      );
+      if (addedToCart) {
+        toast.success("Added to cart!");
+      } else {
+        toast.error("Failed to add to cart.");
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      toast.error("An error occurred while adding to cart.");
+    }
   };
 
   const handleWishlistToggle = async () => {
@@ -249,14 +268,14 @@ const SingleProduct = () => {
           </div>
           {product.imageUrls.length > 1 && (
             <div className="grid grid-cols-4 gap-4">
-              {product.imageUrls.map((image, index) => (
+              {product.imageUrls.slice(1).map((url, index) => (
                 <div
                   key={index}
-                  className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-100"
+                  className="aspect-w-1 aspect-h-1 overflow-hidden rounded-lg bg-gray-100"
                 >
                   <img
-                    src={image}
-                    alt={`${product.title} - Image ${index + 1}`}
+                    src={url}
+                    alt={product.title}
                     className="h-full w-full object-cover object-center"
                   />
                 </div>
@@ -266,133 +285,97 @@ const SingleProduct = () => {
         </div>
 
         {/* Product Info */}
-        <div className="space-y-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {product.title}
-              </h1>
-              <p className="mt-2 text-sm text-gray-500">
-                By{" "}
-                {product.sellerUsername ||
-                  sellerProfile?.fullName ||
-                  "Unknown Seller"}
-              </p>
+        <div className="md:col-span-1">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+            {product.title}
+          </h1>
+          <p className="text-xl text-gray-900 mt-2">
+            {formatPrice(product.price)}
+          </p>
+          <div className="mt-4">
+            <h2 className="text-sm font-medium text-gray-900">Description</h2>
+            <div className="mt-2 space-y-6 text-base text-gray-700">
+              <p>{product.description}</p>
             </div>
-            {!isOwner && (
-              <button
-                onClick={handleWishlistToggle}
-                className={`p-2 rounded-full ${
-                  isInWishlist
-                    ? "text-red-500 hover:text-red-600"
-                    : "text-gray-400 hover:text-gray-500"
-                }`}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill={isInWishlist ? "currentColor" : "none"}
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                </svg>
-              </button>
-            )}
           </div>
 
-          <div className="flex items-center justify-between">
-            <p className="text-2xl font-bold text-primary">
-              {product.price.toLocaleString("vi-VN")} ₫
-            </p>
-          </div>
-
-          <div className="border-t border-gray-200 pt-4">
-            <h3 className="text-lg font-medium text-gray-900">Description</h3>
-            <p className="mt-1 text-gray-600">{product.description}</p>
-          </div>
-
-          <div className="border-t border-gray-200 pt-4">
-            <h3 className="text-lg font-medium text-gray-900">Details</h3>
-            <dl className="mt-1 space-y-3">
-              <div className="flex justify-between">
-                <dt className="text-gray-500">Condition</dt>
-                <dd className="text-gray-900">{product.productCondition}</dd>
+          <div className="mt-4 border-t border-gray-200 pt-4">
+            <h2 className="text-sm font-medium text-gray-900">Details</h2>
+            <dl className="mt-2 space-y-2 text-base text-gray-700">
+              <div>
+                <dt className="inline font-medium text-gray-900">Brand:</dt>{" "}
+                <dd className="inline">{product.brand}</dd>
               </div>
-              <div className="flex justify-between">
-                <dt className="text-gray-500">Category</dt>
-                <dd className="text-gray-900">{product.categoryName}</dd>
+              <div>
+                <dt className="inline font-medium text-gray-900">Condition:</dt>{" "}
+                <dd className="inline capitalize">
+                  {product.productCondition.toLowerCase().replace("_", " ")}
+                </dd>
               </div>
-              <div className="flex justify-between">
-                <dt className="text-gray-500">Size</dt>
-                <dd className="text-gray-900">{product.size}</dd>
+              <div>
+                <dt className="inline font-medium text-gray-900">Category:</dt>{" "}
+                <dd className="inline">{product.categoryName}</dd>
               </div>
-              <div className="flex justify-between">
-                <dt className="text-gray-500">Color</dt>
-                <dd className="text-gray-900">{product.color}</dd>
+              <div>
+                <dt className="inline font-medium text-gray-900">Seller:</dt>{" "}
+                <dd className="inline">
+                  {sellerProfile?.username ||
+                    product.sellerUsername ||
+                    "Unknown Seller"}
+                </dd>
               </div>
             </dl>
           </div>
 
-          <div className="border-t border-gray-200 pt-4">
-            <div className="flex items-center justify-between">
-              {isOwner ? (
-                <button
-                  onClick={handleEdit}
-                  className="w-full bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors"
+          <div className="mt-6 flex space-x-4">
+            {!isOwner && (
+              <button
+                onClick={handleAddToCart}
+                className="flex-1 bg-primary border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              >
+                Add to Cart
+              </button>
+            )}
+            {!isOwner && (
+              <button
+                onClick={handleWishlistToggle}
+                className="flex-1 border border-gray-300 rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className={`h-6 w-6 ${
+                    isInWishlist ? "text-red-500" : "text-gray-400"
+                  }`}
+                  fill={isInWishlist ? "currentColor" : "none"}
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
                 >
-                  Edit Product
-                </button>
-              ) : (
-                <button
-                  onClick={handleAddToCart}
-                  className="w-full bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {"Add to Cart"}
-                </button>
-              )}
-            </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 22.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
+              </button>
+            )}
+            {isOwner && (
+              <button
+                onClick={handleEdit}
+                className="flex-1 bg-blue-500 border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Edit Product
+              </button>
+            )}
           </div>
 
-          {/* Seller's Profile Section */}
-          {sellerProfile && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">
-                Seller Information
-              </h3>
-              <dl className="mt-2 space-y-2">
-                {sellerProfile.username && (
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Username</dt>
-                    <dd className="text-gray-900">{sellerProfile.username}</dd>
-                  </div>
-                )}
-                {/* Add other seller details here if available in UserResponse and needed */}
-                {sellerProfile.fullName && (
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Full Name</dt>
-                    <dd className="text-gray-900">{sellerProfile.fullName}</dd>
-                  </div>
-                )}
-                {sellerProfile.email && (
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Email</dt>
-                    <dd className="text-gray-900">{sellerProfile.email}</dd>
-                  </div>
-                )}
-                {/* Example: Adding a link to seller's other products if applicable */}
-                {/* <div className="flex justify-between">
-                  <dt className="text-gray-500">Other Products</dt>
-                  <dd className="text-gray-900"><a href={`/shop?seller=${sellerProfile.id}`} className="text-blue-600 hover:underline">View all by {sellerProfile.username}</a></dd>
-                </div> */}
-              </dl>
-            </div>
-          )}
+          <div className="mt-4">
+            {product.status !== undefined && product.status !== null && (
+              <p className="text-sm text-gray-500 capitalize">
+                Product Status: {product.status}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
