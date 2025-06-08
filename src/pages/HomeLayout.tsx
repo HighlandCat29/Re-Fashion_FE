@@ -8,6 +8,7 @@ const HomeLayout = () => {
     <>
       <ScrollToTop />
       <Header />
+      <div className="pt-24"></div>
       <Outlet />
       <Footer />
     </>
