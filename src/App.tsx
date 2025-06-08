@@ -19,6 +19,7 @@ import {
   SellProduct,
   SellProductList,
   EditProduct,
+
 } from "./pages";
 import { checkoutAction, searchAction } from "./actions/index";
 import { shopCategoryLoader } from "./pages/Shop";
@@ -39,6 +40,7 @@ import EditProducts from "./pages/Admin/Products/EditProducts";
 import OrdersManagement from "./pages/Admin/Orders/OrdersManagement";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import AuthGuard from "./components/AuthGuard";
+import SingleBlogPage from "./pages/SingleBlogPage";
 
 const router = createBrowserRouter([
   {
@@ -133,6 +135,8 @@ const router = createBrowserRouter([
       },
     ],
   },
+  { path: "blogs/:id", element: <SingleBlogPage /> }
+  ,
   {
     path: "/admin",
     element: (
@@ -168,6 +172,7 @@ function App() {
       </div>
     </WishlistProvider>
   );
+
 }
 
 export default App;

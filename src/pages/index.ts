@@ -16,3 +16,5 @@ export { default as WishlistPage } from "./WishlistPage";
 export { default as SellProduct } from "./User/SellProduct";
 export { default as SellProductList } from "./User/SellProductList";
 export { default as EditProduct } from "./User/EditProduct";
+export { default as SingleBlogPage } from "../pages/SingleBlogPage";
+
