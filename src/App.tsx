@@ -163,7 +163,7 @@ function App() {
         The header is fixed at the top with height = h-24 (96px). 
         So add pt-24 (96px) here to push the routed pages down.
       */}
-      <div className="pt-24">
+      <div className="">
         <RouterProvider router={router} />
       </div>
     </WishlistProvider>
