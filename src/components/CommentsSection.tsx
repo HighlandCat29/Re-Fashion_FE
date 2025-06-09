@@ -1,41 +1,46 @@
 // src/components/CommentsSection.tsx
+
 import React, { useState, useEffect, FormEvent } from "react";
 import {
     getProductComments,
     addProductComment,
-    ProductComment,
+    CommentDto,
     NewProductComment,
 } from "../api/comments/comments";
 import { useAppSelector } from "../hooks";
 import toast from "react-hot-toast";
 
-interface Props {
+interface CommentsSectionProps {
     productId: string;
 }
 
-const CommentsSection: React.FC<Props> = ({ productId }) => {
-    const [comments, setComments] = useState<ProductComment[]>([]);
+const CommentsSection: React.FC<CommentsSectionProps> = ({ productId }) => {
+    const [comments, setComments] = useState<CommentDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [newContent, setNewContent] = useState("");
 
-    // pull the logged-in userId from your store
     const userId = useAppSelector((s) => s.auth.user?.id);
 
+    // Load existing comments
     useEffect(() => {
         (async () => {
             try {
+                // getProductComments now returns CommentDto[] | null
                 const list = await getProductComments(productId);
-                setComments(list);
+                // always pass an array to state
+                setComments(list ?? []);
             } catch (err) {
                 console.error(err);
                 toast.error("Could not load comments");
+                setComments([]); // fallback to empty
             } finally {
                 setLoading(false);
             }
         })();
     }, [productId]);
 
+    // Handle submitting a new comment
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         if (!newContent.trim()) return;
@@ -53,8 +58,11 @@ const CommentsSection: React.FC<Props> = ({ productId }) => {
 
         try {
             const created = await addProductComment(payload);
-            setComments((prev) => [...prev, created]);
-            setNewContent("");
+            // only push if we got a valid comment back
+            if (created) {
+                setComments((prev) => [...prev, created]);
+                setNewContent("");
+            }
         } catch (err) {
             console.error(err);
             toast.error("Failed to post comment");
@@ -72,7 +80,7 @@ const CommentsSection: React.FC<Props> = ({ productId }) => {
             {loading ? (
                 <p className="text-gray-600">Loading comments…</p>
             ) : comments.length === 0 ? (
-                <p className="text-gray-600">No comments yet.</p>
+                <p className="text-gray-600">No comments yet. Be the first!</p>
             ) : (
                 <ul className="space-y-6">
                     {comments.map((c) => (
