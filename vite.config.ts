@@ -1,7 +1,18 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'
+// vite.config.ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react-swc";
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
-})
+  plugins: [
+    react(),  // <-- only SWC-based React HMR
+  ],
+  server: {
+    proxy: {
+      "/blog-comment-controller": {
+        target:
+          "https://refashion-fqe8c7bfcgg5h0e7.southeastasia-01.azurewebsites.net/api",
+        changeOrigin: true,
+      },
+    },
+  },
+});
