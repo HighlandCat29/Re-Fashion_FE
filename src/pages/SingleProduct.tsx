@@ -150,14 +150,7 @@ const SingleProduct = () => {
     }
 
     try {
-      const addedToCart = await addToCart(
-        userId,
-        product.id,
-        1, // Default quantity to 1
-        product.price,
-        product.title,
-        product.imageUrls[0]
-      );
+      const addedToCart = await addToCart(userId, product.id);
       if (addedToCart) {
         toast.success("Added to cart!");
       } else {

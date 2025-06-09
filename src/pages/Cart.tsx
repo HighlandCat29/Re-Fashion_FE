@@ -40,22 +40,28 @@ const Cart = () => {
       return;
     }
 
-    if (!cart?.id) {
-      toast.error("Cart not found. Please try refreshing the page.");
-      return;
-    }
-
     try {
       const updatedCart = await removeCartItem(user.id, productId);
       if (updatedCart) {
         setCart(updatedCart);
-        toast.success("Item removed from cart");
       } else {
-        toast.error("Failed to remove item from cart.");
+        // If removal failed but we got a response, refresh the cart
+        const refreshedCart = await getCartByUserId(user.id);
+        if (refreshedCart) {
+          setCart(refreshedCart);
+        }
       }
     } catch (error) {
       console.error("Error removing item from cart:", error);
-      toast.error("An error occurred while removing item.");
+      // Try to refresh the cart on error
+      try {
+        const refreshedCart = await getCartByUserId(user.id);
+        if (refreshedCart) {
+          setCart(refreshedCart);
+        }
+      } catch (refreshError) {
+        console.error("Error refreshing cart:", refreshError);
+      }
     }
   };
 
@@ -81,19 +87,27 @@ const Cart = () => {
         <div className="text-center">
           <h2 className="text-2xl font-semibold text-gray-800">Your Cart</h2>
           <p className="mt-2 text-gray-600">Your cart is empty</p>
-          <button
-            onClick={() => navigate("/shop")}
-            className="mt-4 bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors"
-          >
-            Continue Shopping
-          </button>
+          <div className="mt-4 space-x-4">
+            <button
+              onClick={() => navigate("/shop")}
+              className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors"
+            >
+              Continue Shopping
+            </button>
+            <button
+              onClick={() => navigate("/checkout")}
+              className="bg-secondary text-white px-6 py-2 rounded-md hover:bg-secondary-dark transition-colors"
+            >
+              Order
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   const calculatedTotalAmount = cart.items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) => sum + item.price,
     0
   );
 
@@ -113,21 +127,16 @@ const Cart = () => {
                 <div className="w-24 h-24 flex-shrink-0">
                   <img
                     src={item.productImage}
-                    alt={item.productName}
+                    alt={item.title}
                     className="w-full h-full object-cover rounded-md"
                   />
                 </div>
 
                 {/* Product Details */}
                 <div className="flex-grow">
-                  <h3 className="font-medium text-gray-900">
-                    {item.productName}
-                  </h3>
+                  <h3 className="font-medium text-gray-900">{item.title}</h3>
                   <p className="mt-1 text-primary font-medium">
                     {formatPrice(item.price)}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Quantity: {item.quantity}
                   </p>
                 </div>
 
@@ -162,7 +171,7 @@ const Cart = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-4">
               Order Summary
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-4 mb-6">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
                 <span>{formatPrice(calculatedTotalAmount)}</span>
@@ -177,15 +186,17 @@ const Cart = () => {
                   <span>{formatPrice(calculatedTotalAmount)}</span>
                 </div>
               </div>
-              <button
-                onClick={handleCheckout}
-                className="w-full bg-primary text-white py-2 rounded-md hover:bg-primary-dark transition-colors"
-              >
-                Proceed to Checkout
-              </button>
+            </div>
+            <button
+              onClick={handleCheckout}
+              className="w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 transition-colors mb-2"
+            >
+              Proceed to Checkout
+            </button>
+            <div className="flex justify-center mt-2">
               <button
                 onClick={() => navigate("/shop")}
-                className="w-full text-gray-600 py-2 hover:text-gray-800 transition-colors"
+                className="flex-1 bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors"
               >
                 Continue Shopping
               </button>

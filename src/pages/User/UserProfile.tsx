@@ -6,6 +6,8 @@ import { logout } from "../../api/Logout";
 import { useAppSelector } from "../../hooks";
 import { getProductsBySellerId, Product } from "../../api/Products/adminIndex";
 import { formatPrice } from "../../utils/formatPrice";
+import { getOrdersByBuyerID, Order } from "../../api/Orders/index";
+import { formatDate } from "../../utils/formatDate";
 
 interface UserForm {
   username: string;
@@ -36,6 +38,8 @@ const UserProfile = () => {
   const [userProducts, setUserProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [, setUserProfile] = useState<UserResponse | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
 
   const navigate = useNavigate();
 
@@ -107,6 +111,40 @@ const UserProfile = () => {
     fetchUserProducts();
   }, [currentUserId]); // Depend on currentUserId
 
+  // Fetch User's Orders
+  useEffect(() => {
+    const fetchUserOrders = async () => {
+      if (!currentUserId) {
+        setOrders([]);
+        return;
+      }
+
+      setLoadingOrders(true);
+      try {
+        const ordersData = await getOrdersByBuyerID(currentUserId);
+
+        if (Array.isArray(ordersData)) {
+          setOrders(ordersData);
+        } else {
+          setOrders([]); // Ensure it's always an array
+        }
+      } catch (err) {
+        console.error("Failed to load user orders:", err);
+        toast.error("Failed to load your order history.");
+        setOrders([]);
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
+    fetchUserOrders();
+  }, [currentUserId]);
+
+  // Debugging useEffect for orders state
+  useEffect(() => {
+    console.log("Orders state changed:", orders);
+  }, [orders]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -154,6 +192,8 @@ const UserProfile = () => {
       <p className="text-center mt-10">Profile not found or not logged in.</p>
     );
 
+  // console.log("Orders state before rendering:", orders); // Removed debugging log
+
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white rounded-2xl shadow-lg mt-8">
       {/* Profile Info Section */}
@@ -179,7 +219,6 @@ const UserProfile = () => {
           Logout
         </button>
       </div>
-
       <form onSubmit={handleSubmit} className="space-y-6 mb-8">
         <section>
           <div className="flex justify-between items-center mb-4">
@@ -301,7 +340,6 @@ const UserProfile = () => {
           </div>
         )}
       </form>
-
       {/* Current's Selling Products Section */}
       <section className="mt-8">
         <h3 className="text-xl font-semibold text-black mb-4">
@@ -353,6 +391,83 @@ const UserProfile = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </section>
+      {/* Orders History Section */}
+      <section className="space-y-4 mt-8">
+        <h3 className="text-xl font-semibold text-black">Order History</h3>
+        {loadingOrders ? (
+          <p className="text-center text-gray-500">Loading orders...</p>
+        ) : (
+          <div>
+            {orders && orders.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 rounded-lg shadow-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Order ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Items
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {orders.map((order) => (
+                      <tr key={order.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {order.id}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(order.createdAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {order.totalAmount?.toLocaleString("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                          })}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              order.status === "CONFIRMED"
+                                ? "bg-green-100 text-green-800"
+                                : order.status === "PENDING"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <ul className="list-disc list-inside">
+                            {order.items?.map((item, itemIdx) => (
+                              <li key={itemIdx}>
+                                {item.productName} x {item.quantity}
+                              </li>
+                            ))}
+                          </ul>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-center text-gray-500">No orders found.</p>
+            )}
           </div>
         )}
       </section>

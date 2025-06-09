@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLoaderData, useNavigate } from "react-router-dom";
-import customFetch from "../axios/custom";
-import { formatDate } from "../utils/formatDate";
+import customFetch from "../../axios/custom";
+import { formatDate } from "../../utils/formatDate";
 
 export const loader = async () => {
   try {

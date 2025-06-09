@@ -258,9 +258,14 @@ export const updateProduct = async (
 };
 
 // Delete a product
-export const deleteProduct = async (id: string): Promise<void> => {
+export const deleteProduct = async (
+  userId: string,
+  productId: string
+): Promise<void> => {
   try {
-    const response = await customFetch.delete(`/products/${id}`);
+    const response = await customFetch.delete(
+      `/carts/${userId}/remove/${productId}`
+    );
     if (
       response.status === 200 ||
       response.status === 1000 ||
@@ -271,9 +276,17 @@ export const deleteProduct = async (id: string): Promise<void> => {
       toast.error("Unexpected response when deleting product.");
     }
   } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "An error occurred";
-    toast.error("Failed to delete product: " + errorMessage);
+    if (error instanceof AxiosError) {
+      console.error("Error response:", error.response?.data);
+      console.error("Error config:", error.config);
+      toast.error(
+        "Failed to delete product: " +
+          (error.response?.data?.message || error.message)
+      );
+    } else {
+      console.error("Unknown error:", error);
+      toast.error("Failed to delete product: Unknown error occurred");
+    }
     throw error;
   }
 };

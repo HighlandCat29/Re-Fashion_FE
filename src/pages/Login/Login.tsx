@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
-import { checkLoginFormData } from "../utils/checkLoginFormData";
-import customFetch from "../axios/custom";
+import { checkLoginFormData } from "../../utils/checkLoginFormData";
+import customFetch from "../../axios/custom";
 import toast from "react-hot-toast";
-import { setUser } from "../features/auth/authSlice";
-import { store } from "../store";
+import { setUser } from "../../features/auth/authSlice";
+import { store } from "../../store";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -43,7 +43,7 @@ const Login = () => {
       if (role.roleId === "1") {
         navigate("/admin");
       } else {
-        navigate("/");
+        navigate("/user-profile");
       }
     } catch (error: unknown) {
       const errorMessage =

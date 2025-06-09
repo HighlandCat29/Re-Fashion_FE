@@ -65,6 +65,9 @@ const UserManagement = () => {
               <thead className="bg-gray-100">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+                    Avatar
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
                     Username
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
@@ -84,6 +87,15 @@ const UserManagement = () => {
               <tbody className="bg-white divide-y divide-gray-100">
                 {users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50 transition">
+                    <td className="px-6 py-4">
+                      <img
+                        src={
+                          user.profilePicture || "/images/default-avatar.png"
+                        }
+                        alt={user.username}
+                        className="w-10 h-10 object-cover rounded-full"
+                      />
+                    </td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
                       {user.username}
                     </td>

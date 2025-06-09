@@ -32,10 +32,7 @@ const Header = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Calculate total items in cart
-  const cartItemCount = productsInCart.reduce(
-    (total, item) => total + item.quantity,
-    0
-  );
+  const cartItemCount = productsInCart.length;
 
   // Update wishlist count when local wishlist changes or user logs in/out
   useEffect(() => {

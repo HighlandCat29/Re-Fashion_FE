@@ -3,6 +3,10 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getAdminUserById, updateAdminUser } from "../../../api/Users/index";
 import { AdminUser, AdminUserResponse } from "../../../api/Users/index";
 import { toast } from "react-hot-toast";
+import {
+  CLOUDINARY_UPLOAD_URL,
+  UPLOAD_PRESET,
+} from "../../../config/cloudinary";
 
 const EditUser = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,15 +22,31 @@ const EditUser = () => {
     roleId: "",
     email: "",
     active: true,
+    profilePicture: "",
   });
 
   const [loading, setLoading] = useState(true);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (id) {
       fetchUser(id);
     }
   }, [id]);
+
+  useEffect(() => {
+    if (selectedFile) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(selectedFile);
+    } else {
+      setPreviewUrl(form.profilePicture || null);
+    }
+  }, [selectedFile, form.profilePicture]);
 
   const fetchUser = async (userId: string) => {
     try {
@@ -41,7 +61,9 @@ const EditUser = () => {
         roleId: user.role.roleId,
         email: user.email,
         active: user.active,
+        profilePicture: user.profilePicture || "",
       });
+      setPreviewUrl(user.profilePicture || "");
     } catch (error) {
       toast.error("Failed to load user data.");
     } finally {
@@ -54,6 +76,48 @@ const EditUser = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+      setPreviewUrl(URL.createObjectURL(e.target.files[0]));
+    } else {
+      setSelectedFile(null);
+      setPreviewUrl(form.profilePicture || null);
+    }
+  };
+
+  const uploadImageToCloudinary = async (
+    file: File
+  ): Promise<string | null> => {
+    setUploadingImage(true);
+    try {
+      const cloudinaryFormData = new FormData();
+      cloudinaryFormData.append("file", file);
+      cloudinaryFormData.append("upload_preset", UPLOAD_PRESET);
+      cloudinaryFormData.append("cloud_name", "dnrxylpid");
+
+      const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+        method: "POST",
+        body: cloudinaryFormData,
+      });
+
+      const data = await response.json();
+
+      if (data.secure_url) {
+        toast.success("Image uploaded successfully!");
+        return data.secure_url;
+      } else {
+        throw new Error(data.error?.message || "Failed to upload image");
+      }
+    } catch (error) {
+      console.error("Cloudinary upload error:", error);
+      toast.error("Failed to upload image to Cloudinary.");
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -62,8 +126,18 @@ const EditUser = () => {
       return;
     }
 
+    let imageUrl = form.profilePicture;
+    if (selectedFile) {
+      const uploadedUrl = await uploadImageToCloudinary(selectedFile);
+      if (uploadedUrl) {
+        imageUrl = uploadedUrl;
+      } else {
+        return;
+      }
+    }
+
     try {
-      await updateAdminUser(id!, form);
+      await updateAdminUser(id!, { ...form, profilePicture: imageUrl });
       toast.success("User updated successfully!");
       navigate("/admin/users");
     } catch (error) {
@@ -111,6 +185,37 @@ const EditUser = () => {
           onChange={handleChange}
           required
         />
+
+        <div>
+          <label
+            htmlFor="profilePicture"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Profile Picture
+          </label>
+          <input
+            type="file"
+            id="profilePicture"
+            name="profilePicture"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
+            disabled={uploadingImage}
+          />
+          {uploadingImage && (
+            <p className="text-blue-500 text-sm mt-1">Uploading image...</p>
+          )}
+          {previewUrl && (
+            <div className="mt-2">
+              <img
+                src={previewUrl}
+                alt="Profile Preview"
+                className="w-24 h-24 object-cover rounded-full"
+              />
+            </div>
+          )}
+        </div>
+
         <Input
           label="New Password"
           name="password"
@@ -137,6 +242,7 @@ const EditUser = () => {
           <button
             type="submit"
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg"
+            disabled={uploadingImage}
           >
             Update User
           </button>

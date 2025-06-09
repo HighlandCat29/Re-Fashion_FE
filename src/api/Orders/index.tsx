@@ -25,10 +25,12 @@ export interface Order {
   sellerId: string;
   shippingAddress: string;
   status: "PENDING" | "CONFIRMED" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+  paymentStatus?: "PAID" | "PENDING" | "REFUNDED";
+  deliveryTrackingNumber?: string;
   totalAmount: number;
   createdAt: string;
-  updatedAt: string;
-  items: OrderItem[];
+  updatedAt?: string;
+  items?: OrderItem[];
   note?: string;
   buyerName?: string;
   sellerName?: string;
@@ -69,20 +71,6 @@ export const createOrder = async (
     }
 
     // Validate each item
-    for (const item of orderData.items) {
-      if (
-        !item.productId ||
-        typeof item.quantity !== "number" ||
-        item.quantity <= 0 ||
-        typeof item.price !== "number" ||
-        item.price <= 0
-      ) {
-        toast.error(
-          "Each item must have a valid product ID, quantity, and price"
-        );
-        return null;
-      }
-    }
 
     const response = await customFetch.post<OrderResponse>(
       "/orders",
@@ -100,9 +88,15 @@ export const createOrder = async (
   }
 };
 
-export const getOrders = async (): Promise<Order[] | null> => {
+export const getOrdersByBuyerID = async (
+  userId: string
+): Promise<Order[] | null> => {
   try {
-    const response = await customFetch.get<OrdersResponse>(`/orders/history`);
+    console.log(userId);
+
+    const response = await customFetch.get<OrdersResponse>(
+      `/orders/buyer/${userId}`
+    );
     return response.data.result;
   } catch (error) {
     if (error instanceof AxiosError) {
@@ -196,11 +190,22 @@ export const deleteOrder = async (orderId: string): Promise<boolean> => {
 export const getAllOrders = async (): Promise<Order[] | null> => {
   try {
     const response = await customFetch.get<OrdersResponse>("/orders");
-    return response.data.result;
+    console.log("API Response:", response.data); // Debug log
+    if (
+      response.data &&
+      response.data.result &&
+      Array.isArray(response.data.result)
+    ) {
+      return response.data.result;
+    }
+    console.error("Invalid API response structure:", response.data);
+    return null;
   } catch (error) {
     if (error instanceof AxiosError) {
+      console.error("API Error:", error.response?.data);
       toast.error(error.response?.data?.message || "Failed to fetch orders");
     } else {
+      console.error("Unexpected error:", error);
       toast.error("An unexpected error occurred");
     }
     return null;

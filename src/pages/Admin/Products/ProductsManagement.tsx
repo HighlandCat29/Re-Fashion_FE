@@ -4,6 +4,7 @@ import {
   Product,
   getProducts,
   changeProductStatus,
+  deleteProduct,
 } from "../../../api/Products/adminIndex";
 import { toast } from "react-hot-toast";
 import { formatPrice } from "../../../utils/formatPrice";
@@ -13,6 +14,7 @@ const ProductsManagement = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   const fetchAllData = async () => {
     try {
@@ -57,6 +59,22 @@ const ProductsManagement = () => {
     }
   };
 
+  const handleDelete = async (product: Product) => {
+    try {
+      if (!product.id || !product.sellerId) {
+        toast.error("Product ID or Seller ID is missing");
+        return;
+      }
+      await deleteProduct(product.sellerId, product.id);
+      await fetchAllData(); // Refresh the list after deletion
+      setProductToDelete(null); // Close the confirmation dialog
+      toast.success("Product deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete product:", error);
+      toast.error("Failed to delete product");
+    }
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto bg-white p-6 rounded-xl shadow-md">
@@ -87,6 +105,9 @@ const ProductsManagement = () => {
                     Image
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+                    ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
                     Title
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
@@ -114,10 +135,15 @@ const ProductsManagement = () => {
                   <tr key={product.id} className="hover:bg-gray-50 transition">
                     <td className="px-6 py-4">
                       <img
-                        src={product.imageUrls[0] || "/default-product.png"}
+                        src={
+                          product.imageUrls[0] || "/images/default-product.png"
+                        }
                         alt={product.title}
                         className="w-16 h-16 object-cover rounded-md"
                       />
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      {product.id}
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
                       {product.title}
@@ -175,6 +201,12 @@ const ProductsManagement = () => {
                             </button>
                           </>
                         )}
+                        <button
+                          onClick={() => setProductToDelete(product)}
+                          className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -215,7 +247,10 @@ const ProductsManagement = () => {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <img
-                    src={selectedProduct.imageUrls[0] || "/default-product.png"}
+                    src={
+                      selectedProduct.imageUrls[0] ||
+                      "/images/default-product.png"
+                    }
                     alt={selectedProduct.title}
                     className="w-full h-64 object-cover rounded-lg"
                   />
@@ -300,6 +335,33 @@ const ProductsManagement = () => {
                 <h3 className="text-lg font-semibold mb-2">Description</h3>
                 <p className="text-gray-600">{selectedProduct.description}</p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {productToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Confirm Delete</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete "{productToDelete.title}"? This
+              action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setProductToDelete(null)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(productToDelete)}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>

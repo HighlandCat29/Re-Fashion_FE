@@ -5,19 +5,17 @@ import { AxiosError } from "axios";
 // Interfaces
 export interface CartItem {
   productId: string;
-  quantity: number;
-  price: number;
-  productName: string;
+  title: string;
   productImage: string;
+  price: number;
+  quantity: number;
 }
 
 export interface Cart {
   id: string;
   userId: string;
-  createdAt: string;
-  updatedAt?: string;
-  items?: CartItem[];
-  totalAmount?: number;
+  items: CartItem[];
+  total: number;
 }
 
 export interface CartResponse {
@@ -50,9 +48,7 @@ export const getCart = async (cartId: string): Promise<Cart | null> => {
 
 export const getCartByUserId = async (userId: string): Promise<Cart | null> => {
   try {
-    const response = await customFetch.get<CartResponse>(
-      `/carts/user/${userId}`
-    );
+    const response = await customFetch.get<CartResponse>(`/carts/${userId}`);
     return response.data.result;
   } catch (error) {
     if (error instanceof AxiosError) {
@@ -68,14 +64,12 @@ export const getCartByUserId = async (userId: string): Promise<Cart | null> => {
 
 export const addToCart = async (
   userId: string,
-  productId: string,
-  quantity: number
+  productId: string
 ): Promise<Cart | null> => {
   try {
     const response = await customFetch.post<CartResponse>(`/carts/add`, {
       userId,
       productId,
-      quantity,
     });
     toast.success("Item added to cart successfully!");
     return response.data.result;
@@ -125,20 +119,28 @@ export const removeCartItem = async (
 ): Promise<Cart | null> => {
   try {
     const response = await customFetch.delete<CartResponse>(
-      `/carts/removeItem`,
+      `/carts/${userId}/remove/${productId}`,
       {
-        data: { userId, productId }, // Axios requires data for DELETE in 'data' field
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
       }
     );
-    toast.success("Item removed from cart successfully!");
-    return response.data.result;
+
+    if (response.data.code === 200) {
+      toast.success("Item removed from cart successfully!");
+      return response.data.result;
+    } else {
+      toast.success(response.data.message || "Remove Cart Success!");
+      return null;
+    }
   } catch (error) {
     if (error instanceof AxiosError) {
-      toast.error(
-        error.response?.data?.message || "Failed to remove item from cart"
-      );
+      console.error("Cart removal error:", error.response?.data);
     } else {
       toast.error("An unexpected error occurred");
+      console.error("Unexpected error:", error);
     }
     return null;
   }

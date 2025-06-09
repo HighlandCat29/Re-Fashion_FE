@@ -5,9 +5,9 @@ import {
   useLoaderData,
   useNavigate,
 } from "react-router-dom";
-import customFetch from "../axios/custom";
+import customFetch from "../../axios/custom";
 import { nanoid } from "nanoid";
-import { formatDate } from "../utils/formatDate";
+import { formatDate } from "../../utils/formatDate";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { id } = params;
@@ -35,9 +35,9 @@ const SingleOrderHistory = () => {
           Order ID: {singleOrder.id}
         </h2>
         <p className="mb-2">Date: {formatDate(singleOrder.orderDate)}</p>
-        <p className="mb-2">Subtotal: ${ singleOrder.subtotal }</p>
+        <p className="mb-2">Subtotal: ${singleOrder.subtotal}</p>
         <p className="mb-2">Shipping: $5</p>
-        <p className="mb-2">Tax: ${ singleOrder.subtotal / 5 }</p>
+        <p className="mb-2">Tax: ${singleOrder.subtotal / 5}</p>
         <p className="mb-2">
           Total: $
           {(singleOrder.subtotal + 5 + singleOrder.subtotal / 5).toFixed(2)}

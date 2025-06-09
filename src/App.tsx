@@ -19,12 +19,13 @@ import {
   SellProduct,
   SellProductList,
   EditProduct,
-
+  OrderConfirmation,
+  Payment,
 } from "./pages";
 import { checkoutAction, searchAction } from "./actions/index";
 import { shopCategoryLoader } from "./pages/Shop";
-import { loader as orderHistoryLoader } from "./pages/OrderHistory";
-import { loader as singleOrderLoader } from "./pages/SingleOrderHistory";
+import { loader as orderHistoryLoader } from "./pages/Order/OrderHistory";
+import { loader as singleOrderLoader } from "./pages/Order/SingleOrderHistory";
 import HomeCollectionSection from "./components/HomeCollectionSection";
 import { WishlistProvider } from "./components/WishlistContext";
 import AdminManager from "./pages/Admin/AdminManager";
@@ -133,10 +134,21 @@ const router = createBrowserRouter([
         ),
         loader: singleOrderLoader,
       },
+      {
+        path: "order-confirmation",
+        element: <OrderConfirmation />,
+      },
+      {
+        path: "payment",
+        element: (
+          <AuthGuard>
+            <Payment />
+          </AuthGuard>
+        ),
+      },
     ],
   },
-  { path: "blogs/:id", element: <SingleBlogPage /> }
-  ,
+  { path: "blogs/:id", element: <SingleBlogPage /> },
   {
     path: "/admin",
     element: (
@@ -172,7 +184,6 @@ function App() {
       </div>
     </WishlistProvider>
   );
-
 }
 
 export default App;

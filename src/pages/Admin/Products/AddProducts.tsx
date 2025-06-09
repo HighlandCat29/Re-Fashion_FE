@@ -16,6 +16,8 @@ const AddProducts = () => {
   const [sellerSearch, setSellerSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -53,6 +55,18 @@ const AddProducts = () => {
     fetchInitialData();
   }, []);
 
+  useEffect(() => {
+    if (selectedFile) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(selectedFile);
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [selectedFile]);
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -71,36 +85,15 @@ const AddProducts = () => {
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setUploadingImage(true);
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("upload_preset", UPLOAD_PRESET);
-        formData.append("cloud_name", "dnrxylpid");
-
-        const response = await fetch(CLOUDINARY_UPLOAD_URL, {
-          method: "POST",
-          body: formData,
-        });
-
-        const data = await response.json();
-
-        if (data.secure_url) {
-          setFormData((prev) => ({
-            ...prev,
-            imageUrls: [data.secure_url],
-          }));
-          toast.success("Image uploaded successfully!");
-        } else {
-          throw new Error(data.error?.message || "Failed to upload image");
-        }
-      } catch (error) {
-        console.error("Image upload error:", error);
-        toast.error("Failed to upload image.");
-      } finally {
-        setUploadingImage(false);
-      }
+      setSelectedFile(file);
+    } else {
+      setSelectedFile(null);
     }
+  };
+
+  const handleClearImage = () => {
+    setSelectedFile(null);
+    setFormData((prev) => ({ ...prev, imageUrls: [] }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,7 +116,38 @@ const AddProducts = () => {
       return;
     }
 
-    if (formData.imageUrls.length === 0) {
+    let finalImageUrls = formData.imageUrls; // Default to existing if no new upload
+
+    if (selectedFile) {
+      setUploadingImage(true);
+      try {
+        const cloudinaryFormData = new FormData();
+        cloudinaryFormData.append("file", selectedFile);
+        cloudinaryFormData.append("upload_preset", UPLOAD_PRESET);
+        cloudinaryFormData.append("cloud_name", "dnrxylpid");
+
+        const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+          method: "POST",
+          body: cloudinaryFormData,
+        });
+
+        const data = await response.json();
+
+        if (data.secure_url) {
+          finalImageUrls = [data.secure_url];
+          toast.success("Image uploaded successfully!");
+        } else {
+          throw new Error(data.error?.message || "Failed to upload image");
+        }
+      } catch (error) {
+        console.error("Image upload error:", error);
+        toast.error("Failed to upload image.");
+        setUploadingImage(false);
+        return; // Stop submission if image upload fails
+      } finally {
+        setUploadingImage(false);
+      }
+    } else if (formData.imageUrls.length === 0) {
       toast("No image selected. Proceeding without product image.");
     }
 
@@ -137,7 +161,7 @@ const AddProducts = () => {
         size: formData.size.trim(),
         color: formData.color.trim(),
         price: Number(formData.price),
-        imageUrls: formData.imageUrls,
+        imageUrls: finalImageUrls, // Use the uploaded URL or existing
         categoryId: formData.categoryId,
         sellerId: formData.sellerId,
         isFeatured: Boolean(formData.isFeatured),
@@ -145,6 +169,7 @@ const AddProducts = () => {
           ? new Date(formData.featuredUntil).toISOString()
           : null,
         isActive: Boolean(formData.isActive),
+        status: "PENDING" as const,
       };
 
       if (
@@ -250,15 +275,47 @@ const AddProducts = () => {
           </div>
 
           <div>
+            <label className="block mb-1 text-sm font-medium">
+              Product Image
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="w-full border p-2 rounded"
+              disabled={uploadingImage}
+            />
+            {uploadingImage && (
+              <p className="text-blue-500 text-sm mt-1">Uploading image...</p>
+            )}
+            {(previewUrl || formData.imageUrls.length > 0) && (
+              <div className="mt-2 flex items-center space-x-2">
+                <img
+                  src={previewUrl || formData.imageUrls[0]}
+                  alt="Product Preview"
+                  className="w-32 h-32 object-cover rounded"
+                />
+                <button
+                  type="button"
+                  onClick={handleClearImage}
+                  className="text-red-600 hover:text-red-800 text-sm"
+                >
+                  Clear Image
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div>
             <label className="block mb-1 text-sm font-medium">Category</label>
             <select
               name="categoryId"
+              required
               value={formData.categoryId}
               onChange={handleChange}
-              required
               className="w-full border p-2 rounded"
             >
-              <option value="">-- Select Category --</option>
+              <option value="">Select a category</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
@@ -267,122 +324,38 @@ const AddProducts = () => {
             </select>
           </div>
 
-          <div className="relative">
+          <div>
             <label className="block mb-1 text-sm font-medium">Seller</label>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search seller by name or username"
-                value={sellerSearch}
-                onChange={(e) => setSellerSearch(e.target.value)}
-                className="w-full border p-2 rounded"
-              />
-              {sellerSearch && (
-                <div className="absolute z-10 bg-white border w-full max-h-40 overflow-y-auto rounded shadow mt-1">
-                  {sellers
-                    .filter((s) =>
-                      `${s.username} ${s.fullName}`
-                        .toLowerCase()
-                        .includes(sellerSearch.toLowerCase())
-                    )
-                    .map((s) => (
-                      <div
-                        key={s.id}
-                        onClick={() => {
-                          setFormData((prev) => ({
-                            ...prev,
-                            sellerId: s.id,
-                          }));
-                          setSellerSearch(`${s.username} (${s.fullName})`);
-                        }}
-                        className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
-                      >
-                        <div className="font-medium">{s.username}</div>
-                        <div className="text-gray-600 text-xs">
-                          {s.fullName} • {s.email}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
-            {formData.sellerId && (
-              <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
-                <p className="text-sm text-green-700">
-                  Selected seller:{" "}
-                  <strong>
-                    {sellers.find((s) => s.id === formData.sellerId)?.username}
-                  </strong>
-                </p>
-                {sellers.find((s) => s.id === formData.sellerId) && (
-                  <p className="text-xs text-green-600 mt-1">
-                    {sellers.find((s) => s.id === formData.sellerId)?.fullName}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block mb-1 text-sm font-medium">
-              Product Image
-            </label>
             <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              disabled={uploadingImage}
-              className="w-full border p-2 rounded"
+              type="text"
+              placeholder="Search seller by username or ID"
+              value={sellerSearch}
+              onChange={(e) => setSellerSearch(e.target.value)}
+              className="w-full border p-2 rounded mb-2"
             />
-            {uploadingImage && (
-              <p className="text-sm text-blue-500 mt-2">Uploading image...</p>
-            )}
-            {formData.imageUrls.length > 0 ? (
-              <img
-                src={formData.imageUrls[0]}
-                alt="Preview"
-                className="mt-2 max-w-xs rounded"
-              />
-            ) : (
-              <p className="text-xs text-gray-400 mt-2 italic">
-                No image selected
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block mb-1 text-sm font-medium">
-              Featured Until
-            </label>
-            <input
-              type="datetime-local"
-              name="featuredUntil"
-              value={formData.featuredUntil.slice(0, 16)}
+            <select
+              name="sellerId"
+              required
+              value={formData.sellerId}
               onChange={handleChange}
               className="w-full border p-2 rounded"
-            />
+            >
+              <option value="">Select a seller</option>
+              {sellers
+                .filter(
+                  (seller) =>
+                    seller.username
+                      .toLowerCase()
+                      .includes(sellerSearch.toLowerCase()) ||
+                    seller.id.toLowerCase().includes(sellerSearch.toLowerCase())
+                )
+                .map((seller) => (
+                  <option key={seller.id} value={seller.id}>
+                    {seller.username} ({seller.fullName})
+                  </option>
+                ))}
+            </select>
           </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input
-              type="checkbox"
-              name="isFeatured"
-              checked={formData.isFeatured}
-              onChange={handleChange}
-            />
-            Featured
-          </label>
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input
-              type="checkbox"
-              name="isActive"
-              checked={formData.isActive}
-              onChange={handleChange}
-            />
-            Active
-          </label>
         </div>
 
         <div>
@@ -393,21 +366,55 @@ const AddProducts = () => {
             onChange={handleChange}
             rows={4}
             className="w-full border p-2 rounded"
-          />
+          ></textarea>
         </div>
 
-        <div className="flex justify-between">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            name="isFeatured"
+            checked={formData.isFeatured}
+            onChange={handleChange}
+            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <label className="text-sm font-medium">Featured Product</label>
+          {formData.isFeatured && (
+            <div>
+              <label className="ml-4 text-sm font-medium">Featured Until</label>
+              <input
+                type="datetime-local"
+                name="featuredUntil"
+                value={formData.featuredUntil.substring(0, 16)}
+                onChange={handleChange}
+                className="ml-2 border p-1 rounded text-sm"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            name="isActive"
+            checked={formData.isActive}
+            onChange={handleChange}
+            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <label className="text-sm font-medium">Product is Active</label>
+        </div>
+
+        <div className="flex justify-end space-x-4">
           <button
             type="button"
             onClick={() => navigate("/admin/products")}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded shadow"
+            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold px-4 py-2 rounded-lg shadow transition"
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow transition"
+            disabled={loading || uploadingImage}
           >
             {loading ? "Adding..." : "Add Product"}
           </button>
