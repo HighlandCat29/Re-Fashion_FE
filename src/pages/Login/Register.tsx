@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import customFetch from "../../axios/custom";
+import { AxiosError } from "axios";
+import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../../config/cloudinary";
 
 const checkRegisterFormData = (data: Record<string, string>) => {
   const {
@@ -14,7 +16,6 @@ const checkRegisterFormData = (data: Record<string, string>) => {
     fullName,
     phoneNumber,
     address,
-    roleId,
   } = data;
 
   if (
@@ -24,8 +25,7 @@ const checkRegisterFormData = (data: Record<string, string>) => {
     !confirmPassword ||
     !fullName ||
     !phoneNumber ||
-    !address ||
-    !roleId
+    !address
   ) {
     toast.error("Please fill in all fields");
     return false;
@@ -42,6 +42,52 @@ const checkRegisterFormData = (data: Record<string, string>) => {
 const Register = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    } else {
+      setSelectedFile(null);
+      setPreviewUrl(null);
+    }
+  };
+
+  const uploadImageToCloudinary = async (
+    file: File
+  ): Promise<string | null> => {
+    setUploadingImage(true);
+    try {
+      const cloudinaryFormData = new FormData();
+      cloudinaryFormData.append("file", file);
+      cloudinaryFormData.append("upload_preset", UPLOAD_PRESET);
+      cloudinaryFormData.append("cloud_name", "dnrxylpid"); // Replace with your Cloudinary cloud name
+
+      const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+        method: "POST",
+        body: cloudinaryFormData,
+      });
+
+      const data = await response.json();
+
+      if (data.secure_url) {
+        toast.success("Image uploaded successfully!");
+        return data.secure_url;
+      } else {
+        throw new Error(data.error?.message || "Failed to upload image");
+      }
+    } catch (error) {
+      console.error("Cloudinary upload error:", error);
+      toast.error("Failed to upload image to Cloudinary.");
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -52,6 +98,18 @@ const Register = () => {
 
     setLoading(true);
 
+    let profilePictureUrl = "";
+    if (selectedFile) {
+      const uploadedUrl = await uploadImageToCloudinary(selectedFile);
+      if (uploadedUrl) {
+        profilePictureUrl = uploadedUrl;
+      } else {
+        toast.error("Failed to upload profile picture. Please try again.");
+        setLoading(false);
+        return; // Stop registration if image upload fails
+      }
+    }
+
     try {
       const response = await customFetch.post("/users", {
         username: data.username,
@@ -61,20 +119,29 @@ const Register = () => {
         fullName: data.fullName,
         phoneNumber: data.phoneNumber,
         address: data.address,
-        roleId: String(data.roleId),
+        profilePicture: profilePictureUrl, // Add profile picture URL
+        roleId: "2", // Automatically set role to User (ID 2)
       });
 
-      if (response.status === 201) {
-        toast.success("User registered successfully");
-        navigate("/login");
-      }
-    } catch (error: any) {
-      if (error.response?.status === 409) {
-        toast.error("User with this email already exists");
-      } else {
-        toast.error(
-          "Server error: " + (error.response?.data?.message || error.message)
+      if (response.status === 200 || response.status === 1000) {
+        toast.success(
+          "Registration successful! Please check your email to verify your account."
         );
+        navigate("/check-email");
+      } else {
+        toast.error("Registration failed. Please try again.");
+      }
+    } catch (error: unknown) {
+      if (error instanceof AxiosError) {
+        if (error.response?.status === 409) {
+          toast.error("User with this email already exists");
+        } else {
+          toast.error(
+            "Server error: " + (error.response?.data?.message || error.message)
+          );
+        }
+      } else {
+        toast.error("An unexpected error occurred.");
       }
     } finally {
       setLoading(false);
@@ -188,6 +255,84 @@ const Register = () => {
               />
             </div>
 
+            {/* Profile Picture */}
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor="profilePicture"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Profile Picture
+              </label>
+              <div className="flex items-center space-x-4">
+                <div className="relative w-24 h-24 rounded-full overflow-hidden border border-gray-300 bg-gray-100 flex items-center justify-center">
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt="Profile Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src="/default-avatar.png" // Default avatar placeholder
+                      alt="Default Avatar"
+                      className="w-full h-full object-cover text-gray-400"
+                    />
+                  )}
+                  {uploadingImage && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  id="profilePicture"
+                  name="profilePicture"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden" // Hide default input
+                  disabled={uploadingImage}
+                />
+                <label
+                  htmlFor="profilePicture"
+                  className="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                >
+                  Choose Image
+                </label>
+                {selectedFile && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setPreviewUrl(null);
+                    }}
+                    className="text-red-600 hover:text-red-800 font-medium ml-2"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Email */}
             <div className="flex flex-col gap-1">
               <label
@@ -254,34 +399,10 @@ const Register = () => {
               />
             </div>
 
-            {/* Role Select */}
-            <div className="flex flex-col gap-1">
-              <label
-                htmlFor="roleId"
-                className="text-sm font-medium text-gray-700"
-              >
-                Role
-              </label>
-              <select
-                id="roleId"
-                name="roleId"
-                defaultValue="2"
-                className="
-                  w-full rounded-xl border border-gray-300
-                  px-4 py-3 text-base text-gray-800
-                  focus:outline-none focus:ring-2 focus:ring-gray-200 transition
-                "
-                required
-              >
-                <option value="2">Buyer</option>
-                <option value="3">Seller</option>
-              </select>
-            </div>
-
             {/* Register Button (black pill‐shaped) */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || uploadingImage}
               className="
                 w-full bg-black text-white text-lg font-medium
                 py-3 rounded-full hover:bg-gray-900 transition
@@ -291,16 +412,26 @@ const Register = () => {
               {loading ? "Registering..." : "Register"}
             </button>
 
-            {/* Already have an account? */}
-            <p className="text-center text-gray-600 text-base">
-              Already have an account?{" "}
-              <Link
-                to="/login"
-                className="underline text-gray-800 hover:text-gray-900 transition"
-              >
-                Login now
+            {/* Disclaimer with Terms / Privacy */}
+            <p className="text-center text-xs text-gray-600">
+              By continuing, you agree to the{" "}
+              <Link to="/terms-of-use" className="underline text-gray-800">
+                Terms of use
+              </Link>{" "}
+              and{" "}
+              <Link to="/privacy-policy" className="underline text-gray-800">
+                Privacy Policy
               </Link>
+              .
             </p>
+
+            {/* "Already have an account" link */}
+            <div className="flex justify-center text-sm text-gray-600">
+              Already have an account?{" "}
+              <Link to="/login" className="hover:underline text-gray-800 ml-1">
+                Sign in
+              </Link>
+            </div>
           </form>
         </div>
       </div>

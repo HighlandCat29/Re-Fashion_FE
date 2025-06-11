@@ -18,3 +18,4 @@ export { default as SellProductList } from "./User/SellProductList";
 export { default as EditProduct } from "./User/EditProduct";
 export { default as SingleBlogPage } from "../pages/SingleBlogPage";
 export { default as Payment } from "./Payment";
+export { default as CheckEmail } from "./Login/CheckEmail";

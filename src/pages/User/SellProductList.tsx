@@ -50,7 +50,7 @@ const SellProductList = () => {
         <h1 className="text-2xl font-bold text-gray-900">My Sell's Products</h1>
         <button
           onClick={() => navigate("/sell-product")}
-          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
+          className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 transition-colors"
         >
           Add New Product
         </button>
@@ -63,7 +63,7 @@ const SellProductList = () => {
           </p>
           <button
             onClick={() => navigate("/sell-product")}
-            className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors"
+            className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors"
           >
             Start Selling
           </button>

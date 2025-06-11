@@ -290,10 +290,14 @@ const Header = () => {
               >
                 <div className="relative">
                   <HiOutlineHeart
-                    className="
-                      text-3xl text-gray-800 hover:text-sky-500
-                      transition-colors duration-200
-                    "
+                    className={`
+                      text-3xl transition-all duration-300
+                      ${
+                        location.pathname === "/wishlist"
+                          ? "text-red-500 animate-pulse"
+                          : "text-gray-800 hover:text-sky-500"
+                      }
+                    `}
                   />
                   {wishlistCount > 0 && (
                     <span
@@ -328,10 +332,14 @@ const Header = () => {
               >
                 <div className="relative">
                   <HiOutlineShoppingBag
-                    className="
-                      text-3xl text-gray-800 hover:text-sky-500
-                      transition-colors duration-200
-                    "
+                    className={`
+                      text-3xl transition-all duration-300
+                      ${
+                        location.pathname === "/cart"
+                          ? "text-purple-500 animate-bounce"
+                          : "text-gray-800 hover:text-sky-500"
+                      }
+                    `}
                   />
                   {cartItemCount > 0 && (
                     <span

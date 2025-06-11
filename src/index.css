@@ -6,8 +6,8 @@
 
 /* 
   1) We apply a very light off-white as the base color.
-     You can tweak this hex (#e8e7e3 below) if it doesn’t
-     exactly match your texture’s true mid-tone.
+     You can tweak this hex (#e8e7e3 below) if it doesn't
+     exactly match your texture's true mid-tone.
 */
 body {
   @apply bg-[#e8e7e3];
@@ -15,7 +15,7 @@ body {
   /*
     2) Use the original full-size subtle-paper.png (e.g. 5000×3000 px).
        In dev, Vite will serve this from /src/assets/subtle-paper.png
-       (though in production it gets fingerprinted, so you’d need
+       (though in production it gets fingerprinted, so you'd need
        to copy it into public/ if you truly want a static path).
   */
   background-image: url("/src/assets/subtle-paper.png");
@@ -39,10 +39,9 @@ body {
   position: relative;
   min-height: 100vh;
 
-  /* 6) Keep your site’s global font */
+  /* 6) Keep your site's global font */
   font-family: "Merriweather", serif;
 }
-
 
 /* —————————————————————————————————————————— */
 /* Your existing CSS rules remain unchanged below */
@@ -50,18 +49,23 @@ body {
 
 .banner {
   height: 800px;
-  background: linear-gradient(0deg,
+  background: linear-gradient(
+      0deg,
       rgba(0, 0, 0, 0.25) 0%,
-      rgba(0, 0, 0, 0.15) 100%),
+      rgba(0, 0, 0, 0.15) 100%
+    ),
     url("/src/assets/newbanner.jpg") lightgray 50% / cover no-repeat;
   background-position: 10% 25%;
 }
 
 .shop-banner {
-  background: linear-gradient(0deg,
+  background: linear-gradient(
+      0deg,
       rgba(0, 0, 0, 0.25) 0%,
-      rgba(0, 0, 0, 0.25) 100%),
-    url("/src/assets/newbanner.jpg") lightgray 3.589px 1.817px / 100% 197.462% no-repeat;
+      rgba(0, 0, 0, 0.25) 100%
+    ),
+    url("/src/assets/newbanner.jpg") lightgray 3.589px 1.817px / 100% 197.462%
+      no-repeat;
 }
 
 /* Sidebar animation classes */
@@ -90,4 +94,65 @@ body {
 
 .singleOrder-table th {
   text-align: left;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s infinite ease-in-out;
+}
+
+/* Utility classes for animation delays */
+.animation-delay-100 {
+  animation-delay: 0.1s;
+}
+.animation-delay-200 {
+  animation-delay: 0.2s;
+}
+.animation-delay-300 {
+  animation-delay: 0.3s;
+}
+.animation-delay-400 {
+  animation-delay: 0.4s;
+}
+.animation-delay-500 {
+  animation-delay: 0.5s;
+}
+.animation-delay-600 {
+  animation-delay: 0.6s;
+}
+.animation-delay-700 {
+  animation-delay: 0.7s;
+}
+.animation-delay-800 {
+  animation-delay: 0.8s;
+}
+.animation-delay-900 {
+  animation-delay: 0.9s;
+}
+.animation-delay-1000 {
+  animation-delay: 1s;
 }

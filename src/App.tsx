@@ -21,6 +21,7 @@ import {
   EditProduct,
   OrderConfirmation,
   Payment,
+  CheckEmail,
 } from "./pages";
 import { checkoutAction, searchAction } from "./actions/index";
 import { shopCategoryLoader } from "./pages/Shop";
@@ -42,6 +43,8 @@ import OrdersManagement from "./pages/Admin/Orders/OrdersManagement";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import AuthGuard from "./components/AuthGuard";
 import SingleBlogPage from "./pages/SingleBlogPage";
+import TermOfUse from "./components/Hardcode/TermOfUse";
+import PrivacyPolicy from "./components/Hardcode/PrivacyPolicy";
 
 const router = createBrowserRouter([
   {
@@ -56,6 +59,9 @@ const router = createBrowserRouter([
       { path: "search", element: <Search />, action: searchAction },
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
+      { path: "check-email", element: <CheckEmail /> },
+      { path: "/terms-of-use", element: <TermOfUse /> },
+      { path: "/privacy-policy", element: <PrivacyPolicy /> },
       { path: "home-collection", element: <HomeCollectionSection /> },
 
       // Protected routes

@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { getUserById, UserResponse, updateUser } from "../../api/Users/index";
+import {
+  getUserById,
+  UserResponse,
+  updateUser,
+  AdminUser,
+} from "../../api/Users/index";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../../api/Logout";
@@ -8,6 +13,7 @@ import { getProductsBySellerId, Product } from "../../api/Products/adminIndex";
 import { formatPrice } from "../../utils/formatPrice";
 import { getOrdersByBuyerID, Order } from "../../api/Orders/index";
 import { formatDate } from "../../utils/formatDate";
+import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../../config/cloudinary";
 
 interface UserForm {
   username: string;
@@ -40,6 +46,9 @@ const UserProfile = () => {
   const [, setUserProfile] = useState<UserResponse | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const navigate = useNavigate();
 
@@ -71,6 +80,7 @@ const UserProfile = () => {
             address: data.address,
           });
           setUserProfile(data);
+          setPreviewUrl(data.profilePicture || null); // Set initial preview
         }
       } catch (err) {
         console.error("Failed to load profile:", err);
@@ -82,6 +92,50 @@ const UserProfile = () => {
 
     fetchProfile();
   }, [currentUserId]); // Depend on currentUserId
+
+  // Handle file selection and preview for profile picture
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    } else {
+      setSelectedFile(null);
+      setPreviewUrl(user?.profilePicture || null);
+    }
+  };
+
+  const uploadImageToCloudinary = async (
+    file: File
+  ): Promise<string | null> => {
+    setUploadingImage(true);
+    try {
+      const cloudinaryFormData = new FormData();
+      cloudinaryFormData.append("file", file);
+      cloudinaryFormData.append("upload_preset", UPLOAD_PRESET);
+      cloudinaryFormData.append("cloud_name", "dnrxylpid"); // Replace with your Cloudinary cloud name
+
+      const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+        method: "POST",
+        body: cloudinaryFormData,
+      });
+
+      const data = await response.json();
+
+      if (data.secure_url) {
+        toast.success("Image uploaded successfully!");
+        return data.secure_url;
+      } else {
+        throw new Error(data.error?.message || "Failed to upload image");
+      }
+    } catch (error) {
+      console.error("Cloudinary upload error:", error);
+      toast.error("Failed to upload image to Cloudinary.");
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   // Fetch User's Listed Products
   useEffect(() => {
@@ -163,17 +217,49 @@ const UserProfile = () => {
     }
 
     setLoadingProfile(true);
+    let imageUrl = user.profilePicture || "";
+
+    if (selectedFile) {
+      const uploadedUrl = await uploadImageToCloudinary(selectedFile);
+      if (uploadedUrl) {
+        imageUrl = uploadedUrl;
+      } else {
+        toast.error("Failed to upload profile picture. Please try again.");
+        setLoadingProfile(false);
+        return; // Stop the form submission if image upload fails
+      }
+    }
+
+    // Log the form data before sending to the API
+    console.log("Form data before update:", form);
+
     try {
-      await updateUser(user.id, {
-        ...form,
+      const updatePayload: Partial<AdminUser> = {
+        username: form.username,
+        fullName: form.fullName,
+        phoneNumber: form.phoneNumber,
+        address: form.address,
         roleId: user.role.roleId,
         email: user.email,
         active: user.active,
-      });
+        profilePicture: imageUrl, // Use the potentially new imageUrl
+      };
+
+      if (form.password) {
+        updatePayload.password = form.password;
+        updatePayload.confirmPassword = form.confirmPassword; // Include confirmPassword if password is being updated, though backend might ignore
+      }
+
+      await updateUser(user.id, updatePayload as AdminUser);
       toast.success("Profile updated successfully!");
       setEditing(false);
       // Reset password fields
       setForm((prev) => ({ ...prev, password: "", confirmPassword: "" }));
+      // Refresh user data to show updated profile picture
+      // This can be done by refetching user data or updating the user state directly
+      setUser((prevUser) =>
+        prevUser ? { ...prevUser, profilePicture: imageUrl } : null
+      );
     } catch (err) {
       console.error("Failed to update profile:", err);
       toast.error("Failed to update profile.");
@@ -200,7 +286,7 @@ const UserProfile = () => {
       <div className="flex items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
           <img
-            src={user.profilePicture || "/default-avatar.png"}
+            src={previewUrl || user.profilePicture || "/default-avatar.png"}
             alt="Profile"
             className="w-20 h-20 rounded-full object-cover border"
           />
@@ -227,7 +313,14 @@ const UserProfile = () => {
             </h3>
             <button
               type="button"
-              onClick={() => setEditing(!editing)}
+              onClick={() => {
+                setEditing(!editing);
+                if (editing) {
+                  // If cancelling, reset file selection and preview
+                  setSelectedFile(null);
+                  setPreviewUrl(user?.profilePicture || null);
+                }
+              }}
               className="text-blue-600 hover:text-blue-800 font-medium"
             >
               {editing ? "Cancel" : "Edit Profile"}
@@ -285,6 +378,37 @@ const UserProfile = () => {
             {editing && (
               <>
                 <div>
+                  <label
+                    htmlFor="profilePicture"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Profile Picture
+                  </label>
+                  <input
+                    type="file"
+                    id="profilePicture"
+                    name="profilePicture"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="mt-1 block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
+                    disabled={uploadingImage}
+                  />
+                  {uploadingImage && (
+                    <p className="text-blue-500 text-sm mt-1">
+                      Uploading image...
+                    </p>
+                  )}
+                  {previewUrl && (
+                    <div className="mt-2">
+                      <img
+                        src={previewUrl}
+                        alt="Profile Preview"
+                        className="w-24 h-24 object-cover rounded-full"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700">
                     New Password
                   </label>
@@ -332,7 +456,7 @@ const UserProfile = () => {
           <div className="flex justify-end gap-3 pt-4">
             <button
               type="submit"
-              disabled={loadingProfile}
+              disabled={loadingProfile || uploadingImage}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loadingProfile ? "Saving..." : "Save Changes"}

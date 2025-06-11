@@ -30,13 +30,16 @@ const Login = () => {
 
       const { token, userId, role } = response.data.result;
 
-      // Save token + user to localStorage
+      // Get complete user data
+      const userResponse = await customFetch.get(`/users/${userId}`);
+      const completeUserData = userResponse.data.result;
+
+      // Save token + complete user data to localStorage
       localStorage.setItem("authToken", token);
-      const userData = { id: userId, role };
-      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("user", JSON.stringify(completeUserData));
 
       // Update Redux state
-      store.dispatch(setUser(userData));
+      store.dispatch(setUser(completeUserData));
       toast.success("You logged in successfully");
 
       // Redirect based on role
@@ -150,11 +153,11 @@ const Login = () => {
             {/* Disclaimer with Terms / Privacy */}
             <p className="text-center text-xs text-gray-600">
               By continuing, you agree to the{" "}
-              <Link to="#" className="underline text-gray-800">
+              <Link to="/terms-of-use" className="underline text-gray-800">
                 Terms of use
               </Link>{" "}
               and{" "}
-              <Link to="#" className="underline text-gray-800">
+              <Link to="/privacy-policy" className="underline text-gray-800">
                 Privacy Policy
               </Link>
               .

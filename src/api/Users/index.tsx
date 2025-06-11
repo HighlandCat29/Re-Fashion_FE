@@ -43,13 +43,13 @@ export interface AdminUser {
   roleId: string;
   email: string;
   username: string;
-  password: string;
-  confirmPassword: string;
+  password?: string;
+  confirmPassword?: string;
   fullName: string;
   phoneNumber: string;
   address: string;
   active: boolean;
-  profilePicture?: string;
+  profilePicture: string;
 }
 
 /** API Functions **/
@@ -168,6 +168,7 @@ export const updateAdminUser = async (
   user: AdminUser
 ): Promise<AdminUserResponse> => {
   try {
+    console.log(user);
     const response = await customFetch.put(`/admin/users/${id}`, user);
     if ([200, 1000, 1073741824].includes(response.status)) {
       toast.success("Admin user updated successfully!");
@@ -189,6 +190,7 @@ export const updateUser = async (
   user: AdminUser
 ): Promise<AdminUserResponse> => {
   try {
+    console.log(user);
     const response = await customFetch.put(`/users/${id}`, user);
     if ([200, 1000, 1073741824].includes(response.status)) {
       toast.success("Admin user updated successfully!");

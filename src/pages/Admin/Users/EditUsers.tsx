@@ -129,18 +129,29 @@ const EditUser = () => {
     let imageUrl = form.profilePicture;
     if (selectedFile) {
       const uploadedUrl = await uploadImageToCloudinary(selectedFile);
+      console.log("Cloudinary uploaded URL:", uploadedUrl);
       if (uploadedUrl) {
         imageUrl = uploadedUrl;
       } else {
+        toast.error("Failed to upload profile picture. Please try again.");
         return;
       }
     }
 
+    console.log("Payload being sent to updateAdminUser:", {
+      ...form,
+      profilePicture: imageUrl,
+    });
+
     try {
-      await updateAdminUser(id!, { ...form, profilePicture: imageUrl });
+      await updateAdminUser(id!, {
+        ...form,
+        profilePicture: imageUrl,
+      });
       toast.success("User updated successfully!");
       navigate("/admin/users");
     } catch (error) {
+      console.error("Failed to update user:", error);
       toast.error("Failed to update user.");
     }
   };
