@@ -2,19 +2,27 @@ import React, { useState, useEffect } from "react";
 import {
   getAllOrders,
   updateOrderStatus,
+  updateOrderPaymentStatus,
   Order,
   deleteOrder,
 } from "../../../api/Orders";
 import { toast } from "react-hot-toast";
 import { getUserById } from "../../../api/Users";
+import { getProductById } from "../../../api/Products/index";
 
 const OrdersManagement = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [updatingPaymentStatus, setUpdatingPaymentStatus] = useState<
+    string | null
+  >(null);
   const [selectedStatus, setSelectedStatus] = useState<Order["status"] | "ALL">(
     "ALL"
   );
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<
+    Order["paymentStatus"] | "ALL"
+  >("ALL");
   const [userType, setUserType] = useState<"ALL" | "BUYER" | "SELLER">("ALL");
   const [userId, setUserId] = useState("");
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
@@ -39,14 +47,33 @@ const OrdersManagement = () => {
             const seller = order.sellerId
               ? await getUserById(order.sellerId)
               : null;
+
+            // Fetch full product details for each productId
+            const items = await Promise.all(
+              (order.productIds || []).map(async (productId) => {
+                const product = await getProductById(productId);
+                if (product) {
+                  return {
+                    productId: product.id,
+                    quantity: 1, // Assuming quantity is 1 for now, adjust if your backend provides it
+                    price: product.price,
+                    productName: product.title,
+                    productImage: product.imageUrls?.[0] || "",
+                  };
+                }
+                return null; // Handle cases where product might not be found
+              })
+            );
+
             return {
               ...order,
               buyerName: buyer?.fullName || order.buyerId,
               sellerName: seller?.fullName || order.sellerId,
+              items: items.filter((item) => item !== null) as Order["items"], // Filter out nulls
             };
           })
         );
-        console.log("Setting orders with names:", ordersWithNames);
+        console.log("Setting orders with names and items:", ordersWithNames);
         setOrders(ordersWithNames);
       } else {
         console.error("Invalid orders data received:", data);
@@ -91,6 +118,36 @@ const OrdersManagement = () => {
     }
   };
 
+  const handlePaymentStatusChange = async (
+    orderId: string,
+    newPaymentStatus: Order["paymentStatus"]
+  ) => {
+    if (!orderId || !newPaymentStatus) {
+      toast.error("Invalid order or payment status");
+      return;
+    }
+    setUpdatingPaymentStatus(orderId);
+    try {
+      const updatedOrder = await updateOrderPaymentStatus(
+        orderId,
+        newPaymentStatus
+      );
+      if (updatedOrder) {
+        setOrders(
+          orders.map((order) => (order.id === orderId ? updatedOrder : order))
+        );
+        toast.success(`Order payment status updated to ${newPaymentStatus}`);
+      } else {
+        toast.error("Failed to update payment status");
+      }
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      toast.error("Failed to update payment status");
+    } finally {
+      setUpdatingPaymentStatus(null);
+    }
+  };
+
   const handleDeleteOrder = async (orderId: string) => {
     if (window.confirm("Are you sure you want to delete this order?")) {
       try {
@@ -110,6 +167,7 @@ const OrdersManagement = () => {
 
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order);
+    console.log("Selected Order for Details:", order);
     setShowOrderDetailsModal(true);
   };
 
@@ -164,6 +222,14 @@ const OrdersManagement = () => {
 
       // Filter by selected status
       if (selectedStatus !== "ALL" && order.status !== selectedStatus) {
+        return false;
+      }
+
+      // Filter by selected payment status
+      if (
+        selectedPaymentStatus !== "ALL" &&
+        order.paymentStatus !== selectedPaymentStatus
+      ) {
         return false;
       }
 
@@ -234,6 +300,27 @@ const OrdersManagement = () => {
             </select>
           </div>
 
+          {/* Payment Status Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Filter by Payment Status
+            </label>
+            <select
+              value={selectedPaymentStatus}
+              onChange={(e) =>
+                setSelectedPaymentStatus(
+                  e.target.value as Order["paymentStatus"] | "ALL"
+                )
+              }
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            >
+              <option value="ALL">All Payment Statuses</option>
+              <option value="PAID">Paid</option>
+              <option value="UNPAID">Unpaid</option>
+              <option value="REFUNDED">Refunded</option>
+            </select>
+          </div>
+
           {/* User ID Search */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -276,7 +363,7 @@ const OrdersManagement = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Order ID
+                    Details
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Buyer
@@ -285,36 +372,35 @@ const OrdersManagement = () => {
                     Seller
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Payment Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Order Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Details
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Delete
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {order.id}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => handleViewDetails(order)}
+                        className="text-indigo-600 hover:text-indigo-900 mr-4"
+                      >
+                        View Details
+                      </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {order.buyerName}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {order.sellerName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatCurrency(order.totalAmount || 0)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
@@ -324,6 +410,27 @@ const OrdersManagement = () => {
                       >
                         {order.status}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <select
+                        value={order.paymentStatus || "UNPAID"} // Default to UNPAID if null
+                        onChange={(e) =>
+                          handlePaymentStatusChange(
+                            order.id,
+                            e.target.value as Order["paymentStatus"]
+                          )
+                        }
+                        disabled={updatingPaymentStatus === order.id}
+                        className={`mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md ${
+                          updatingPaymentStatus === order.id
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
+                        }`}
+                      >
+                        <option value="PAID">PAID</option>
+                        <option value="UNPAID">UNPAID</option>
+                        <option value="REFUNDED">REFUNDED</option>
+                      </select>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <select
@@ -347,14 +454,6 @@ const OrdersManagement = () => {
                         <option value="DELIVERED">Delivered</option>
                         <option value="CANCELLED">Cancelled</option>
                       </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleViewDetails(order)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-4"
-                      >
-                        View Details
-                      </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
@@ -400,13 +499,25 @@ const OrdersManagement = () => {
             </div>
             <div className="mt-4 space-y-3 text-gray-700">
               <p>
-                <strong>Buyer:</strong>{" "}
-                {selectedOrder.buyerName || selectedOrder.buyerId}
+                <strong>Order ID:</strong> {selectedOrder.id}
               </p>
               <p>
-                <strong>Seller:</strong>{" "}
-                {selectedOrder.sellerName || selectedOrder.sellerId}
+                <strong>Buyer:</strong> {selectedOrder.buyerName}
               </p>
+              <p>
+                <strong>Seller:</strong> {selectedOrder.sellerName}
+              </p>
+              <p>
+                <strong>Shipping Address:</strong>{" "}
+                {selectedOrder.shippingAddress}
+              </p>
+              {selectedOrder.productIds &&
+                selectedOrder.productIds.length > 0 && (
+                  <p>
+                    <strong>Product IDs:</strong>{" "}
+                    {selectedOrder.productIds.join(", ")}
+                  </p>
+                )}
               <p>
                 <strong>Total Amount:</strong>{" "}
                 {formatCurrency(selectedOrder.totalAmount || 0)}
@@ -426,10 +537,6 @@ const OrdersManagement = () => {
                 {selectedOrder.paymentStatus || "N/A"}
               </p>
               <p>
-                <strong>Shipping Address:</strong>{" "}
-                {selectedOrder.shippingAddress}
-              </p>
-              <p>
                 <strong>Order Date:</strong>{" "}
                 {formatDate(selectedOrder.createdAt)}
               </p>
@@ -445,12 +552,20 @@ const OrdersManagement = () => {
                 </p>
               )}
 
-              <h4 className="font-semibold mt-4">Items:</h4>
+              <h4 className="font-semibold mt-4 mb-2">Items:</h4>
               <ul className="list-disc pl-5">
                 {selectedOrder.items?.map((item, idx) => (
-                  <li key={idx} className="mb-2">
-                    {item.productName} (x{item.quantity}) -{" "}
-                    {formatCurrency(item.price)}
+                  <li key={idx} className="mb-2 flex items-center space-x-2">
+                    {item.productImage && (
+                      <img
+                        src={item.productImage}
+                        alt={item.productName}
+                        className="w-12 h-12 object-cover rounded-md"
+                      />
+                    )}
+                    <span>
+                      {item.productName} - {formatCurrency(item.price)}
+                    </span>
                   </li>
                 ))}
               </ul>

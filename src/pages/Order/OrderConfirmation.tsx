@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { OrderItem } from "../../api/Orders";
+import purchaseGif from "../../assets/purchase.gif";
 
 const OrderConfirmation = () => {
   const location = useLocation();
@@ -16,6 +17,11 @@ const OrderConfirmation = () => {
           <h2 className="text-2xl font-semibold mb-4 text-center text-green-700">
             Thank you for your purchase!
           </h2>
+          <img
+            src={purchaseGif}
+            alt="Purchase Confirmed"
+            className="mx-auto mb-6 w-48 h-48 object-contain"
+          />
           <p className="text-center text-gray-700 mb-6">
             Your order has been confirmed and will be shipped shortly.
           </p>

@@ -4,6 +4,7 @@ import { useAppSelector } from "../hooks";
 import { toast } from "react-hot-toast";
 import { getCartByUserId, removeCartItem, Cart as CartType } from "../api/Cart";
 import { formatPrice } from "../utils/formatPrice";
+import emptyCartGif from "../assets/cart.gif";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -24,7 +25,6 @@ const Cart = () => {
         setCart(userCart);
       } catch (error) {
         console.error("Error fetching cart:", error);
-        toast.error("Failed to load cart. Please try again later.");
         setCart(null);
       } finally {
         setLoading(false);
@@ -87,18 +87,17 @@ const Cart = () => {
         <div className="text-center">
           <h2 className="text-2xl font-semibold text-gray-800">Your Cart</h2>
           <p className="mt-2 text-gray-600">Your cart is empty</p>
+          <img
+            src={emptyCartGif}
+            alt="Empty Cart"
+            className="mx-auto mt-6 mb-4 w-48 h-48 object-contain"
+          />
           <div className="mt-4 space-x-4">
             <button
               onClick={() => navigate("/shop")}
-              className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors"
+              className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors"
             >
               Continue Shopping
-            </button>
-            <button
-              onClick={() => navigate("/checkout")}
-              className="bg-secondary text-white px-6 py-2 rounded-md hover:bg-secondary-dark transition-colors"
-            >
-              Order
             </button>
           </div>
         </div>

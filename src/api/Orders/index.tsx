@@ -34,6 +34,7 @@ export interface Order {
   note?: string;
   buyerName?: string;
   sellerName?: string;
+  productIds?: string[];
 }
 
 export interface OrderResponse {
@@ -183,6 +184,28 @@ export const deleteOrder = async (orderId: string): Promise<boolean> => {
       toast.error("An unexpected error occurred");
     }
     return false;
+  }
+};
+
+export const updateOrderPaymentStatus = async (
+  orderId: string,
+  paymentStatus: Order["paymentStatus"]
+): Promise<Order | null> => {
+  try {
+    const response = await customFetch.patch<OrderResponse>(
+      `/orders/${orderId}/payment-status?paymentStatus=${paymentStatus}`
+    );
+    toast.success("Order payment status updated successfully!");
+    return response.data.result;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      toast.error(
+        error.response?.data?.message || "Failed to update payment status"
+      );
+    } else {
+      toast.error("An unexpected error occurred");
+    }
+    return null;
   }
 };
 

@@ -52,11 +52,10 @@ export const getCartByUserId = async (userId: string): Promise<Cart | null> => {
     return response.data.result;
   } catch (error) {
     if (error instanceof AxiosError) {
-      toast.error(
-        error.response?.data?.message || "Failed to fetch cart by user ID"
+      console.error(
+        "Error fetching cart by user ID:",
+        error.response?.data?.message || "Unknown error"
       );
-    } else {
-      toast.error("An unexpected error occurred");
     }
     return null;
   }

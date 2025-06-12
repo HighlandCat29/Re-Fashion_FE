@@ -228,12 +228,6 @@ const SingleProduct = () => {
         <h2 className="text-2xl font-semibold text-gray-800">
           Product not found
         </h2>
-        <button
-          onClick={() => navigate("/shop")}
-          className="mt-4 px-6 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
-        >
-          Back to Shop
-        </button>
       </div>
     );
   }
@@ -252,7 +246,7 @@ const SingleProduct = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Product Images */}
         <div className="space-y-4">
-          <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-100">
+          <div className="w-96 h-96 mx-auto overflow-hidden rounded-lg bg-gray-100">
             <img
               src={product.imageUrls[0]}
               alt={product.title}
@@ -264,7 +258,7 @@ const SingleProduct = () => {
               {product.imageUrls.slice(1).map((url, index) => (
                 <div
                   key={index}
-                  className="aspect-w-1 aspect-h-1 overflow-hidden rounded-lg bg-gray-100"
+                  className="w-32 h-32 overflow-hidden rounded-lg bg-gray-100"
                 >
                   <img
                     src={url}
@@ -324,7 +318,7 @@ const SingleProduct = () => {
             {!isOwner && (
               <button
                 onClick={handleAddToCart}
-                className="flex-1 bg-primary border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                className="w-full bg-black text-white py-3 px-6 rounded-md hover:bg-gray-800 transition-colors duration-300 font-semibold"
               >
                 Add to Cart
               </button>
