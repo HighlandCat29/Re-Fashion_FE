@@ -1,3 +1,4 @@
+import { CommentSection } from "../components/CommentSection";
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getProductById } from "../api/Products/index";
@@ -330,9 +331,8 @@ const SingleProduct = () => {
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className={`h-6 w-6 ${
-                    isInWishlist ? "text-red-500" : "text-gray-400"
-                  }`}
+                  className={`h-6 w-6 ${isInWishlist ? "text-red-500" : "text-gray-400"
+                    }`}
                   fill={isInWishlist ? "currentColor" : "none"}
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -363,6 +363,12 @@ const SingleProduct = () => {
               </p>
             )}
           </div>
+
+
+          {/* ────── Comments ────── */}
+          <CommentSection productId={product.id!} />
+
+
         </div>
       </div>
     </div>
