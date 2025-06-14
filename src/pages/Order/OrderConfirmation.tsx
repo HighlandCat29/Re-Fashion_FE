@@ -57,8 +57,36 @@ const OrderConfirmation = () => {
             </div>
             <div className="flex justify-between">
               <span className="font-medium">Payment Status:</span>
-              <span>{order.paymentStatus || "Pending"}</span>
+              <span
+                className={`px-2 py-1 rounded text-sm ${
+                  order.paymentStatus === "PAID"
+                    ? "bg-green-100 text-green-800"
+                    : order.paymentStatus === "PENDING"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {order.paymentStatus || "Pending"}
+              </span>
             </div>
+
+            {/* Payment Screenshot Section */}
+            {order.paymentScreenshotUrl && (
+              <div className="mt-6 border-t pt-6">
+                <h3 className="font-medium mb-4">Payment Confirmation:</h3>
+                <div className="flex flex-col items-center">
+                  <img
+                    src={order.paymentScreenshotUrl}
+                    alt="Payment Screenshot"
+                    className="max-w-xs rounded-lg shadow-md"
+                  />
+                  <p className="text-sm text-gray-600 mt-2">
+                    Payment screenshot has been uploaded successfully
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="mt-6">
               <span className="font-medium">Items:</span>
               <ul className="list-disc ml-6 mt-2">

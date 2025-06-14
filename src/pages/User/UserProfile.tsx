@@ -6,12 +6,16 @@ import {
   AdminUser,
 } from "../../api/Users/index";
 import { toast } from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { logout } from "../../api/Logout";
 import { useAppSelector } from "../../hooks";
 import { getProductsBySellerId, Product } from "../../api/Products/adminIndex";
 import { formatPrice } from "../../utils/formatPrice";
-import { getOrdersByBuyerID, Order } from "../../api/Orders/index";
+import {
+  getOrdersByBuyerID,
+  Order,
+  getOrdersBySellerId,
+} from "../../api/Orders/index";
 import { formatDate } from "../../utils/formatDate";
 import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../../config/cloudinary";
 
@@ -165,7 +169,7 @@ const UserProfile = () => {
     fetchUserProducts();
   }, [currentUserId]); // Depend on currentUserId
 
-  // Fetch User's Orders
+  // Fetch User's Orders (both buying and selling)
   useEffect(() => {
     const fetchUserOrders = async () => {
       if (!currentUserId) {
@@ -175,13 +179,22 @@ const UserProfile = () => {
 
       setLoadingOrders(true);
       try {
-        const ordersData = await getOrdersByBuyerID(currentUserId);
+        const buyingOrders = await getOrdersByBuyerID(currentUserId);
+        const sellingOrders = await getOrdersBySellerId(currentUserId);
 
-        if (Array.isArray(ordersData)) {
-          setOrders(ordersData);
-        } else {
-          setOrders([]); // Ensure it's always an array
-        }
+        const combinedOrders = [
+          ...(buyingOrders || []),
+          ...(sellingOrders || []),
+        ];
+
+        // Remove duplicates if an order appears in both (e.g., if buyer is also seller)
+        const uniqueOrders = Array.from(
+          new Map(
+            combinedOrders.map((order) => [order.orderId, order])
+          ).values()
+        );
+
+        setOrders(uniqueOrders);
       } catch (err) {
         console.error("Failed to load user orders:", err);
         toast.error("Failed to load your order history.");
@@ -266,6 +279,23 @@ const UserProfile = () => {
     } finally {
       setLoadingProfile(false);
     }
+  };
+
+  // Filter orders for the "Current Buying Orders" section
+  const filteredBuyingOrders = orders.filter(
+    (order) => order.buyerId === currentUserId
+  );
+
+  // Helper to get status color (matches OrdersManagement)
+  const getStatusColor = (status: Order["status"]) => {
+    const colors = {
+      PENDING: "bg-yellow-100 text-yellow-800",
+      PROCESSING: "bg-blue-100 text-blue-800",
+      SHIPPED: "bg-purple-100 text-purple-800",
+      DELIVERED: "bg-green-100 text-green-800",
+      CANCELLED: "bg-red-100 text-red-800",
+    };
+    return colors[status] || "bg-gray-100 text-gray-800";
   };
 
   if (loadingProfile)
@@ -518,80 +548,210 @@ const UserProfile = () => {
           </div>
         )}
       </section>
-      {/* Orders History Section */}
-      <section className="space-y-4 mt-8">
-        <h3 className="text-xl font-semibold text-black">Order History</h3>
+      {/* Current Selling Orders Section */}
+      <section className="mt-8">
+        <h3 className="text-xl font-semibold text-black mb-4">
+          Current Selling Orders
+        </h3>
         {loadingOrders ? (
-          <p className="text-center text-gray-500">Loading orders...</p>
+          <p className="text-center py-4">Loading orders...</p>
+        ) : orders.filter((order) => order.sellerId === currentUserId)
+            .length === 0 ? (
+          <p className="text-center py-4 text-gray-500">
+            No current selling orders.
+          </p>
         ) : (
-          <div>
-            {orders && orders.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 rounded-lg shadow-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Order ID
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Items
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-100">
-                    {orders.map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {order.id}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(order.createdAt)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {order.totalAmount?.toLocaleString("vi-VN", {
-                            style: "currency",
-                            currency: "VND",
-                          })}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              order.status === "CONFIRMED"
-                                ? "bg-green-100 text-green-800"
-                                : order.status === "PENDING"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <ul className="list-disc list-inside">
-                            {order.items?.map((item, itemIdx) => (
-                              <li key={itemIdx}>
-                                {item.productName} x {item.quantity}
-                              </li>
-                            ))}
-                          </ul>
-                        </td>
-                      </tr>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {orders
+              .filter((order) => order.sellerId === currentUserId)
+              .map((order) => (
+                <div
+                  key={order.orderId}
+                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  <h4 className="font-medium text-lg mb-2">
+                    Order ID: {order.orderId}
+                  </h4>
+                  <p className="text-gray-600 mb-2">
+                    Buyer: {order.buyerName || "Unknown Buyer"}
+                  </p>
+                  <p className="text-primary font-semibold mb-2">
+                    Total: {formatPrice(order.totalAmount)}
+                  </p>
+                  <p className="text-gray-600 mb-2">
+                    Order Date: {formatDate(order.createdAt)}
+                  </p>
+                  <p className="text-gray-600 mb-2">
+                    Shipping Address: {order.shippingAddress}
+                  </p>
+                  <div className="flex items-center justify-between mt-3">
+                    <span
+                      className={`px-2 py-1 rounded text-sm ${getStatusColor(
+                        order.status
+                      )}`}
+                    >
+                      {order.status}
+                    </span>
+                    <span
+                      className={`ml-2 px-2 py-1 rounded text-sm ${
+                        order.paymentStatus === "PAID"
+                          ? "bg-green-100 text-green-800"
+                          : order.paymentStatus === "PENDING"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {order.paymentStatus || "N/A"}
+                    </span>
+                  </div>
+                  <h4 className="mt-3 text-md font-semibold">Items:</h4>
+                  <ul className="list-disc list-inside ml-4 text-gray-700">
+                    {order.items?.map((item, index) => (
+                      <li key={index}>
+                        {item.productName} (x{item.quantity}) -{" "}
+                        {formatPrice(item.price)}
+                      </li>
                     ))}
-                  </tbody>
-                </table>
+                  </ul>
+                  <div className="mt-2">
+                    {order.paymentScreenshotUrl && (
+                      <p className="text-gray-600 text-sm mb-1">
+                        Payment Screenshot:
+                      </p>
+                    )}
+                    {order.paymentScreenshotUrl && (
+                      <img
+                        src={order.paymentScreenshotUrl}
+                        alt="Payment Screenshot"
+                        className="w-32 h-32 object-cover rounded-md shadow"
+                      />
+                    )}
+                  </div>
+                  <div className="mt-4">
+                    <Link
+                      to={`/seller-order/${order.orderId}/status`}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                    >
+                      <span>View Order Status</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
+      </section>
+      {/* Current Buying Orders Section */}
+      <section className="mt-8">
+        <h3 className="text-xl font-semibold text-black mb-4">
+          Current Buying Orders
+        </h3>
+        {loadingOrders ? (
+          <p className="text-center py-4">Loading your orders...</p>
+        ) : filteredBuyingOrders.length === 0 ? (
+          <p className="text-center py-4 text-gray-500">
+            No current buying orders.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredBuyingOrders.map((order) => (
+              <div
+                key={order.orderId}
+                className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+              >
+                <h4 className="font-medium text-lg mb-2">
+                  Order ID: {order.orderId}
+                </h4>
+                <p className="text-gray-600 mb-2">Seller: {order.sellerName}</p>
+                <p className="text-primary font-semibold mb-2">
+                  Total: {formatPrice(order.totalAmount)}
+                </p>
+                <p className="text-gray-600 mb-2">
+                  Order Date: {formatDate(order.createdAt)}
+                </p>
+                <p className="text-gray-600 mb-2">
+                  Shipping Address: {order.shippingAddress}
+                </p>
+                <div className="flex items-center justify-between mt-3">
+                  <span
+                    className={`px-2 py-1 rounded text-sm ${getStatusColor(
+                      order.status
+                    )}`}
+                  >
+                    {order.status}
+                  </span>
+                  <span
+                    className={`ml-2 px-2 py-1 rounded text-sm ${
+                      order.paymentStatus === "PAID"
+                        ? "bg-green-100 text-green-800"
+                        : order.paymentStatus === "PENDING"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {order.paymentStatus || "N/A"}
+                  </span>
+                </div>
+                <h4 className="mt-3 text-md font-semibold">Items:</h4>
+                <ul className="list-disc list-inside ml-4 text-gray-700">
+                  {order.items?.map((item, index) => (
+                    <li key={index}>
+                      {item.productName} (x{item.quantity}) -{" "}
+                      {formatPrice(item.price)}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-2">
+                  {order.paymentScreenshotUrl && (
+                    <p className="text-gray-600 text-sm mb-1">
+                      Payment Screenshot:
+                    </p>
+                  )}
+                  {order.paymentScreenshotUrl && (
+                    <img
+                      src={order.paymentScreenshotUrl}
+                      alt="Payment Screenshot"
+                      className="w-32 h-32 object-cover rounded-md shadow"
+                    />
+                  )}
+                </div>
+                <div className="mt-4">
+                  <Link
+                    to={`/order/${order.orderId}/status`}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                  >
+                    <span>View Order Status</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </Link>
+                </div>
               </div>
-            ) : (
-              <p className="text-center text-gray-500">No orders found.</p>
-            )}
+            ))}
           </div>
         )}
       </section>

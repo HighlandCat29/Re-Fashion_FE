@@ -1,12 +1,16 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { uploadPaymentScreenshot } from "../api/Orders";
+import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../config/cloudinary";
 
 const Payment = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const order = location.state?.order;
   const [paymentScreenshot, setPaymentScreenshot] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -14,15 +18,71 @@ const Payment = () => {
     }
   };
 
-  const handleConfirmPayment = () => {
+  const uploadImageToCloudinary = async (
+    file: File
+  ): Promise<string | null> => {
+    setUploadingImage(true);
+    try {
+      const cloudinaryFormData = new FormData();
+      cloudinaryFormData.append("file", file);
+      cloudinaryFormData.append("upload_preset", UPLOAD_PRESET);
+      cloudinaryFormData.append("cloud_name", "dnrxylpid"); // Replace with your Cloudinary cloud name
+
+      const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+        method: "POST",
+        body: cloudinaryFormData,
+      });
+
+      const data = await response.json();
+
+      if (data.secure_url) {
+        toast.success("Screenshot uploaded successfully!");
+        return data.secure_url;
+      } else {
+        throw new Error(data.error?.message || "Failed to upload image");
+      }
+    } catch (error) {
+      console.error("Cloudinary upload error:", error);
+      toast.error("Failed to upload image to Cloudinary.");
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleConfirmPayment = async () => {
     if (!paymentScreenshot) {
       toast.error("Please upload a payment screenshot.");
       return;
     }
-    // Here you would typically send the screenshot to your backend
-    // For now, we'll just navigate to the confirmation page
-    toast.success("Payment confirmed!");
-    navigate("/order-confirmation", { state: { order } });
+
+    if (!order?.id) {
+      toast.error("Order details not found. Cannot confirm payment.");
+      return;
+    }
+
+    setConfirmingPayment(true);
+
+    try {
+      const imageUrl = await uploadImageToCloudinary(paymentScreenshot);
+
+      if (imageUrl) {
+        const updatedOrder = await uploadPaymentScreenshot(order.id, imageUrl);
+        if (updatedOrder) {
+          toast.success("Payment confirmed and screenshot uploaded!");
+          navigate("/order-confirmation", { state: { order: updatedOrder } });
+        } else {
+          toast.error("Failed to update order with payment screenshot.");
+        }
+      } else {
+        toast.error("Image upload failed.");
+      }
+    } catch (error) {
+      console.error("Error confirming payment:", error);
+      toast.error("Failed to confirm payment.");
+    } finally {
+      setConfirmingPayment(false);
+    }
   };
 
   if (!order) {
@@ -76,7 +136,11 @@ const Payment = () => {
               accept="image/*"
               onChange={handleFileChange}
               className="mb-4 p-2 border border-gray-300 rounded-md"
+              disabled={uploadingImage || confirmingPayment}
             />
+            {uploadingImage && (
+              <p className="text-blue-500 text-sm mt-1">Uploading image...</p>
+            )}
             {paymentScreenshot && (
               <img
                 src={URL.createObjectURL(paymentScreenshot)}
@@ -86,14 +150,16 @@ const Payment = () => {
             )}
             <button
               onClick={handleConfirmPayment}
-              disabled={!paymentScreenshot}
+              disabled={
+                !paymentScreenshot || uploadingImage || confirmingPayment
+              }
               className={`text-white bg-black text-center text-xl font-normal tracking-[0.6px] leading-[72px] w-[200px] h-12 flex items-center justify-center max-md:text-base rounded-lg shadow ${
-                !paymentScreenshot
+                !paymentScreenshot || uploadingImage || confirmingPayment
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:bg-gray-800 transition-colors"
               }`}
             >
-              Confirm Payment
+              {confirmingPayment ? "Confirming..." : "Confirm Payment"}
             </button>
           </div>
         </div>

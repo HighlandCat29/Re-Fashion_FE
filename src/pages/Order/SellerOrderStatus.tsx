@@ -1,0 +1,399 @@
+import React from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  getOrderById,
+  Order,
+  OrderItem,
+  shipConfirm,
+  updateOrderStatus,
+} from "../../api/Orders";
+import { getUserById } from "../../api/Users";
+import { toast } from "react-hot-toast";
+import { useAppSelector } from "../../hooks";
+import { formatPrice } from "../../utils/formatPrice";
+import { formatDate } from "../../utils/formatDate";
+import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../../config/cloudinary";
+
+const SellerOrderStatus = () => {
+  const { orderId } = useParams();
+  const navigate = useNavigate();
+  const { user: loggedInUser } = useAppSelector((state) => state.auth);
+  const [order, setOrder] = React.useState<Order | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [buyerName, setBuyerName] = React.useState<string>("");
+  const [packageImage, setPackageImage] = React.useState<string>("");
+  const [uploading, setUploading] = React.useState(false);
+  const [shipLoading, setShipLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    const fetchOrder = async () => {
+      if (!orderId || !loggedInUser?.id) return;
+      try {
+        // Fetch the order directly by ID, as the seller needs to see any order they are involved in.
+        const currentOrder = await getOrderById(orderId);
+
+        // Verify that the logged-in user is indeed the seller for this order
+        if (currentOrder && currentOrder.sellerId === loggedInUser.id) {
+          setOrder(currentOrder);
+          // Fetch buyer name if buyerId exists
+          if (currentOrder.buyerId) {
+            const buyer = await getUserById(currentOrder.buyerId);
+            if (buyer) {
+              setBuyerName(buyer.fullName);
+            }
+          }
+        } else if (currentOrder && currentOrder.sellerId !== loggedInUser.id) {
+          toast.error("You are not authorized to view this order.");
+          navigate("/user-profile");
+        } else {
+          toast.error("Order not found");
+          navigate("/user-profile");
+        }
+      } catch (error) {
+        toast.error("Failed to fetch order details");
+        navigate("/user-profile");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrder();
+  }, [orderId, loggedInUser?.id, navigate]);
+
+  const statusSteps = [
+    { id: "PENDING", label: "Order Placed" },
+    { id: "PROCESSING", label: "Processing" },
+    { id: "SHIPPED", label: "Shipped" },
+    { id: "DELIVERED", label: "Delivered" },
+    { id: "CANCELLED", label: "Cancelled" },
+  ];
+
+  // Helper to get status color (matches OrdersManagement)
+  const getStatusColor = (status: Order["status"]) => {
+    const colors = {
+      PENDING: "bg-yellow-100 text-yellow-800",
+      PROCESSING: "bg-blue-100 text-blue-800",
+      SHIPPED: "bg-purple-100 text-purple-800",
+      DELIVERED: "bg-green-100 text-green-800",
+      CANCELLED: "bg-red-100 text-red-800",
+    };
+    return colors[status] || "bg-gray-100 text-gray-800";
+  };
+
+  // Handler for package image upload
+  const handlePackageImageChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", UPLOAD_PRESET);
+      formData.append("cloud_name", "dnrxylpid");
+      const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      if (!data.secure_url) throw new Error("Failed to upload image");
+      setPackageImage(data.secure_url);
+      toast.success("Package image uploaded!");
+    } catch (err) {
+      toast.error("Failed to upload package image");
+      setPackageImage("");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Handler for confirming shipment
+  const handleShipConfirm = async () => {
+    if (!orderId || !loggedInUser?.id || !packageImage) {
+      toast.error("Missing information for shipping confirmation");
+      return;
+    }
+    setShipLoading(true);
+    try {
+      const shippedOrder = await shipConfirm(
+        orderId,
+        [packageImage],
+        loggedInUser.id
+      );
+      if (shippedOrder) {
+        await updateOrderStatus(orderId, "SHIPPED");
+        toast.success("Order marked as shipped!");
+        // Refresh order state
+        const refreshedOrder = await getOrderById(orderId);
+        setOrder(refreshedOrder);
+      }
+    } catch (err) {
+      toast.error("Failed to confirm shipment");
+    } finally {
+      setShipLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">Loading...</div>
+    );
+  }
+
+  if (!order) {
+    return <div className="text-center mt-8">Order not found</div>;
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto p-6 bg-white rounded-2xl shadow-lg mt-8">
+      <h2 className="text-2xl font-bold mb-8">Order Status (Seller View)</h2>
+
+      {/* Order Status Roadmap */}
+      <div className="mb-12">
+        <h3 className="text-lg font-semibold mb-4">Order Progress</h3>
+        <div className="relative">
+          <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-200 -translate-y-1/2"></div>
+          <div className="relative flex justify-between">
+            {statusSteps.map((step, index) => {
+              const isActive =
+                order.status === "CANCELLED"
+                  ? step.id === "CANCELLED"
+                  : statusSteps.findIndex((s) => s.id === order.status) >=
+                    index;
+              const stepColor = isActive
+                ? getStatusColor(step.id as Order["status"])
+                : "bg-gray-200 text-gray-500";
+              return (
+                <div key={step.id} className="flex flex-col items-center">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${stepColor}`}
+                  >
+                    {index + 1}
+                  </div>
+                  <span
+                    className={`text-sm ${
+                      isActive
+                        ? stepColor.replace("bg-", "text-")
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        {order.status === "CANCELLED" && (
+          <p className="text-sm text-red-600 mt-2 text-center">
+            This order has been cancelled.
+          </p>
+        )}
+
+        {/* Status Descriptions */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-medium mb-2">
+              Current Status:{" "}
+              <span
+                className={`px-2 py-1 rounded text-sm ${getStatusColor(
+                  order.status
+                )}`}
+              >
+                {order.status}
+              </span>
+            </h4>
+            <p className="text-sm text-gray-600">
+              {order.status === "PENDING" &&
+                "The buyer has placed the order and it's awaiting your processing."}
+              {order.status === "PROCESSING" &&
+                "You are currently preparing and processing the order."}
+              {order.status === "SHIPPED" &&
+                "You have shipped the order, and it's on its way to the buyer."}
+              {order.status === "DELIVERED" &&
+                "The order has been successfully delivered to the buyer."}
+              {order.status === "CANCELLED" && "This order has been cancelled."}
+            </p>
+          </div>
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-medium mb-2">Next Steps</h4>
+            <p className="text-sm text-gray-600">
+              {order.status === "PENDING" &&
+                "Please process the order as soon as possible."}
+              {order.status === "PROCESSING" &&
+                'Prepare the shipment and update the order status to "SHIPPED".'}
+              {order.status === "SHIPPED" &&
+                "Monitor the delivery and ensure it reaches the buyer."}
+              {order.status === "DELIVERED" &&
+                "The order is complete. Ensure any post-delivery tasks are handled."}
+              {order.status === "CANCELLED" &&
+                "No further action required for this order."}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Status Section */}
+      <div className="mb-12">
+        <h3 className="text-lg font-semibold mb-4">Payment Status</h3>
+        <div className="flex items-center gap-4">
+          <div
+            className={`px-4 py-2 rounded-full text-sm font-medium ${
+              order.paymentStatus === "UNPAID"
+                ? "bg-red-100 text-red-800"
+                : order.paymentStatus === "PENDING"
+                ? "bg-yellow-100 text-yellow-800"
+                : order.paymentStatus === "PAID"
+                ? "bg-green-100 text-green-800"
+                : order.paymentStatus === "REFUNDED"
+                ? "bg-purple-100 text-purple-800"
+                : "bg-gray-100 text-gray-800"
+            }`}
+          >
+            {order.paymentStatus === "UNPAID"
+              ? "Unpaid"
+              : order.paymentStatus === "PENDING"
+              ? "Awaiting Your Confirmation"
+              : order.paymentStatus === "PAID"
+              ? "Payment Confirmed"
+              : order.paymentStatus === "REFUNDED"
+              ? "Refunded"
+              : "Unknown Status"}
+          </div>
+          {order.paymentStatus === "PENDING" && (
+            <p className="text-sm text-gray-600">
+              The buyer has submitted payment. Please confirm payment once
+              received.
+            </p>
+          )}
+          {order.paymentStatus === "UNPAID" && (
+            <p className="text-sm text-gray-600">
+              Payment is pending from the buyer.
+            </p>
+          )}
+          {order.paymentStatus === "PAID" && (
+            <p className="text-sm text-gray-600">Payment has been confirmed.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Ship Packaged Section */}
+      {order.status === "PROCESSING" && (
+        <div className="my-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+          <h3 className="text-lg font-semibold mb-4 text-blue-700">
+            Ship Packaged
+          </h3>
+          <p className="mb-2 text-gray-700">
+            Upload a photo of the packaged order before shipping:
+          </p>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handlePackageImageChange}
+            disabled={uploading || shipLoading}
+          />
+          {packageImage && (
+            <div className="mt-4">
+              <img
+                src={packageImage}
+                alt="Package Preview"
+                className="w-40 h-40 object-cover rounded shadow"
+              />
+            </div>
+          )}
+          <button
+            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+            onClick={handleShipConfirm}
+            disabled={!packageImage || uploading || shipLoading}
+          >
+            {shipLoading ? "Confirming..." : "Confirm Shipped"}
+          </button>
+        </div>
+      )}
+
+      {/* Order Details Card */}
+      <div className="border rounded-lg p-6 hover:shadow-md transition-shadow">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="font-medium text-lg">Order ID: {order.orderId}</h3>
+            <p className="text-gray-600">
+              Buyer: {buyerName || order.buyerName || "Unknown Buyer"}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <p className="text-gray-600">Order Date</p>
+            <p className="font-medium">{formatDate(order.createdAt)}</p>
+          </div>
+          <div>
+            <p className="text-gray-600">Total Amount</p>
+            <p className="font-medium text-primary">
+              {formatPrice(order.totalAmount)}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-600">Shipping Address</p>
+            <p className="font-medium">{order.shippingAddress}</p>
+          </div>
+        </div>
+
+        {/* Order Items */}
+        <div className="mt-6">
+          <h4 className="text-lg font-semibold mb-3">Order Items</h4>
+          <ul className="space-y-2">
+            {order.items?.map((item: OrderItem, index: number) => (
+              <li
+                key={index}
+                className="flex justify-between items-center p-2 bg-gray-50 rounded"
+              >
+                <span>
+                  {item.productName} (x{item.quantity})
+                </span>
+                <span className="font-medium">{formatPrice(item.price)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Payment Screenshot, Shipped Package Image, and Delivery Confirmation Image */}
+        <div className="mt-6 flex flex-wrap gap-8 items-start">
+          {order.paymentScreenshotUrl && (
+            <div>
+              <p className="text-gray-600 mb-2">Payment Screenshot:</p>
+              <img
+                src={order.paymentScreenshotUrl}
+                alt="Payment Screenshot"
+                className="w-32 h-32 object-cover rounded-md shadow"
+              />
+            </div>
+          )}
+          {order.sellerPackageImageUrl && (
+            <div>
+              <p className="text-gray-600 mb-2">Shipped Package Image:</p>
+              <img
+                src={order.sellerPackageImageUrl}
+                alt="Shipped Package"
+                className="w-32 h-32 object-cover rounded-md shadow"
+              />
+            </div>
+          )}
+          {order.buyerPackageImageUrl && (
+            <div>
+              <p className="text-gray-600 mb-2">Delivery Confirmation Image:</p>
+              <img
+                src={order.buyerPackageImageUrl}
+                alt="Delivery Confirmation"
+                className="w-32 h-32 object-cover rounded-md shadow"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SellerOrderStatus;

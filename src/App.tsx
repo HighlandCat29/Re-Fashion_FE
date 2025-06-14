@@ -20,8 +20,9 @@ import {
   SellProductList,
   EditProduct,
   OrderConfirmation,
-  Payment,
   CheckEmail,
+  BuyerOrderStatus,
+  SellerOrderStatus,
 } from "./pages";
 import { checkoutAction, searchAction } from "./actions/index";
 import { shopCategoryLoader } from "./pages/Shop";
@@ -145,12 +146,14 @@ const router = createBrowserRouter([
         element: <OrderConfirmation />,
       },
       {
-        path: "payment",
-        element: (
-          <AuthGuard>
-            <Payment />
-          </AuthGuard>
-        ),
+        path: "order/:orderId/status",
+        element: <BuyerOrderStatus />,
+        errorElement: <div>Error loading buyer order status.</div>,
+      },
+      {
+        path: "/seller-order/:orderId/status",
+        element: <SellerOrderStatus />,
+        errorElement: <div>Error loading seller order status.</div>,
       },
     ],
   },

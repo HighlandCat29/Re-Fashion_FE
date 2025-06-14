@@ -26,9 +26,12 @@ interface User {
 }
 
 interface Order {
-  id: number;
+  id: string;
   orderStatus: string;
   orderDate: string;
+  createdAt: string;
+  totalAmount: number;
+  status: string;
   data: {
     email: string;
   };

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   getAllOrders,
   updateOrderStatus,
-  updateOrderPaymentStatus,
+  updatePaymentStatus,
   Order,
   deleteOrder,
 } from "../../../api/Orders";
@@ -14,9 +14,6 @@ const OrdersManagement = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
-  const [updatingPaymentStatus, setUpdatingPaymentStatus] = useState<
-    string | null
-  >(null);
   const [selectedStatus, setSelectedStatus] = useState<Order["status"] | "ALL">(
     "ALL"
   );
@@ -27,6 +24,9 @@ const OrdersManagement = () => {
   const [userId, setUserId] = useState("");
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [updatingPaymentStatus, setUpdatingPaymentStatus] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     fetchOrders();
@@ -74,7 +74,12 @@ const OrdersManagement = () => {
           })
         );
         console.log("Setting orders with names and items:", ordersWithNames);
-        setOrders(ordersWithNames);
+        setOrders(
+          ordersWithNames.sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )
+        );
       } else {
         console.error("Invalid orders data received:", data);
         setOrders([]);
@@ -102,13 +107,12 @@ const OrdersManagement = () => {
     try {
       const updatedOrder = await updateOrderStatus(orderId, newStatus);
       if (updatedOrder) {
-        // Update the order in the local state
         setOrders(
-          orders.map((order) => (order.id === orderId ? updatedOrder : order))
+          orders.map((order) =>
+            order.orderId === orderId ? { ...order, status: newStatus } : order
+          )
         );
-        toast.success(`Order status updated to ${newStatus}`);
-      } else {
-        toast.error("Failed to update order status");
+        toast.success("Order status updated successfully!");
       }
     } catch (error) {
       console.error("Error updating order status:", error);
@@ -120,25 +124,59 @@ const OrdersManagement = () => {
 
   const handlePaymentStatusChange = async (
     orderId: string,
-    newPaymentStatus: Order["paymentStatus"]
+    newPaymentStatus: "UNPAID" | "PENDING" | "PAID" | "REFUNDED"
   ) => {
-    if (!orderId || !newPaymentStatus) {
-      toast.error("Invalid order or payment status");
+    console.log("Updating payment status:", { orderId, newPaymentStatus });
+
+    if (!orderId) {
+      toast.error("Order ID is required");
       return;
     }
+
+    if (!newPaymentStatus) {
+      toast.error("Payment status is required");
+      return;
+    }
+
     setUpdatingPaymentStatus(orderId);
     try {
-      const updatedOrder = await updateOrderPaymentStatus(
-        orderId,
-        newPaymentStatus
-      );
+      const updatedOrder = await updatePaymentStatus(orderId, newPaymentStatus);
       if (updatedOrder) {
-        setOrders(
-          orders.map((order) => (order.id === orderId ? updatedOrder : order))
-        );
-        toast.success(`Order payment status updated to ${newPaymentStatus}`);
-      } else {
-        toast.error("Failed to update payment status");
+        // If payment is confirmed, update order status to PROCESSING first
+        if (newPaymentStatus === "PAID") {
+          const order = orders.find((o) => o.orderId === orderId);
+          if (order && order.status === "PENDING") {
+            const statusUpdatedOrder = await updateOrderStatus(
+              orderId,
+              "PROCESSING"
+            );
+            if (statusUpdatedOrder) {
+              // Update both payment status and order status in the local state
+              setOrders(
+                orders.map((order) =>
+                  order.orderId === orderId
+                    ? {
+                        ...order,
+                        paymentStatus: newPaymentStatus,
+                        status: "PROCESSING",
+                      }
+                    : order
+                )
+              );
+              toast.success("Payment confirmed and order moved to processing");
+            }
+          }
+        } else {
+          // For other payment status changes, just update the payment status
+          setOrders(
+            orders.map((order) =>
+              order.orderId === orderId
+                ? { ...order, paymentStatus: newPaymentStatus }
+                : order
+            )
+          );
+          toast.success(`Payment status updated to ${newPaymentStatus}`);
+        }
       }
     } catch (error) {
       console.error("Error updating payment status:", error);
@@ -150,24 +188,15 @@ const OrdersManagement = () => {
 
   const handleDeleteOrder = async (orderId: string) => {
     if (window.confirm("Are you sure you want to delete this order?")) {
-      try {
-        const success = await deleteOrder(orderId);
-        if (success) {
-          setOrders(orders.filter((order) => order.id !== orderId));
-          toast.success("Order deleted successfully!");
-        } else {
-          toast.error("Failed to delete order.");
-        }
-      } catch (error) {
-        console.error("Error deleting order:", error);
-        toast.error("Failed to delete order.");
+      const success = await deleteOrder(orderId);
+      if (success) {
+        setOrders(orders.filter((order) => order.orderId !== orderId));
       }
     }
   };
 
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order);
-    console.log("Selected Order for Details:", order);
     setShowOrderDetailsModal(true);
   };
 
@@ -176,38 +205,10 @@ const OrdersManagement = () => {
     setSelectedOrder(null);
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString("vi-VN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch (error) {
-      console.error("Error formatting date:", error);
-      return "Invalid date";
-    }
-  };
-
-  const formatCurrency = (amount: number) => {
-    try {
-      return new Intl.NumberFormat("vi-VN", {
-        style: "currency",
-        currency: "VND",
-      }).format(amount);
-    } catch (error) {
-      console.error("Error formatting currency:", error);
-      return "Invalid amount";
-    }
-  };
-
   const getStatusColor = (status: Order["status"]) => {
     const colors = {
       PENDING: "bg-yellow-100 text-yellow-800",
-      CONFIRMED: "bg-blue-100 text-blue-800",
+      PROCESSING: "bg-blue-100 text-blue-800",
       SHIPPED: "bg-purple-100 text-purple-800",
       DELIVERED: "bg-green-100 text-green-800",
       CANCELLED: "bg-red-100 text-red-800",
@@ -275,7 +276,7 @@ const OrdersManagement = () => {
             >
               <option value="ALL">All Orders</option>
               <option value="PENDING">Pending</option>
-              <option value="CONFIRMED">Confirmed</option>
+              <option value="PROCESSING">Processing</option>
               <option value="SHIPPED">Shipped</option>
               <option value="DELIVERED">Delivered</option>
               <option value="CANCELLED">Cancelled</option>
@@ -387,14 +388,70 @@ const OrdersManagement = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
+                  <tr key={order.orderId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleViewDetails(order)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-4"
-                      >
-                        View Details
-                      </button>
+                      <div className="flex flex-col space-y-2">
+                        <button
+                          onClick={() => handleViewDetails(order)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          View Details
+                        </button>
+                        {order.paymentScreenshotUrl && (
+                          <div className="mt-2">
+                            <p className="text-xs text-gray-500 mb-1">
+                              Payment Screenshot:
+                            </p>
+                            <img
+                              src={order.paymentScreenshotUrl}
+                              alt="Payment Screenshot"
+                              className="w-16 h-16 object-cover rounded-md cursor-pointer"
+                              onClick={() =>
+                                window.open(
+                                  order.paymentScreenshotUrl,
+                                  "_blank"
+                                )
+                              }
+                            />
+                          </div>
+                        )}
+                        {order.sellerPackageImageUrl && (
+                          <div className="mt-2">
+                            <p className="text-xs text-gray-500 mb-1">
+                              Seller Package:
+                            </p>
+                            <img
+                              src={order.sellerPackageImageUrl}
+                              alt="Seller Package"
+                              className="w-16 h-16 object-cover rounded-md cursor-pointer"
+                              onClick={() =>
+                                window.open(
+                                  order.sellerPackageImageUrl,
+                                  "_blank"
+                                )
+                              }
+                            />
+                          </div>
+                        )}
+                        {order.buyerPackageImageUrl && (
+                          <div className="mt-2">
+                            <p className="text-xs text-gray-500 mb-1">
+                              Buyer Package:
+                            </p>
+                            <img
+                              src={order.buyerPackageImageUrl}
+                              alt="Buyer Package"
+                              className="w-16 h-16 object-cover rounded-md cursor-pointer"
+                              onClick={() =>
+                                window.open(
+                                  order.buyerPackageImageUrl,
+                                  "_blank"
+                                )
+                              }
+                            />
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {order.buyerName}
@@ -411,45 +468,67 @@ const OrdersManagement = () => {
                         {order.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <select
-                        value={order.paymentStatus || "UNPAID"} // Default to UNPAID if null
-                        onChange={(e) =>
-                          handlePaymentStatusChange(
-                            order.id,
-                            e.target.value as Order["paymentStatus"]
-                          )
-                        }
-                        disabled={updatingPaymentStatus === order.id}
-                        className={`mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md ${
-                          updatingPaymentStatus === order.id
-                            ? "opacity-50 cursor-not-allowed"
-                            : ""
+                        value={order.paymentStatus || "UNPAID"}
+                        onChange={(e) => {
+                          const newStatus = e.target.value as
+                            | "UNPAID"
+                            | "PENDING"
+                            | "PAID"
+                            | "REFUNDED";
+                          console.log(
+                            "Selected new status:",
+                            newStatus,
+                            "for order:",
+                            order.orderId
+                          );
+                          if (order.orderId) {
+                            handlePaymentStatusChange(order.orderId, newStatus);
+                          } else {
+                            toast.error("Order ID is missing");
+                          }
+                        }}
+                        disabled={updatingPaymentStatus === order.orderId}
+                        className={`px-2 py-1 rounded text-sm ${
+                          order.paymentStatus === "PAID"
+                            ? "bg-green-100 text-green-800"
+                            : order.paymentStatus === "PENDING"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : order.paymentStatus === "UNPAID"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-orange-100 text-orange-800"
                         }`}
                       >
-                        <option value="PAID">PAID</option>
-                        <option value="UNPAID">UNPAID</option>
-                        <option value="REFUNDED">REFUNDED</option>
+                        <option value="UNPAID">Unpaid</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="PAID">Paid</option>
+                        <option value="REFUNDED">Refunded</option>
                       </select>
+                      {updatingPaymentStatus === order.orderId && (
+                        <span className="ml-2 text-sm text-gray-500">
+                          Updating...
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <select
                         value={order.status}
                         onChange={(e) =>
                           handleStatusChange(
-                            order.id,
+                            order.orderId,
                             e.target.value as Order["status"]
                           )
                         }
-                        disabled={updatingStatus === order.id}
+                        disabled={updatingStatus === order.orderId}
                         className={`mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md ${
-                          updatingStatus === order.id
+                          updatingStatus === order.orderId
                             ? "opacity-50 cursor-not-allowed"
                             : ""
                         }`}
                       >
                         <option value="PENDING">Pending</option>
-                        <option value="CONFIRMED">Confirmed</option>
+                        <option value="PROCESSING">Processing</option>
                         <option value="SHIPPED">Shipped</option>
                         <option value="DELIVERED">Delivered</option>
                         <option value="CANCELLED">Cancelled</option>
@@ -457,7 +536,7 @@ const OrdersManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        onClick={() => handleDeleteOrder(order.id)}
+                        onClick={() => handleDeleteOrder(order.orderId)}
                         className="text-red-600 hover:text-red-900"
                       >
                         Delete
@@ -474,10 +553,10 @@ const OrdersManagement = () => {
       {/* Order Details Modal */}
       {showOrderDetailsModal && selectedOrder && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex justify-center items-center">
-          <div className="relative p-8 bg-white w-full max-w-2xl mx-auto rounded-lg shadow-lg">
+          <div className="relative p-8 bg-white w-full max-w-4xl mx-auto rounded-lg shadow-lg">
             <div className="flex justify-between items-center pb-3 border-b border-gray-200">
               <h3 className="text-2xl font-semibold text-gray-900">
-                Order Details (ID: {selectedOrder.id})
+                Order Details (ID: {selectedOrder.orderId})
               </h3>
               <button
                 className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center"
@@ -497,86 +576,104 @@ const OrdersManagement = () => {
                 </svg>
               </button>
             </div>
-            <div className="mt-4 space-y-3 text-gray-700">
-              <p>
-                <strong>Order ID:</strong> {selectedOrder.id}
-              </p>
-              <p>
-                <strong>Buyer:</strong> {selectedOrder.buyerName}
-              </p>
-              <p>
-                <strong>Seller:</strong> {selectedOrder.sellerName}
-              </p>
-              <p>
-                <strong>Shipping Address:</strong>{" "}
-                {selectedOrder.shippingAddress}
-              </p>
-              {selectedOrder.productIds &&
-                selectedOrder.productIds.length > 0 && (
+            <div className="mt-4 grid grid-cols-2 gap-8">
+              {/* Left Column - Order Information */}
+              <div className="space-y-3 text-gray-700">
+                <p>
+                  <strong>Order ID:</strong> {selectedOrder.orderId}
+                </p>
+                <p>
+                  <strong>Buyer:</strong> {selectedOrder.buyerName}
+                </p>
+                <p>
+                  <strong>Seller:</strong> {selectedOrder.sellerName}
+                </p>
+                <p>
+                  <strong>Shipping Address:</strong>{" "}
+                  {selectedOrder.shippingAddress}
+                </p>
+                <p>
+                  <strong>Status:</strong> {selectedOrder.status}
+                </p>
+                <p className="text-gray-700">
+                  <strong>Payment Status:</strong> {selectedOrder.paymentStatus}
+                </p>
+                <p>
+                  <strong>Total Amount:</strong>{" "}
+                  {selectedOrder.totalAmount?.toLocaleString("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                  })}
+                </p>
+                <p>
+                  <strong>Order Date:</strong>{" "}
+                  {new Date(selectedOrder.createdAt).toLocaleString()}
+                </p>
+                {selectedOrder.deliveryTrackingNumber && (
                   <p>
-                    <strong>Product IDs:</strong>{" "}
-                    {selectedOrder.productIds.join(", ")}
+                    <strong>Tracking Number:</strong>{" "}
+                    {selectedOrder.deliveryTrackingNumber}
                   </p>
                 )}
-              <p>
-                <strong>Total Amount:</strong>{" "}
-                {formatCurrency(selectedOrder.totalAmount || 0)}
-              </p>
-              <p>
-                <strong>Status:</strong>{" "}
-                <span
-                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                    selectedOrder.status
-                  )}`}
-                >
-                  {selectedOrder.status}
-                </span>
-              </p>
-              <p>
-                <strong>Payment Status:</strong>{" "}
-                {selectedOrder.paymentStatus || "N/A"}
-              </p>
-              <p>
-                <strong>Order Date:</strong>{" "}
-                {formatDate(selectedOrder.createdAt)}
-              </p>
-              {selectedOrder.deliveryTrackingNumber && (
-                <p>
-                  <strong>Tracking Number:</strong>{" "}
-                  {selectedOrder.deliveryTrackingNumber}
-                </p>
-              )}
-              {selectedOrder.note && (
-                <p>
-                  <strong>Note:</strong> {selectedOrder.note}
-                </p>
-              )}
+              </div>
 
-              <h4 className="font-semibold mt-4 mb-2">Items:</h4>
-              <ul className="list-disc pl-5">
-                {selectedOrder.items?.map((item, idx) => (
-                  <li key={idx} className="mb-2 flex items-center space-x-2">
-                    {item.productImage && (
+              {/* Right Column - Images */}
+              <div className="space-y-4">
+                {selectedOrder.paymentScreenshotUrl && (
+                  <div>
+                    <p className="font-semibold mb-2">Payment Screenshot:</p>
+                    <div className="flex justify-center">
                       <img
-                        src={item.productImage}
-                        alt={item.productName}
-                        className="w-12 h-12 object-cover rounded-md"
+                        src={selectedOrder.paymentScreenshotUrl}
+                        alt="Payment Screenshot"
+                        className="max-w-[200px] h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                        onClick={() =>
+                          window.open(
+                            selectedOrder.paymentScreenshotUrl,
+                            "_blank"
+                          )
+                        }
                       />
-                    )}
-                    <span>
-                      {item.productName} - {formatCurrency(item.price)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="flex justify-end pt-4 border-t border-gray-200 mt-6">
-              <button
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-                onClick={closeOrderDetailsModal}
-              >
-                Close
-              </button>
+                    </div>
+                  </div>
+                )}
+                {selectedOrder.sellerPackageImageUrl && (
+                  <div>
+                    <p className="font-semibold mb-2">Seller Package Image:</p>
+                    <div className="flex justify-center">
+                      <img
+                        src={selectedOrder.sellerPackageImageUrl}
+                        alt="Seller Package"
+                        className="max-w-[200px] h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                        onClick={() =>
+                          window.open(
+                            selectedOrder.sellerPackageImageUrl,
+                            "_blank"
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+                {selectedOrder.buyerPackageImageUrl && (
+                  <div>
+                    <p className="font-semibold mb-2">Buyer Package Image:</p>
+                    <div className="flex justify-center">
+                      <img
+                        src={selectedOrder.buyerPackageImageUrl}
+                        alt="Buyer Package"
+                        className="max-w-[200px] h-auto rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                        onClick={() =>
+                          window.open(
+                            selectedOrder.buyerPackageImageUrl,
+                            "_blank"
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

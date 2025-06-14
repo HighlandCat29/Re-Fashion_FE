@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useLoaderData, useNavigate } from "react-router-dom";
-import customFetch from "../../axios/custom";
 import { formatDate } from "../../utils/formatDate";
+import { getOrdersByBuyerID } from "../../api/Orders";
 
 export const loader = async () => {
   try {
-    const response = await customFetch.get("/orders/history");
-
-    return response.data;
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!user?.id) {
+      return [];
+    }
+    const response = await getOrdersByBuyerID(user.id);
+    return response || [];
   } catch (error) {
     console.error("Failed to fetch orders:", error);
     return [];
@@ -43,34 +46,28 @@ const OrderHistory = () => {
             </tr>
           </thead>
           <tbody>
-            {orders.map(
-              (order) =>
-                order?.user &&
-                order.user.id === user.id && (
-                  <tr key={order.id}>
-                    <td className="py-3 px-4 border-b text-center">
-                      {order.id}
-                    </td>
-                    <td className="py-3 px-4 border-b text-center">
-                      {formatDate(order.orderDate)}
-                    </td>
-                    <td className="py-3 px-4 border-b text-center">
-                      ${order.subtotal + 5 + order.subtotal / 5}
-                    </td>
-                    <td className="py-3 px-4 border-b text-center">
-                      {order.orderStatus}
-                    </td>
-                    <td className="py-3 px-4 border-b text-center">
-                      <Link
-                        to={`/order-history/${order.id}`}
-                        className="text-blue-500 hover:underline"
-                      >
-                        View Details
-                      </Link>
-                    </td>
-                  </tr>
-                )
-            )}
+            {orders.map((order) => (
+              <tr key={order.id}>
+                <td className="py-3 px-4 border-b text-center">{order.id}</td>
+                <td className="py-3 px-4 border-b text-center">
+                  {formatDate(order.createdAt)}
+                </td>
+                <td className="py-3 px-4 border-b text-center">
+                  ${order.totalAmount.toFixed(2)}
+                </td>
+                <td className="py-3 px-4 border-b text-center">
+                  {order.status}
+                </td>
+                <td className="py-3 px-4 border-b text-center">
+                  <Link
+                    to={`/order-history/${order.id}`}
+                    className="text-blue-500 hover:underline"
+                  >
+                    View Details
+                  </Link>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
