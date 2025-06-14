@@ -1,37 +1,70 @@
+// src/components/CommentSection.tsx
 import React, { useEffect, useState } from "react";
 import { useAppSelector } from "../hooks";
-import { getCommentsByProduct, postComment, CommentDto } from "../api/comments";
 
-export const CommentSection: React.FC<{ productId: string }> = ({ productId }) => {
+// 1️⃣ Import your Users API
+import { getUserById, UserResponse } from "../api/Users";
+// 2️⃣ Import your Comments API
+import {
+    getCommentsByProduct,
+    postComment,
+    CommentDto,
+} from "../api/comments";
+
+type Props = { productId: string };
+
+export const CommentSection: React.FC<Props> = ({ productId }) => {
+    // a) Grab only the minimal auth object from Redux
     const authUser = useAppSelector((s) => s.auth.user)!;
-    const userId = authUser.id;
 
+    // b) Local state to hold the full UserResponse
+    const [profile, setProfile] = useState<UserResponse | null>(null);
+
+    // c) Fetch the full profile once we know authUser.id
+    useEffect(() => {
+        if (!authUser?.id) return;
+        getUserById(authUser.id)
+            .then((data) => {
+                if (data) setProfile(data);
+            })
+            .catch((err) => {
+                console.error("Failed to load user profile", err);
+            });
+    }, [authUser.id]);
+
+    // d) Compute the display name
+    const displayName =
+        profile?.username ?? profile?.fullName ?? "Anonymous";
+
+    // Comments state
     const [comments, setComments] = useState<CommentDto[]>([]);
     const [content, setContent] = useState("");
     const [loading, setLoading] = useState(true);
-    const [posting, setPosting] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
+    // Load existing comments
     useEffect(() => {
         setLoading(true);
         getCommentsByProduct(productId)
             .then((res) => setComments(res.data.result))
-            .catch(console.error)
+            .catch((err) => console.error("Load comments failed", err))
             .finally(() => setLoading(false));
     }, [productId]);
 
+    // Post a new comment
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!content.trim()) return;
 
-        setPosting(true);
+        setSubmitting(true);
         try {
-            const res = await postComment(productId, userId, content);
+            const res = await postComment(productId, authUser.id, content);
             setComments((prev) => [...prev, res.data.result]);
             setContent("");
         } catch (err) {
-            console.error(err);
+            console.error("Post comment failed", err);
         } finally {
-            setPosting(false);
+            setSubmitting(false);
         }
     };
 
@@ -59,23 +92,25 @@ export const CommentSection: React.FC<{ productId: string }> = ({ productId }) =
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-3">
                 <div className="text-sm text-gray-700">
-                    Commenting as <strong>{authUser.name} {authUser.lastname}</strong>
+                    Commenting as <strong>{displayName}</strong>
                 </div>
+
                 <textarea
                     placeholder="Write a comment…"
                     className="w-full border rounded px-3 py-2"
                     rows={4}
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    disabled={posting}
+                    disabled={submitting}
                     required
                 />
+
                 <button
                     type="submit"
                     className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-                    disabled={posting}
+                    disabled={submitting}
                 >
-                    {posting ? "Posting…" : "Post Comment"}
+                    {submitting ? "Posting…" : "Post Comment"}
                 </button>
             </form>
         </div>
