@@ -1,5 +1,5 @@
 // src/components/CommentSection.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useAppSelector } from "../hooks";
 import { getUserById, UserResponse } from "../api/Users";
 import {
@@ -11,57 +11,81 @@ import {
 type Props = { productId: string };
 
 export const CommentSection: React.FC<Props> = ({ productId }) => {
-    // 1) Minimal auth info from Redux (only has id + role)
+    // ─── Auth & profile ─────────────────────────────────
     const authUser = useAppSelector((s) => s.auth.user)!;
-
-    // 2) Local state for full profile
     const [profile, setProfile] = useState<UserResponse | null>(null);
-
-    // 3) Fetch full profile so we can read profile.username
     useEffect(() => {
         getUserById(authUser.id)
             .then((u) => u && setProfile(u))
             .catch(console.error);
     }, [authUser.id]);
-
-    // 4) Compute the display name from username
     const displayName = profile?.username ?? "Anonymous";
 
-    // ───────────────────────────────────────────────────────────
-    // Comments list & paging state
+    // ─── Comments state ────────────────────────────────
     const [comments, setComments] = useState<CommentDto[]>([]);
     const [content, setContent] = useState("");
     const [loading, setLoading] = useState(true);
     const [posting, setPosting] = useState(false);
 
-    const [page, setPage] = useState(1);
+    // ─── Pagination state ─────────────────────────────
+    const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 5;
     const pageCount = Math.ceil(comments.length / pageSize);
-    const pagedComments = comments.slice(
-        (page - 1) * pageSize,
-        (page - 1) * pageSize + pageSize
-    );
 
-    // Load comments on mount / when productId changes
+    // Load & sort newest-first
     useEffect(() => {
         setLoading(true);
         getCommentsByProduct(productId)
-            .then((res) => setComments(res.data.result))
+            .then((res) =>
+                setComments(
+                    [...res.data.result].sort(
+                        (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)
+                    )
+                )
+            )
             .catch(console.error)
             .finally(() => setLoading(false));
     }, [productId]);
 
-    // Handle posting a new comment
+    // Build the sliding window of pages
+    const { pages, leftDots, rightDots } = useMemo(() => {
+        const total = pageCount;
+        const current = currentPage;
+        const windowSize = 5;
+        // calculate start/end for window
+        let start = current - Math.floor(windowSize / 2);
+        if (start < 1) start = 1;
+        let end = start + windowSize - 1;
+        if (end > total) {
+            end = total;
+            start = Math.max(1, end - windowSize + 1);
+        }
+        // helper to build array
+        const range = (s: number, e: number) =>
+            Array.from({ length: e - s + 1 }, (_, i) => s + i);
+        return {
+            pages: range(start, end),
+            leftDots: start > 1,
+            rightDots: end < total,
+        };
+    }, [pageCount, currentPage]);
+
+    // Slice comments for current page
+    const pagedComments = comments.slice(
+        (currentPage - 1) * pageSize,
+        (currentPage - 1) * pageSize + pageSize
+    );
+
+    // ─── Submit handler ────────────────────────────────
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!content.trim()) return;
-
         setPosting(true);
         try {
             const res = await postComment(productId, authUser.id, content);
-            setComments((prev) => [...prev, res.data.result]);
+            setComments((prev) => [res.data.result, ...prev]);
+            setCurrentPage(1); // show newest
             setContent("");
-            setPage(pageCount + 1); // jump to last page when new comment arrives
         } catch (err) {
             console.error(err);
         } finally {
@@ -70,12 +94,12 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
     };
 
     return (
-        <div className="mt-8 space-y-4">
-            <h3 className="text-2xl font-semibold">Comments</h3>
+        <div className="mt-8 space-y-4 border-t pt-6 bg-black bg-opacity-20 p-6 rounded-lg">
+            <h3 className="text-2xl font-semibold text-black">Comments</h3>
 
-            {/* ─── New comment form at top ────────────────────────── */}
+            {/* New comment form */}
             <form onSubmit={handleSubmit} className="space-y-2">
-                <div className="text-sm text-gray-700">
+                <div className="text-sm text-gray-900">
                     Commenting as <strong>{displayName}</strong>
                 </div>
                 <textarea
@@ -96,13 +120,13 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
                 </button>
             </form>
 
-            {/* ─── Paged comments list ───────────────────────────── */}
+            {/* Comments list */}
             {loading ? (
-                <p>Loading comments…</p>
+                <p className="text-gray-100">Loading comments…</p>
             ) : pagedComments.length === 0 ? (
-                <p className="text-gray-600">No comments yet.</p>
+                <p className="text-gray-100">No comments yet.</p>
             ) : (
-                <ul className="space-y-4 max-h-96 ">
+                <ul className="space-y-4">
                     {pagedComments.map((c) => (
                         <li key={c.id} className="p-4 bg-gray-50 rounded-lg">
                             <div className="text-sm text-gray-500">
@@ -115,34 +139,44 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
                 </ul>
             )}
 
-            {/* ─── Pagination controls ─────────────────────────────:**/}
+            {/* Pagination */}
             {pageCount > 1 && (
-                <div className="flex justify-center space-x-2">
+                <div className="flex justify-center items-center space-x-2">
                     <button
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                        className="px-3 py-1 rounded disabled:opacity-50"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="px-2 py-1 rounded disabled:opacity-50 text-gray-100"
                     >
-                        ‹ Prev
+                        ‹
                     </button>
 
-                    {Array.from({ length: pageCount }, (_, i) => (
+                    {leftDots && (
+                        <span className="px-2 text-gray-100 select-none">…</span>
+                    )}
+
+                    {pages.map((p) => (
                         <button
-                            key={i}
-                            onClick={() => setPage(i + 1)}
-                            className={`px-3 py-1 rounded ${page === i + 1 ? "bg-blue-600 text-white" : "bg-gray-200"
+                            key={p}
+                            onClick={() => setCurrentPage(p)}
+                            className={`px-3 py-1 rounded ${currentPage === p ? "bg-blue-600 text-white" : "bg-gray-200"
                                 }`}
                         >
-                            {i + 1}
+                            {p}
                         </button>
                     ))}
 
+                    {rightDots && (
+                        <span className="px-2 text-gray-100 select-none">…</span>
+                    )}
+
                     <button
-                        onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                        disabled={page === pageCount}
-                        className="px-3 py-1 rounded disabled:opacity-50"
+                        onClick={() =>
+                            setCurrentPage((p) => Math.min(pageCount, p + 1))
+                        }
+                        disabled={currentPage === pageCount}
+                        className="px-2 py-1 rounded disabled:opacity-50 text-gray-100"
                     >
-                        Next ›
+                        ›
                     </button>
                 </div>
             )}
