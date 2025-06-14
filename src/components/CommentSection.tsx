@@ -69,7 +69,7 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
     };
 
     return (
-        <div className="mt-8 border-t pt-6">
+        <div className="mt-8 border-t pt-6 bg-black bg-opacity-20 p-6 rounded-lg">
             <h3 className="text-2xl font-semibold mb-4">Comments</h3>
 
             {loading ? (
@@ -77,7 +77,7 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
             ) : comments.length === 0 ? (
                 <p className="text-gray-600">No comments yet. Be the first!</p>
             ) : (
-                <ul className="space-y-4">
+                <ul className="space-y-6">
                     {comments.map((c) => (
                         <li key={c.id} className="p-4 bg-gray-50 rounded-lg">
                             <div className="text-sm text-gray-500">

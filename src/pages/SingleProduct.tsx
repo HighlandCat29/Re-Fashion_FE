@@ -273,7 +273,7 @@ const SingleProduct = () => {
         </div>
 
         {/* Product Info */}
-        <div className="md:col-span-1">
+        <div className="md:col-span-1 ">
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
             {product.title}
           </h1>
