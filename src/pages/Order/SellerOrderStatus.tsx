@@ -13,6 +13,7 @@ import { useAppSelector } from "../../hooks";
 import { formatPrice } from "../../utils/formatPrice";
 import { formatDate } from "../../utils/formatDate";
 import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../../config/cloudinary";
+import { Message } from "../../api/Message";
 
 const SellerOrderStatus = () => {
   const { orderId } = useParams();
@@ -25,6 +26,16 @@ const SellerOrderStatus = () => {
   const [uploading, setUploading] = React.useState(false);
   const [shipLoading, setShipLoading] = React.useState(false);
   const [showAdminRefundModal, setShowAdminRefundModal] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [unread, setUnread] = useState(false);
+  const [lastSeen, setLastSeen] = useState<number>(Date.now());
+  const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
+  const typingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const prevMessagesLength = React.useRef<number>(0);
 
   React.useEffect(() => {
     const fetchOrder = async () => {
@@ -134,6 +145,100 @@ const SellerOrderStatus = () => {
     } finally {
       setShipLoading(false);
     }
+  };
+
+  // Typing indicator logic using localStorage
+  React.useEffect(() => {
+    if (!showChat || !loggedInUser?.id) return;
+    const typingKey = `typing-${loggedInUser.id}-to-0e274421-7d98-4864-97e7-20dc05852138`;
+    if (input) {
+      localStorage.setItem(typingKey, "true");
+      setIsTyping(false); // Don't show for self
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        localStorage.setItem(typingKey, "false");
+      }, 1500);
+    } else {
+      localStorage.setItem(typingKey, "false");
+      setIsTyping(false);
+    }
+  }, [input, showChat, loggedInUser?.id]);
+
+  // Polling for messages and typing
+  const fetchMessages = React.useCallback(() => {
+    if (!loggedInUser?.id) return;
+    import("../../api/Message").then(({ getConversation }) => {
+      getConversation(
+        loggedInUser.id,
+        "0e274421-7d98-4864-97e7-20dc05852138"
+      ).then((msgs) => {
+        if (msgs) {
+          setMessages(msgs);
+          // Unread badge logic
+          if (
+            !showChat &&
+            msgs.length > 0 &&
+            new Date(msgs[msgs.length - 1].sentAt).getTime() > lastSeen
+          ) {
+            setUnread(true);
+          }
+        }
+      });
+    });
+    // Typing indicator: check if admin is typing
+    if (loggedInUser?.id) {
+      const typingKey = `typing-0e274421-7d98-4864-97e7-20dc05852138-to-${loggedInUser.id}`;
+      setIsTyping(localStorage.getItem(typingKey) === "true");
+    }
+  }, [loggedInUser?.id, showChat, lastSeen]);
+
+  React.useEffect(() => {
+    if (
+      showChat &&
+      loggedInUser &&
+      loggedInUser.id &&
+      "0e274421-7d98-4864-97e7-20dc05852138"
+    ) {
+      fetchMessages(); // Initial fetch
+      intervalRef.current = setInterval(fetchMessages, 2000); // Poll every 2 seconds
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [showChat, loggedInUser && loggedInUser.id, fetchMessages]);
+
+  React.useEffect(() => {
+    if (
+      messages.length > prevMessagesLength.current &&
+      messagesEndRef.current
+    ) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+    prevMessagesLength.current = messages.length;
+  }, [messages]);
+
+  // Mark as read when popup opens
+  React.useEffect(() => {
+    if (showChat) {
+      setUnread(false);
+      setLastSeen(Date.now());
+    }
+  }, [showChat, messages]);
+
+  const handleSend = async () => {
+    if (!input.trim() || !loggedInUser?.id) return;
+    setLoading(true);
+    const { sendMessage } = await import("../../api/Message");
+    const msg = await sendMessage({
+      senderId: loggedInUser.id,
+      receiverId: "0e274421-7d98-4864-97e7-20dc05852138",
+      message: input,
+    });
+    if (msg) {
+      setMessages((prev) => [...prev, msg]);
+      setInput("");
+    }
+    setLoading(false);
   };
 
   if (loading) {
@@ -267,6 +372,20 @@ const SellerOrderStatus = () => {
                 "The order has been successfully delivered to the buyer."}
               {order.status === "CANCELLED" && "This order has been cancelled."}
             </p>
+            {/* Chat with Admin button if DELIVERED */}
+            {order.status === "DELIVERED" && loggedInUser?.id && (
+              <button
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 relative"
+                onClick={() => setShowChat(true)}
+              >
+                Chat with Admin
+                {unread && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                    New
+                  </span>
+                )}
+              </button>
+            )}
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <h4 className="font-medium mb-2">Next Steps</h4>
@@ -464,6 +583,86 @@ const SellerOrderStatus = () => {
           )}
         </div>
       </div>
+
+      {/* Chat with Admin Popup */}
+      {showChat && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
+          onClick={() => setShowChat(false)}
+        >
+          <div
+            className="bg-white rounded shadow-lg w-full max-w-md p-4 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-black"
+              onClick={() => setShowChat(false)}
+            >
+              &times;
+            </button>
+            <h2 className="text-lg font-bold mb-2">Chat with Admin</h2>
+            <div className="h-64 overflow-y-auto border rounded p-2 mb-2 bg-gray-50">
+              {messages.length === 0 ? (
+                <p className="text-gray-400">No messages yet.</p>
+              ) : (
+                messages.map((msg, idx) => {
+                  return (
+                    <div
+                      key={idx}
+                      className={`mb-2 flex ${
+                        loggedInUser && msg.senderId === loggedInUser.id
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`px-3 py-2 rounded-lg max-w-xs break-words ${
+                          loggedInUser && msg.senderId === loggedInUser.id
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-gray-200 text-gray-800"
+                        }`}
+                      >
+                        {msg.message}
+                        <div className="text-[10px] text-gray-400 mt-0.5 text-right">
+                          {msg.sentAt
+                            ? new Date(msg.sentAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : ""}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+            {/* Typing indicator */}
+            {isTyping && (
+              <div className="text-xs text-gray-500 mb-2">
+                Admin is typing...
+              </div>
+            )}
+            <div className="flex gap-2 items-center">
+              <input
+                className="flex-1 border rounded px-2 py-1"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type a message..."
+                onFocus={() => setUnread(false)}
+              />
+              <button
+                className="bg-blue-600 text-white px-4 py-1 rounded disabled:opacity-50"
+                onClick={handleSend}
+                disabled={loading || !input.trim()}
+              >
+                {loading ? "..." : "Send"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

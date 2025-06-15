@@ -46,6 +46,7 @@ import AuthGuard from "./components/AuthGuard";
 import SingleBlogPage from "./pages/SingleBlogPage";
 import TermOfUse from "./components/Hardcode/TermOfUse";
 import PrivacyPolicy from "./components/Hardcode/PrivacyPolicy";
+import MessagePage from "./pages/Message/Message";
 
 const router = createBrowserRouter([
   {
@@ -179,6 +180,7 @@ const router = createBrowserRouter([
       { path: "orders", element: <OrdersManagement /> },
     ],
   },
+  { path: "/messages", element: <MessagePage /> },
 ]);
 
 function App() {

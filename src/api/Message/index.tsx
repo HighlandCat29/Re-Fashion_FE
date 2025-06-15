@@ -73,6 +73,7 @@ export const sendMessage = async (
   data: SendMessageRequest
 ): Promise<Message | null> => {
   try {
+    console.log("Sending message payload:", data);
     const response = await customFetch.post<SendMessageResponse>(
       "/messages/send",
       data
