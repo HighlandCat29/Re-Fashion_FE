@@ -5,10 +5,97 @@ import {
   updatePaymentStatus,
   Order,
   deleteOrder,
+  adminRefund,
 } from "../../../api/Orders";
 import { toast } from "react-hot-toast";
 import { getUserById } from "../../../api/Users";
 import { getProductById } from "../../../api/Products/index";
+import {
+  CLOUDINARY_UPLOAD_URL,
+  UPLOAD_PRESET,
+} from "../../../config/cloudinary";
+
+// Helper to upload a single image to Cloudinary
+const uploadImageToCloudinary = async (file: File): Promise<string | null> => {
+  try {
+    const cloudinaryFormData = new FormData();
+    cloudinaryFormData.append("file", file);
+    cloudinaryFormData.append("upload_preset", UPLOAD_PRESET);
+    cloudinaryFormData.append("cloud_name", "dnrxylpid");
+    const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+      method: "POST",
+      body: cloudinaryFormData,
+    });
+    const data = await response.json();
+    if (data.secure_url) {
+      return data.secure_url;
+    } else {
+      throw new Error(data.error?.message || "Failed to upload image");
+    }
+  } catch (error) {
+    console.error("Cloudinary upload error:", error);
+    toast.error("Failed to upload image to Cloudinary.");
+    return null;
+  }
+};
+
+// RefundImageUploadCell: For DELIVERED orders, allow admin to upload refund images and call adminRefund
+const RefundImageUploadCell = ({ order }: { order: Order }) => {
+  const [uploading, setUploading] = useState(false);
+  // TODO: Fetch and display actual refund images from backend if available
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+
+  // Handle file input change
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      // Upload all images to Cloudinary
+      const urls = (
+        await Promise.all(Array.from(files).map(uploadImageToCloudinary))
+      ).filter((url): url is string => !!url);
+      if (urls.length === 0) throw new Error("No images uploaded");
+      // Call adminRefund API
+      const result = await adminRefund(order.orderId, urls);
+      if (result) {
+        setUploadedImages((prev) => [...prev, ...urls]);
+        toast.success("Refund image(s) uploaded!");
+      }
+    } catch (err) {
+      toast.error("Failed to upload refund image(s)");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div>
+      <input
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFileChange}
+        disabled={uploading}
+        className="mb-2"
+      />
+      <div className="flex flex-wrap gap-2 mt-1">
+        {uploadedImages.map((url, idx) => (
+          <img
+            key={idx}
+            src={url}
+            alt="Refund"
+            className="w-10 h-10 object-cover rounded border cursor-pointer"
+            onClick={() => window.open(url, "_blank")}
+          />
+        ))}
+      </div>
+      {uploading && (
+        <div className="text-xs text-gray-400 mt-1">Uploading...</div>
+      )}
+    </div>
+  );
+};
 
 const OrdersManagement = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -212,6 +299,7 @@ const OrdersManagement = () => {
       SHIPPED: "bg-purple-100 text-purple-800",
       DELIVERED: "bg-green-100 text-green-800",
       CANCELLED: "bg-red-100 text-red-800",
+      REFUND: "bg-orange-100 text-orange-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
   };
@@ -382,6 +470,9 @@ const OrdersManagement = () => {
                     Order Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Payment Refund
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -533,6 +624,14 @@ const OrdersManagement = () => {
                         <option value="DELIVERED">Delivered</option>
                         <option value="CANCELLED">Cancelled</option>
                       </select>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {/* Payment Refund column */}
+                      {order.status === "DELIVERED" ? (
+                        <RefundImageUploadCell order={order} />
+                      ) : (
+                        <span className="text-gray-400">N/A</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button

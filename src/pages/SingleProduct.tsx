@@ -319,7 +319,7 @@ const SingleProduct = () => {
             {!isOwner && (
               <button
                 onClick={handleAddToCart}
-                className="w-full bg-black text-white py-3 px-6 rounded-md hover:bg-gray-800 transition-colors duration-300 font-semibold"
+                className="w-full bg-primary text-white py-3 rounded-lg hover:bg-primary-dark transition-colors"
               >
                 Add to Cart
               </button>
@@ -327,12 +327,17 @@ const SingleProduct = () => {
             {!isOwner && (
               <button
                 onClick={handleWishlistToggle}
-                className="flex-1 border border-gray-300 rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                className={`w-full py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                  isInWishlist
+                    ? "bg-red-100 text-red-600 hover:bg-red-200"
+                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                }`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className={`h-6 w-6 ${isInWishlist ? "text-red-500" : "text-gray-400"
-                    }`}
+                  className={`h-6 w-6 ${
+                    isInWishlist ? "text-red-500" : "text-gray-400"
+                  }`}
                   fill={isInWishlist ? "currentColor" : "none"}
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -364,13 +369,12 @@ const SingleProduct = () => {
             )}
           </div>
 
-
           {/* ────── Comments ────── */}
           <CommentSection productId={product.id!} />
-
-
         </div>
       </div>
+
+      {/* Message Popup */}
     </div>
   );
 };

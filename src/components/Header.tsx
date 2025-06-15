@@ -6,6 +6,7 @@ import {
   HiOutlineMagnifyingGlass,
   HiOutlineShoppingBag,
   HiOutlineHeart,
+  HiOutlineChatBubbleLeftRight,
 } from "react-icons/hi2";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
@@ -446,6 +447,15 @@ const Header = () => {
                   </div>
                 )}
               </div>
+
+              {/* Chat Icon */}
+              <Link
+                to="/messages"
+                className="relative flex items-center mx-2"
+                title="Messages"
+              >
+                <HiOutlineChatBubbleLeftRight className="w-7 h-7 hover:text-blue-600 transition-colors" />
+              </Link>
             </div>
           </div>
         </div>

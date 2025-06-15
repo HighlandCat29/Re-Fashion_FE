@@ -54,11 +54,11 @@ const BuyerOrderStatus = () => {
   }, [orderId, loggedInUser?.id, navigate]);
 
   const statusSteps = [
+    { id: "CANCELLED", label: "Cancelled" },
     { id: "PENDING", label: "Order Placed" },
     { id: "PROCESSING", label: "Processing" },
     { id: "SHIPPED", label: "Shipped" },
     { id: "DELIVERED", label: "Delivered" },
-    { id: "CANCELLED", label: "Cancelled" },
   ];
 
   const handleReceiveImageChange = async (
@@ -131,7 +131,7 @@ const BuyerOrderStatus = () => {
                 order.status === "CANCELLED"
                   ? step.id === "CANCELLED"
                   : statusSteps.findIndex((s) => s.id === order.status) >=
-                    index;
+                      index && step.id !== "CANCELLED";
               const stepColor = isActive
                 ? getStatusColor(step.id as Order["status"])
                 : "bg-gray-200 text-gray-500";
@@ -140,7 +140,7 @@ const BuyerOrderStatus = () => {
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${stepColor}`}
                   >
-                    {index + 1}
+                    {step.id === "CANCELLED" ? 0 : index}
                   </div>
                   <span
                     className={`text-sm ${

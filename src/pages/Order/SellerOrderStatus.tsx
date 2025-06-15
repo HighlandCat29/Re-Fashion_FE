@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getOrderById,
@@ -24,6 +24,7 @@ const SellerOrderStatus = () => {
   const [packageImage, setPackageImage] = React.useState<string>("");
   const [uploading, setUploading] = React.useState(false);
   const [shipLoading, setShipLoading] = React.useState(false);
+  const [showAdminRefundModal, setShowAdminRefundModal] = useState(false);
 
   React.useEffect(() => {
     const fetchOrder = async () => {
@@ -61,11 +62,11 @@ const SellerOrderStatus = () => {
   }, [orderId, loggedInUser?.id, navigate]);
 
   const statusSteps = [
+    { id: "CANCELLED", label: "Cancelled" },
     { id: "PENDING", label: "Order Placed" },
     { id: "PROCESSING", label: "Processing" },
     { id: "SHIPPED", label: "Shipped" },
     { id: "DELIVERED", label: "Delivered" },
-    { id: "CANCELLED", label: "Cancelled" },
   ];
 
   // Helper to get status color (matches OrdersManagement)
@@ -160,7 +161,7 @@ const SellerOrderStatus = () => {
                 order.status === "CANCELLED"
                   ? step.id === "CANCELLED"
                   : statusSteps.findIndex((s) => s.id === order.status) >=
-                    index;
+                      index && step.id !== "CANCELLED";
               const stepColor = isActive
                 ? getStatusColor(step.id as Order["status"])
                 : "bg-gray-200 text-gray-500";
@@ -169,7 +170,7 @@ const SellerOrderStatus = () => {
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${stepColor}`}
                   >
-                    {index + 1}
+                    {step.id === "CANCELLED" ? 0 : index}
                   </div>
                   <span
                     className={`text-sm ${
@@ -189,6 +190,57 @@ const SellerOrderStatus = () => {
           <p className="text-sm text-red-600 mt-2 text-center">
             This order has been cancelled.
           </p>
+        )}
+
+        {/* Admin Refund Image Modal */}
+        {order.adminPaymentScreenshotUrl && showAdminRefundModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
+            onClick={() => setShowAdminRefundModal(false)}
+          >
+            <div
+              className="relative max-w-3xl w-full flex flex-col items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="absolute top-2 right-2 text-white text-2xl bg-black bg-opacity-50 rounded-full px-2 py-1 hover:bg-opacity-80"
+                onClick={() => setShowAdminRefundModal(false)}
+                aria-label="Close"
+              >
+                &times;
+              </button>
+              <img
+                src={order.adminPaymentScreenshotUrl}
+                alt="Admin Refund Payment Screenshot Full"
+                className="w-full max-h-[80vh] object-contain rounded shadow-lg"
+              />
+              <p className="mt-2 text-white text-center text-sm bg-black bg-opacity-40 px-4 py-2 rounded">
+                This image was uploaded by the admin as proof of refund to the
+                seller.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Admin Refund Image under Order Progress */}
+        {order.adminPaymentScreenshotUrl && (
+          <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded flex items-center gap-4">
+            <img
+              src={order.adminPaymentScreenshotUrl}
+              alt="Admin Refund Payment Screenshot"
+              className="w-20 h-20 object-cover rounded-md shadow cursor-pointer hover:opacity-80"
+              onClick={() => setShowAdminRefundModal(true)}
+            />
+            <div>
+              <p className="font-medium text-green-700 mb-1">
+                Admin Refund Payment Screenshot
+              </p>
+              <p className="text-xs text-gray-600">
+                This image was uploaded by the admin as proof of refund to the
+                seller. Please check your account for the refund.
+              </p>
+            </div>
+          </div>
         )}
 
         {/* Status Descriptions */}
@@ -226,7 +278,7 @@ const SellerOrderStatus = () => {
               {order.status === "SHIPPED" &&
                 "Monitor the delivery and ensure it reaches the buyer."}
               {order.status === "DELIVERED" &&
-                "The order is complete. Ensure any post-delivery tasks are handled."}
+                "The order is complete. Wait for admin to refund the payment to you."}
               {order.status === "CANCELLED" &&
                 "No further action required for this order."}
             </p>
@@ -273,7 +325,10 @@ const SellerOrderStatus = () => {
             </p>
           )}
           {order.paymentStatus === "PAID" && (
-            <p className="text-sm text-gray-600">Payment has been confirmed.</p>
+            <p className="text-sm text-gray-600">
+              Payment from the buyer has been confirmed and will be securely
+              held by the admin until the order is successfully completed.
+            </p>
           )}
         </div>
       </div>
@@ -388,6 +443,23 @@ const SellerOrderStatus = () => {
                 alt="Delivery Confirmation"
                 className="w-32 h-32 object-cover rounded-md shadow"
               />
+            </div>
+          )}
+          {order.adminPaymentScreenshotUrl && (
+            <div>
+              <p className="text-gray-600 mb-2">
+                Admin Refund Payment Screenshot:
+              </p>
+              <img
+                src={order.adminPaymentScreenshotUrl}
+                alt="Admin Refund Payment Screenshot"
+                className="w-32 h-32 object-cover rounded-md shadow cursor-pointer hover:opacity-80"
+                onClick={() => setShowAdminRefundModal(true)}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                This image was uploaded by the admin as proof of refund to the
+                seller.
+              </p>
             </div>
           )}
         </div>

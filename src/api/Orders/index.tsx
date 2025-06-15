@@ -41,6 +41,7 @@ export interface Order {
   paymentScreenshotUrl?: string;
   sellerPackageImageUrl?: string;
   buyerPackageImageUrl?: string;
+  adminPaymentScreenshotUrl?: string;
 }
 
 export interface OrderResponse {
@@ -494,6 +495,40 @@ export const deliveryConfirm = async (
     if (error instanceof AxiosError) {
       toast.error(
         error.response?.data?.message || "Failed to confirm delivery"
+      );
+    } else {
+      toast.error("An unexpected error occurred");
+    }
+    return null;
+  }
+};
+
+// Admin refund: upload admin payment image for refund
+export const adminRefund = async (
+  orderId: string,
+  imageUrls: string[]
+): Promise<Order | null> => {
+  try {
+    if (!orderId || !imageUrls || imageUrls.length === 0) {
+      toast.error("Order ID and at least one image URL are required");
+      return null;
+    }
+
+    // Construct query parameters
+    const params = new URLSearchParams();
+    imageUrls.forEach((url) => params.append("imageUrls", url));
+
+    const response = await customFetch.patch<OrderResponse>(
+      `/orders/${orderId}/admin-payment-image?${params.toString()}`,
+      {}
+    );
+    toast.success("Admin refund image(s) uploaded successfully!");
+    return response.data.result;
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to upload admin refund image(s)"
       );
     } else {
       toast.error("An unexpected error occurred");
