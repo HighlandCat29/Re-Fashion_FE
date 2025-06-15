@@ -114,7 +114,6 @@ const MessagePopup = ({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [unread, setUnread] = useState(false);
   const [lastSeen, setLastSeen] = useState<number>(Date.now());
   const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
@@ -144,14 +143,7 @@ const MessagePopup = ({
       getConversation(senderId, receiverId).then((msgs) => {
         if (msgs) {
           setMessages(msgs);
-          // Unread badge logic
-          if (
-            !open &&
-            msgs.length > 0 &&
-            new Date(msgs[msgs.length - 1].sentAt).getTime() > lastSeen
-          ) {
-            setUnread(true);
-          }
+          // Remove unread badge logic since we removed unread state
         }
       });
     });
@@ -183,7 +175,6 @@ const MessagePopup = ({
   // Mark as read when popup opens
   React.useEffect(() => {
     if (open) {
-      setUnread(false);
       setLastSeen(Date.now());
     }
   }, [open, messages]);
@@ -279,7 +270,6 @@ const MessagePopup = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type a message..."
-            onFocus={() => setUnread(false)}
           />
           <button
             className="bg-blue-600 text-white px-4 py-1 rounded disabled:opacity-50"

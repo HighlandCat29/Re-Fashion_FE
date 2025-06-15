@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  Message,
-  ChatRoom,
-  getChatMessages,
-  sendMessage,
-} from "../../api/Message";
-import { format } from "date-fns";
+import { Message, sendMessage } from "../../api/Message";
 
 interface ChatWindowProps {
-  chatRoom: ChatRoom;
+  chatRoom: {
+    id: string;
+    participants: string[];
+    productId?: string;
+  };
   onClose: () => void;
   currentUserId: string;
 }
@@ -25,8 +23,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const fetchedMessages = await getChatMessages(chatRoom.id);
-        setMessages(fetchedMessages);
+        const { getConversation } = await import("../../api/Message");
+        const fetchedMessages = await getConversation(
+          currentUserId,
+          chatRoom.participants.find((id) => id !== currentUserId) || ""
+        );
+        if (fetchedMessages) {
+          setMessages(fetchedMessages);
+        }
       } catch (error) {
         console.error("Error fetching messages:", error);
       }
@@ -36,7 +40,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     // Set up polling for new messages
     const interval = setInterval(fetchMessages, 5000);
     return () => clearInterval(interval);
-  }, [chatRoom.id]);
+  }, [chatRoom.id, currentUserId, chatRoom.participants]);
 
   useEffect(() => {
     scrollToBottom();
@@ -55,20 +59,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         senderId: currentUserId,
         receiverId:
           chatRoom.participants.find((id) => id !== currentUserId) || "",
-        content: newMessage.trim(),
-        productId: chatRoom.productId,
+        message: newMessage.trim(),
       };
 
       const sentMessage = await sendMessage(messageData);
-      setMessages((prev) => [...prev, sentMessage]);
-      setNewMessage("");
+      if (sentMessage) {
+        setMessages((prev) => [...prev, sentMessage]);
+        setNewMessage("");
+      }
     } catch (error) {
       console.error("Error sending message:", error);
     }
   };
 
   return (
-    <div className="fixed bottom-0 right-4 w-96 h-[500px] bg-white rounded-t-lg shadow-lg flex flex-col">
+    <div className="fixed bottom-0 right-4 w-96 bg-white rounded-t-lg shadow-lg">
       <div className="bg-primary text-white p-4 rounded-t-lg flex justify-between items-center">
         <h3 className="font-semibold">Chat</h3>
         <button onClick={onClose} className="text-white hover:text-gray-200">
@@ -76,27 +81,30 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
+      <div className="h-96 overflow-y-auto p-4">
+        {messages.map((msg, index) => (
           <div
-            key={message.id}
-            className={`flex ${
-              message.senderId === currentUserId
-                ? "justify-end"
-                : "justify-start"
+            key={index}
+            className={`mb-2 ${
+              msg.senderId === currentUserId ? "text-right" : "text-left"
             }`}
           >
             <div
-              className={`max-w-[70%] rounded-lg p-3 ${
-                message.senderId === currentUserId
-                  ? "bg-primary text-white"
-                  : "bg-gray-100"
+              className={`inline-block p-2 rounded-lg ${
+                msg.senderId === currentUserId
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 text-gray-800"
               }`}
             >
-              <p>{message.content}</p>
-              <p className="text-xs mt-1 opacity-70">
-                {format(new Date(message.timestamp), "HH:mm")}
-              </p>
+              {msg.message}
+              <div className="text-[10px] text-gray-400 mt-0.5 text-right">
+                {msg.sentAt
+                  ? new Date(msg.sentAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : ""}
+              </div>
             </div>
           </div>
         ))}
@@ -110,11 +118,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type a message..."
-            className="flex-1 p-2 border rounded-lg focus:outline-none focus:border-primary"
+            className="flex-1 border rounded px-2 py-1"
           />
           <button
             type="submit"
-            className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90"
+            className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
           >
             Send
           </button>

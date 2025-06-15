@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { ChatRoom, getUserChatRooms, createChatRoom } from "../../api/Message";
+import { Message } from "../../api/Message";
 import { useAuth } from "../../context/AuthContext";
 import ChatWindow from "./ChatWindow";
+
+interface ChatRoom {
+  id: string;
+  participants: string[];
+  productId?: string;
+  lastMessage?: Message;
+}
 
 const ChatList: React.FC = () => {
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
@@ -12,8 +19,19 @@ const ChatList: React.FC = () => {
     const fetchChatRooms = async () => {
       if (!user) return;
       try {
-        const rooms = await getUserChatRooms(user.id);
-        setChatRooms(rooms);
+        const { getConversation } = await import("../../api/Message");
+        // For now, we'll just show the admin chat room
+        const adminId = "0e274421-7d98-4864-97e7-20dc05852138";
+        const messages = await getConversation(user.id, adminId);
+        if (messages && messages.length > 0) {
+          setChatRooms([
+            {
+              id: "admin-chat",
+              participants: [user.id, adminId],
+              lastMessage: messages[messages.length - 1],
+            },
+          ]);
+        }
       } catch (error) {
         console.error("Error fetching chat rooms:", error);
       }
@@ -71,13 +89,16 @@ const ChatList: React.FC = () => {
                   </p>
                   {room.lastMessage && (
                     <p className="text-sm text-gray-500 truncate">
-                      {room.lastMessage.content}
+                      {room.lastMessage.message}
                     </p>
                   )}
                 </div>
                 {room.lastMessage && (
-                  <span className="text-xs text-gray-400">
-                    {new Date(room.lastMessage.timestamp).toLocaleDateString()}
+                  <span className="text-[10px] text-gray-400">
+                    {new Date(room.lastMessage.sentAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                 )}
               </div>
@@ -86,10 +107,11 @@ const ChatList: React.FC = () => {
         )}
       </div>
 
-      {selectedChat && (
+      {selectedChat && user && (
         <ChatWindow
           chatRoom={selectedChat}
           onClose={() => setSelectedChat(null)}
+          currentUserId={user.id}
         />
       )}
     </div>
