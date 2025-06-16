@@ -248,133 +248,112 @@ const SingleProduct = () => {
         {/* Product Images */}
         <div className="space-y-4">
           <div className="w-96 h-96 mx-auto overflow-hidden rounded-lg bg-gray-100">
-            <img
-              src={product.imageUrls[0]}
-              alt={product.title}
-              className="h-full w-full object-cover object-center"
-            />
+            {product.imageUrls && product.imageUrls.length > 0 ? (
+              <img
+                src={product.imageUrls[0]}
+                alt={product.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                No image available
+              </div>
+            )}
           </div>
-          {product.imageUrls.length > 1 && (
-            <div className="grid grid-cols-4 gap-4">
-              {product.imageUrls.slice(1).map((url, index) => (
-                <div
-                  key={index}
-                  className="w-32 h-32 overflow-hidden rounded-lg bg-gray-100"
-                >
-                  <img
-                    src={url}
-                    alt={product.title}
-                    className="h-full w-full object-cover object-center"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
-        {/* Product Info */}
-        <div className="md:col-span-1 ">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-            {product.title}
-          </h1>
-          <p className="text-xl text-gray-900 mt-2">
-            {formatPrice(product.price)}
-          </p>
-          <div className="mt-4">
-            <h2 className="text-sm font-medium text-gray-900">Description</h2>
-            <div className="mt-2 space-y-6 text-base text-gray-700">
-              <p>{product.description}</p>
+        {/* Product Details */}
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {product.title}
+            </h1>
+            <p className="text-2xl font-semibold text-primary mt-2">
+              {formatPrice(product.price)}
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Description
+              </h2>
+              <p className="mt-2 text-gray-600">{product.description}</p>
+            </div>
+
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Category</h2>
+              <p className="mt-2 text-gray-600">{product.categoryName}</p>
+            </div>
+
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Seller</h2>
+              <p className="mt-2 text-gray-600">
+                {sellerProfile?.username || "Unknown Seller"}
+              </p>
             </div>
           </div>
 
-          <div className="mt-4 border-t border-gray-200 pt-4">
-            <h2 className="text-sm font-medium text-gray-900">Details</h2>
-            <dl className="mt-2 space-y-2 text-base text-gray-700">
-              <div>
-                <dt className="inline font-medium text-gray-900">Brand:</dt>{" "}
-                <dd className="inline">{product.brand}</dd>
-              </div>
-              <div>
-                <dt className="inline font-medium text-gray-900">Condition:</dt>{" "}
-                <dd className="inline capitalize">
-                  {product.productCondition.toLowerCase().replace("_", " ")}
-                </dd>
-              </div>
-              <div>
-                <dt className="inline font-medium text-gray-900">Category:</dt>{" "}
-                <dd className="inline">{product.categoryName}</dd>
-              </div>
-              <div>
-                <dt className="inline font-medium text-gray-900">Seller:</dt>{" "}
-                <dd className="inline">
-                  {sellerProfile?.username ||
-                    product.sellerUsername ||
-                    "Unknown Seller"}
-                </dd>
-              </div>
-            </dl>
-          </div>
-
-          <div className="mt-6 flex space-x-4">
-            {!isOwner && (
-              <button
-                onClick={handleAddToCart}
-                className="w-full bg-primary text-white py-3 rounded-lg hover:bg-primary-dark transition-colors"
-              >
-                Add to Cart
-              </button>
-            )}
-            {!isOwner && (
-              <button
-                onClick={handleWishlistToggle}
-                className={`w-full py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                  isInWishlist
-                    ? "bg-red-100 text-red-600 hover:bg-red-200"
-                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                }`}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className={`h-6 w-6 ${
-                    isInWishlist ? "text-red-500" : "text-gray-400"
-                  }`}
-                  fill={isInWishlist ? "currentColor" : "none"}
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 22.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                </svg>
-              </button>
-            )}
-            {isOwner && (
+          {/* Action Buttons */}
+          <div className="flex flex-col space-y-4">
+            {isOwner ? (
               <button
                 onClick={handleEdit}
-                className="flex-1 bg-blue-500 border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Edit Product
               </button>
+            ) : (
+              <>
+                {userId ? (
+                  <>
+                    <button
+                      onClick={handleAddToCart}
+                      className="w-full bg-primary text-white py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                      Add to Cart
+                    </button>
+                    <button
+                      onClick={handleWishlistToggle}
+                      className={`w-full py-3 px-6 rounded-lg transition-colors ${
+                        isInWishlist
+                          ? "bg-red-500 text-white hover:bg-red-600"
+                          : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                      }`}
+                    >
+                      {isInWishlist
+                        ? "Remove from Wishlist"
+                        : "Add to Wishlist"}
+                    </button>
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-center text-gray-600">
+                      Please{" "}
+                      <a
+                        href="/login"
+                        className="text-blue-600 hover:underline"
+                      >
+                        log in
+                      </a>{" "}
+                      to add items to cart or wishlist
+                    </div>
+                    <button
+                      onClick={() => navigate("/login")}
+                      className="w-full bg-black text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition-colors"
+                    >
+                      Login to Continue
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
-
-          <div className="mt-4">
-            {product.status !== undefined && product.status !== null && (
-              <p className="text-sm text-gray-500 capitalize">
-                Product Status: {product.status}
-              </p>
-            )}
-          </div>
-
-          {/* ────── Comments ────── */}
-          <CommentSection productId={product.id!} />
         </div>
       </div>
 
-      {/* Message Popup */}
+      {/* Comments Section */}
+      {product.id && <CommentSection productId={product.id} />}
     </div>
   );
 };
