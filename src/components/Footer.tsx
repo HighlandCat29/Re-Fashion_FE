@@ -30,13 +30,13 @@ const Footer = () => {
           </p>
           <ul className="flex justify-center items-center gap-6 text-base text-gray-600 max-sm:text-sm max-[350px]:flex-col max-[350px]:gap-4">
             <li className="hover:text-secondaryBrown transition-colors cursor-pointer">
-              Cookie Policy
+              ReFashion@gmail.com
             </li>
             <li className="hover:text-secondaryBrown transition-colors cursor-pointer">
               Privacy Policy
             </li>
             <li className="hover:text-secondaryBrown transition-colors cursor-pointer">
-              Legal Notes
+              Phone: +84 782782600
             </li>
           </ul>
         </div>

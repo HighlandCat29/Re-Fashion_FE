@@ -58,7 +58,7 @@ const SidebarMenu = ({
     { to: "/user-profile", label: "User Profile" },
     { to: "/cart", label: "Cart" },
     { to: "/wishlist", label: "Wishlist" },
-    { to: "/news", label: "News" },
+
     ...(loginStatus
       ? [{ to: null, label: "Logout", action: handleLogoutClick }]
       : [{ to: "/login", label: "Login" }]),
@@ -70,17 +70,15 @@ const SidebarMenu = ({
         <>
           {/* Overlay */}
           <div
-            className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ${
-              isSidebarOpen ? "opacity-100" : "opacity-0"
-            }`}
+            className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ${isSidebarOpen ? "opacity-100" : "opacity-0"
+              }`}
             onClick={() => setIsSidebarOpen(false)}
           />
 
           {/* Sidebar */}
           <div
-            className={`fixed top-0 left-0 w-72 max-sm:w-64 z-50 h-full bg-white shadow-xl border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
-              isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-            }`}
+            className={`fixed top-0 left-0 w-72 max-sm:w-64 z-50 h-full bg-white shadow-xl border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+              }`}
           >
             {/* Close button */}
             <div className="flex justify-end p-4">
