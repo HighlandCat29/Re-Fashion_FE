@@ -1,5 +1,6 @@
 // src/components/CommentSection.tsx
 import React, { useEffect, useState, useMemo } from "react";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import { useAppSelector } from "../hooks";
 import { getUserById, UserResponse } from "../api/Users";
 import {
@@ -83,8 +84,15 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
         setPosting(true);
         try {
             const res = await postComment(productId, authUser.id, content);
-            setComments((prev) => [res.data.result, ...prev]);
-            setCurrentPage(1); // show newest
+
+            // override createdAt so we get “just now”
+            const fresh: CommentDto = {
+                ...res.data.result,
+                createdAt: new Date().toISOString(),
+            };
+
+            setComments(prev => [fresh, ...prev]);
+            setCurrentPage(1);
             setContent("");
         } catch (err) {
             console.error(err);
@@ -92,6 +100,7 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
             setPosting(false);
         }
     };
+
 
     return (
         <div className="mt-8 space-y-4 border-t pt-6 bg-black bg-opacity-20 p-6 rounded-lg">
@@ -129,14 +138,51 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
                 <ul className="space-y-4">
                     {pagedComments.map((c) => (
                         <li key={c.id} className="p-4 bg-gray-50 rounded-lg">
-                            <div className="text-sm text-gray-500">
-                                {new Date(c.createdAt).toLocaleString()} by{" "}
-                                <strong>{c.username}</strong>
+                            <div className="flex items-start space-x-4">
+                                {/* ─── Avatar ────────────────────────────── */}
+                                <div className="flex-shrink-0">
+                                    <div className="h-8 w-8 bg-gray-400 rounded-full flex items-center justify-center">
+                                        <span className="text-white font-medium">
+                                            {c.username.charAt(0).toUpperCase()}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* ─── Comment body ───────────────────────── */}
+                                <div className="flex-1">
+                                    {/* Username · time ago */}
+                                    <div className="flex items-center space-x-2 text-sm text-gray-700">
+                                        <strong className="text-gray-900">{c.username}</strong>
+
+                                    </div>
+
+                                    {/* The comment text */}
+                                    <p className="mt-1 text-gray-800">{c.content}</p>
+
+                                    {/* Like · Reply */}
+                                    <div className="mt-2 flex items-center text-xs text-gray-500 space-x-1">
+                                        <button className="hover:underline">Like</button>
+                                        <span>·</span>
+                                        <button className="hover:underline">Reply</button>
+                                        <span>·</span>
+                                        <span>
+                                            {formatDistanceToNow(
+                                                // if no “Z” at end, append one so it’s treated as UTC
+                                                parseISO(
+                                                    c.createdAt.endsWith("Z")
+                                                        ? c.createdAt
+                                                        : `${c.createdAt}Z`
+                                                ),
+                                                { addSuffix: true }
+                                            )}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                            <p className="mt-1">{c.content}</p>
                         </li>
                     ))}
                 </ul>
+
             )}
 
             {/* Pagination */}
