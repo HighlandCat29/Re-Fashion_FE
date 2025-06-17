@@ -14,6 +14,12 @@ import {
 import { getUserById, UserResponse } from "../api/Users";
 import { addToCart } from "../api/Cart";
 import { formatPrice } from "../utils/formatPrice";
+import { MessagePopup } from "../components/MessagePopup";
+import {
+  HiOutlineShoppingCart,
+  HiOutlineHeart,
+  HiHeart,
+} from "react-icons/hi2";
 
 const SingleProduct = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +33,7 @@ const SingleProduct = () => {
   const [isOwner, setIsOwner] = useState(false);
   const [userProfile, setUserProfile] = useState<UserResponse | null>(null);
   const [sellerProfile, setSellerProfile] = useState<UserResponse | null>(null);
+  const [showChat, setShowChat] = useState(false);
 
   const {
     wishlist: localWishlist,
@@ -264,89 +271,134 @@ const SingleProduct = () => {
 
         {/* Product Details */}
         <div className="space-y-6">
+          <h1 className="text-3xl font-bold text-gray-900">{product.title}</h1>
+          <p className="text-lg text-gray-600">{product.brand || "No Brand"}</p>
+          <p className="text-2xl font-semibold text-primary mt-2">
+            {formatPrice(product.price)}
+          </p>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {product.title}
-            </h1>
-            <p className="text-2xl font-semibold text-primary mt-2">
-              {formatPrice(product.price)}
-            </p>
+            <h2 className="text-lg font-semibold text-gray-900">Description</h2>
+            <p className="mt-1 text-gray-700">{product.description}</p>
           </div>
-
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Description
-              </h2>
-              <p className="mt-2 text-gray-600">{product.description}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Category
+                </h2>
+                <p className="mt-1 text-gray-700">{product.categoryName}</p>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Seller</h2>
+                <p className="mt-1 text-gray-700">{product.sellerUsername}</p>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Condition
+                </h2>
+                <p className="mt-1 text-gray-700">{product.productCondition}</p>
+              </div>
             </div>
-
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Category</h2>
-              <p className="mt-2 text-gray-600">{product.categoryName}</p>
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Size</h2>
+                <p className="mt-1 text-gray-700">{product.size}</p>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Color</h2>
+                <p className="mt-1 text-gray-700">{product.color}</p>
+              </div>
             </div>
-
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Seller</h2>
-              <p className="mt-2 text-gray-600">
-                {sellerProfile?.username || "Unknown Seller"}
-              </p>
-            </div>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Seller</h2>
+            <p className="mt-2 text-gray-600">
+              {sellerProfile?.username || "Unknown Seller"}
+            </p>
+            {!isOwner && userId && sellerProfile && (
+              <button
+                onClick={() => setShowChat(true)}
+                className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Chat with Seller
+              </button>
+            )}
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col space-y-4">
-            {isOwner ? (
-              <button
-                onClick={handleEdit}
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Edit Product
-              </button>
-            ) : (
+          <div className="space-y-4">
+            {userId ? (
               <>
-                {userId ? (
-                  <>
+                {!isOwner ? (
+                  <div className="flex space-x-4">
                     <button
                       onClick={handleAddToCart}
-                      className="w-full bg-primary text-white py-3 px-6 rounded-lg hover:bg-primary/90 transition-colors"
+                      className="flex-1 flex items-center justify-center bg-black text-white p-3 rounded-lg hover:bg-gray-800 transition-colors text-2xl relative group"
+                      aria-label="Add to Cart"
+                      title="Add to Cart"
                     >
-                      Add to Cart
+                      <HiOutlineShoppingCart />
+                      <span className="sr-only">Add to Cart</span>
+                      <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
+                        Add to Cart
+                      </span>
                     </button>
                     <button
                       onClick={handleWishlistToggle}
-                      className={`w-full py-3 px-6 rounded-lg transition-colors ${
+                      className={`flex-1 flex items-center justify-center p-3 rounded-lg text-2xl relative group transition-colors ${
                         isInWishlist
-                          ? "bg-red-500 text-white hover:bg-red-600"
+                          ? "bg-red-100 text-red-500 hover:bg-red-200"
                           : "bg-gray-200 text-gray-800 hover:bg-gray-300"
                       }`}
+                      aria-label={
+                        isInWishlist
+                          ? "Remove from Wishlist"
+                          : "Add to Wishlist"
+                      }
+                      title={
+                        isInWishlist
+                          ? "Remove from Wishlist"
+                          : "Add to Wishlist"
+                      }
                     >
-                      {isInWishlist
-                        ? "Remove from Wishlist"
-                        : "Add to Wishlist"}
-                    </button>
-                  </>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="text-center text-gray-600">
-                      Please{" "}
-                      <a
-                        href="/login"
-                        className="text-blue-600 hover:underline"
-                      >
-                        log in
-                      </a>{" "}
-                      to add items to cart or wishlist
-                    </div>
-                    <button
-                      onClick={() => navigate("/login")}
-                      className="w-full bg-black text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition-colors"
-                    >
-                      Login to Continue
+                      {isInWishlist ? <HiHeart /> : <HiOutlineHeart />}
+                      <span className="sr-only">
+                        {isInWishlist
+                          ? "Remove from Wishlist"
+                          : "Add to Wishlist"}
+                      </span>
+                      <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
+                        {isInWishlist
+                          ? "Remove from Wishlist"
+                          : "Add to Wishlist"}
+                      </span>
                     </button>
                   </div>
+                ) : (
+                  <button
+                    onClick={handleEdit}
+                    className="w-full bg-primary text-white py-3 px-6 rounded-lg hover:bg-primary-dark transition-colors"
+                  >
+                    Edit Product
+                  </button>
                 )}
               </>
+            ) : (
+              <div className="space-y-4">
+                <div className="text-center text-gray-600">
+                  Please{" "}
+                  <a href="/login" className="text-blue-600 hover:underline">
+                    log in
+                  </a>{" "}
+                  to add items to cart or wishlist
+                </div>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="w-full bg-black text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  Login to Continue
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -354,6 +406,17 @@ const SingleProduct = () => {
 
       {/* Comments Section */}
       {product.id && <CommentSection productId={product.id} />}
+
+      {/* Chat Popup */}
+      {showChat && userId && sellerProfile && (
+        <MessagePopup
+          open={showChat}
+          onClose={() => setShowChat(false)}
+          senderId={userId}
+          receiverId={sellerProfile.id}
+          receiverName={sellerProfile.username}
+        />
+      )}
     </div>
   );
 };

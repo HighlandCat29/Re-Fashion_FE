@@ -2,11 +2,11 @@
 
 import {
   HiBars3,
-  HiOutlineUser,
-  HiOutlineMagnifyingGlass,
   HiOutlineShoppingBag,
   HiOutlineHeart,
   HiOutlineChatBubbleLeftRight,
+  HiOutlineUser,
+  HiOutlineMagnifyingGlass,
 } from "react-icons/hi2";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
@@ -451,10 +451,29 @@ const Header = () => {
               {/* Chat Icon */}
               <Link
                 to="/messages"
-                className="relative flex items-center mx-2"
-                title="Messages"
+                className="group relative"
+                aria-label="Messages"
+                onClick={(e) => handleNavigation(e, "/messages")}
               >
-                <HiOutlineChatBubbleLeftRight className="w-7 h-7 hover:text-blue-600 transition-colors" />
+                <HiOutlineChatBubbleLeftRight
+                  className={`
+                    text-3xl transition-all duration-300
+                    ${
+                      location.pathname === "/messages"
+                        ? "text-sky-500 animate-pulse"
+                        : "text-gray-800 hover:text-sky-500"
+                    }
+                  `}
+                />
+                <span
+                  className="
+                    absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
+                    text-xs text-white group-hover:block
+                    -translate-x-1/2
+                  "
+                >
+                  Messages
+                </span>
               </Link>
             </div>
           </div>

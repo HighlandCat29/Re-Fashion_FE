@@ -46,7 +46,7 @@ import AuthGuard from "./components/AuthGuard";
 import SingleBlogPage from "./pages/SingleBlogPage";
 import TermOfUse from "./components/Hardcode/TermOfUse";
 import PrivacyPolicy from "./components/Hardcode/PrivacyPolicy";
-import MessagePage from "./pages/Message/Message";
+import Messages from "./pages/Message/Messages";
 
 const router = createBrowserRouter([
   {
@@ -156,6 +156,14 @@ const router = createBrowserRouter([
         element: <SellerOrderStatus />,
         errorElement: <div>Error loading seller order status.</div>,
       },
+      {
+        path: "messages",
+        element: (
+          <AuthGuard>
+            <Messages />
+          </AuthGuard>
+        ),
+      },
     ],
   },
   { path: "blogs/:id", element: <SingleBlogPage /> },
@@ -180,7 +188,6 @@ const router = createBrowserRouter([
       { path: "orders", element: <OrdersManagement /> },
     ],
   },
-  { path: "/messages", element: <MessagePage /> },
 ]);
 
 function App() {

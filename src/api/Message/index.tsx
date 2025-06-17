@@ -76,7 +76,11 @@ export const sendMessage = async (
     console.log("Sending message payload:", data);
     const response = await customFetch.post<SendMessageResponse>(
       "/messages/send",
-      data
+      {
+        senderId: data.senderId,
+        receiverId: data.receiverId,
+        message: data.message,
+      }
     );
     return response.data.result;
   } catch (error) {
@@ -111,8 +115,9 @@ export const getMessagePartners = async (
   userId: string
 ): Promise<MessagePartner[] | null> => {
   try {
+    // First, get all messages for the user
     const response = await customFetch.get<GetPartnersResponse>(
-      `/messages/partners?userId=${userId}`
+      `/messages/user/${userId}`
     );
     return response.data.result;
   } catch (error) {
