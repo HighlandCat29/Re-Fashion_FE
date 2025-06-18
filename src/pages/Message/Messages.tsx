@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAppSelector } from "../../hooks";
-import { Message, getConversation, sendMessage } from "../../api/Message";
-import { getAdminUsers, AdminUserResponse } from "../../api/Users";
+import {
+  Message,
+  getConversation,
+  sendMessage,
+  getMessagePartners,
+  MessagePartner,
+} from "../../api/Message";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
 
-type PartnerPreview = AdminUserResponse & { lastMessage?: Message };
+type PartnerPreview = MessagePartner & { lastMessage?: Message };
 
 const Messages = () => {
   const { user } = useAppSelector((state) => state.auth);
@@ -23,7 +28,7 @@ const Messages = () => {
   const prevMessagesLengthRef = useRef<number>(0);
   const [autoScroll, setAutoScroll] = useState(true);
 
-  // Fetch all users except the current user
+  // Fetch only message partners (users the current user has chatted with)
   useEffect(() => {
     if (!user?.id) {
       navigate("/login");
@@ -32,17 +37,16 @@ const Messages = () => {
     const fetchPartners = async () => {
       try {
         setLoading(true);
-        const users = await getAdminUsers();
-        if (users) {
-          const filteredUsers = users.filter((u) => u.id !== user.id);
-          setPartners(filteredUsers);
-          if (filteredUsers.length > 0) {
-            setSelectedPartner(filteredUsers[0]);
+        const partners = await getMessagePartners(user.id);
+        if (partners) {
+          setPartners(partners);
+          if (partners.length > 0) {
+            setSelectedPartner(partners[0]);
           }
         }
       } catch (error) {
-        console.error("Error fetching users:", error);
-        toast.error("Failed to load users");
+        console.error("Error fetching message partners:", error);
+        toast.error("Failed to load chat partners");
       } finally {
         setLoading(false);
       }
@@ -147,11 +151,19 @@ const Messages = () => {
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                        <span className="text-lg font-medium text-gray-600">
-                          {partner.username.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
+                      {partner.profilePicture ? (
+                        <img
+                          src={partner.profilePicture}
+                          alt={partner.username}
+                          className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                          <span className="text-lg font-medium text-gray-600">
+                            {partner.username.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">
                           {partner.username}
@@ -191,7 +203,7 @@ const Messages = () => {
                 {/* Messages */}
                 <div
                   ref={chatContainerRef}
-                  className="h-[500px] overflow-y-auto p-4 space-y-4"
+                  className="h-[350px] overflow-y-auto p-4 space-y-4"
                   onScroll={handleScroll}
                 >
                   {messages.length === 0 ? (
@@ -199,29 +211,47 @@ const Messages = () => {
                       No messages yet. Start the conversation!
                     </div>
                   ) : (
-                    messages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${
-                          msg.senderId === user?.id
-                            ? "justify-end"
-                            : "justify-start"
-                        }`}
-                      >
+                    messages.map((msg) => {
+                      const isCurrentUser = msg.senderId === user?.id;
+                      return (
                         <div
-                          className={`max-w-[70%] rounded-lg p-3 ${
-                            msg.senderId === user?.id
-                              ? "bg-blue-500 text-white"
-                              : "bg-gray-100 text-gray-800"
+                          key={msg.id}
+                          className={`flex items-end gap-2 ${
+                            isCurrentUser ? "justify-end" : "justify-start"
                           }`}
                         >
-                          <p>{msg.message}</p>
-                          <p className="text-xs mt-1 opacity-70">
-                            {new Date(msg.sentAt).toLocaleTimeString()}
-                          </p>
+                          {!isCurrentUser &&
+                            selectedPartner &&
+                            (selectedPartner.profilePicture ? (
+                              <img
+                                src={selectedPartner.profilePicture}
+                                alt={selectedPartner.username}
+                                className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-gray-600">
+                                  {selectedPartner.username
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </span>
+                              </div>
+                            ))}
+                          <div
+                            className={`max-w-[70%] rounded-lg p-3 ${
+                              isCurrentUser
+                                ? "bg-black text-white"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            <p>{msg.message}</p>
+                            <p className="text-xs mt-1 opacity-70">
+                              {new Date(msg.sentAt).toLocaleTimeString()}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
                 {/* Input */}
@@ -239,7 +269,7 @@ const Messages = () => {
                     <button
                       onClick={handleSend}
                       disabled={sending || !input.trim()}
-                      className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {sending ? "Sending..." : "Send"}
                     </button>
@@ -247,7 +277,7 @@ const Messages = () => {
                 </div>
               </>
             ) : (
-              <div className="h-[500px] flex items-center justify-center text-gray-500">
+              <div className="h-[350px] flex items-center justify-center text-gray-500">
                 Select a user to start chatting
               </div>
             )}

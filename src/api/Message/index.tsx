@@ -38,13 +38,14 @@ export interface ReadMessageResponse {
 }
 
 export interface MessagePartner {
-  uid: string;
+  id: string;
   username: string;
   email: string;
   role: {
     roleId: string;
     roleName: string;
     description: string;
+    active: boolean;
   };
   fullName: string;
   phoneNumber: string;
@@ -53,7 +54,7 @@ export interface MessagePartner {
   createdAt: string;
   emailVerified: boolean;
   active: boolean;
-  verificationToken: string;
+  verificationToken: string | null;
 }
 
 export interface GetPartnersResponse {
@@ -67,6 +68,11 @@ export interface GetConversationResponse {
   message: string;
   result: Message[];
 }
+
+export type UnreadCount = {
+  partnerId: string;
+  count: number;
+};
 
 // API Functions
 export const sendMessage = async (
@@ -115,9 +121,8 @@ export const getMessagePartners = async (
   userId: string
 ): Promise<MessagePartner[] | null> => {
   try {
-    // First, get all messages for the user
     const response = await customFetch.get<GetPartnersResponse>(
-      `/messages/user/${userId}`
+      `/messages/partners?userId=${userId}`
     );
     return response.data.result;
   } catch (error) {
