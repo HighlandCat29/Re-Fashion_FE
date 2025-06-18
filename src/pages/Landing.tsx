@@ -8,7 +8,7 @@ const Landing: React.FC = () => {
     <>
       <Banner />
       <HomeCollectionSection />
-      <BlogSection />        {/* <-- new blog section inserted here */}
+      {/* <-- new blog section inserted here */}
       <CategoriesSection />
     </>
   );
