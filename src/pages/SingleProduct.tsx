@@ -34,6 +34,7 @@ const SingleProduct = () => {
   const [userProfile, setUserProfile] = useState<UserResponse | null>(null);
   const [sellerProfile, setSellerProfile] = useState<UserResponse | null>(null);
   const [showChat, setShowChat] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const {
     wishlist: localWishlist,
@@ -158,12 +159,7 @@ const SingleProduct = () => {
     }
 
     try {
-      const addedToCart = await addToCart(userId, product.id);
-      if (addedToCart) {
-        toast.success("Added to cart!");
-      } else {
-        toast.error("Failed to add to cart.");
-      }
+      await addToCart(userId, product.id);
     } catch (error) {
       console.error("Error adding to cart:", error);
       toast.error("An error occurred while adding to cart.");
@@ -254,12 +250,13 @@ const SingleProduct = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Product Images */}
         <div className="space-y-4">
+          {/* Main large image */}
           <div className="w-96 h-96 mx-auto overflow-hidden rounded-lg bg-gray-100">
             {product.imageUrls && product.imageUrls.length > 0 ? (
               <img
-                src={product.imageUrls[0]}
+                src={product.imageUrls[selectedImageIndex]}
                 alt={product.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-all duration-300 ease-in-out"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -267,6 +264,29 @@ const SingleProduct = () => {
               </div>
             )}
           </div>
+
+          {/* Thumbnail gallery - only show if there are multiple images */}
+          {product.imageUrls && product.imageUrls.length > 1 && (
+            <div className="flex flex-wrap gap-2 justify-center">
+              {product.imageUrls.map((imageUrl, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedImageIndex(index)}
+                  className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+                    selectedImageIndex === index
+                      ? "border-primary shadow-lg scale-105"
+                      : "border-gray-200 hover:border-gray-300 hover:scale-105"
+                  }`}
+                >
+                  <img
+                    src={imageUrl}
+                    alt={`${product.title} - Image ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Product Details */}
@@ -377,7 +397,7 @@ const SingleProduct = () => {
                 ) : (
                   <button
                     onClick={handleEdit}
-                    className="w-full bg-primary text-white py-3 px-6 rounded-lg hover:bg-primary-dark transition-colors"
+                    className="w-full bg-black text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition-colors"
                   >
                     Edit Product
                   </button>

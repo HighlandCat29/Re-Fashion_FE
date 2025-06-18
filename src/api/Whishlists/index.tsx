@@ -38,7 +38,6 @@ export const addToWishlist = async (
 ): Promise<Wishlist | null> => {
   try {
     const response = await customFetch.post("/wishlists", wishlist);
-    toast.success("Product added to wishlist!");
     return response.data;
   } catch (error: unknown) {
     let errorMessage = "An unknown error occurred";
@@ -59,7 +58,6 @@ export const removeFromWishlist = async (
 ): Promise<void> => {
   try {
     await customFetch.delete(`/wishlists/${userId}/${productId}`);
-    toast.success("Product removed from wishlist!");
   } catch (error: unknown) {
     let errorMessage = "An unknown error occurred";
     if (error instanceof AxiosError) {

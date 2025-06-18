@@ -271,9 +271,6 @@ const Checkout = () => {
                       />
                       <div>
                         <p className="font-medium">{item.title}</p>
-                        <p className="text-sm text-gray-600">
-                          Quantity: {item.quantity}
-                        </p>
                       </div>
                     </div>
                     <p className="font-medium">{formatPrice(item.price)}</p>

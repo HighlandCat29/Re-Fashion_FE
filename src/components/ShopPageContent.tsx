@@ -39,20 +39,18 @@ const ShopPageContent = ({ category, page, products }: Props) => {
 
   // Calculate total filtered products and products shown on current page
   const totalFilteredProducts = sortedProducts.length;
-  const currentProductsCount = paginatedProducts.length;
 
   return (
     <>
       <ShopFilterAndSort
         sortCriteria={sortCriteria}
         setSortCriteria={setSortCriteria}
+        currentPage={currentPage}
+        itemsPerPage={ITEMS_PER_PAGE}
+        totalFilteredProducts={totalFilteredProducts}
       />
 
-      <ProductGridWrapper
-        sortCriteria={sortCriteria}
-        category={category}
-        page={currentPage}
-      >
+      <ProductGridWrapper>
         <ProductGrid products={paginatedProducts} />
       </ProductGridWrapper>
 
@@ -60,8 +58,6 @@ const ShopPageContent = ({ category, page, products }: Props) => {
         page={currentPage}
         category={category}
         setCurrentPage={setCurrentPage}
-        totalFilteredProducts={totalFilteredProducts}
-        currentProductsCount={currentProductsCount}
       />
     </>
   );

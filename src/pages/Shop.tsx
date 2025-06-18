@@ -5,13 +5,14 @@ import {
   useLoaderData,
   useSearchParams,
 } from "react-router-dom";
-import { ShopBanner, ShopPageContent } from "../components";
+import { ShopPageContent } from "../components";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { getProducts, Product } from "../api/Products/index";
 import { getCategories, Category } from "../api/Categories/index";
 import { useAppDispatch, useAppSelector } from "../hooks";
 import { setProducts } from "../features/shop/shopSlice";
+import { getAllOrders, Order } from "../api/Orders";
 
 export const shopCategoryLoader = async ({ params }: LoaderFunctionArgs) => {
   const { category } = params;
@@ -43,6 +44,8 @@ const Shop = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [productsWithActive, setProductsWithActive] = useState<Product[]>([]);
 
   const dispatch = useAppDispatch();
   const { products } = useAppSelector((state) => state.shop);
@@ -66,19 +69,52 @@ const Shop = () => {
     fetchCategories();
   }, []);
 
-  // Fetch products
+  // Fetch all orders for validation
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const allOrders = await getAllOrders();
+        if (allOrders) setOrders(allOrders);
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      }
+    };
+    fetchOrders();
+  }, []);
+
+  // Fetch products and apply isActive logic
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const productsData = await getProducts();
         if (productsData) {
-          // Filter only approved products
-          const approvedProducts = productsData.filter(
-            (p) => p.status === "APPROVED"
+          // Find all productIds in orders with paymentStatus PENDING or PAID
+          const inactiveProductIds = new Set<string>();
+          orders.forEach((order) => {
+            if (
+              order.paymentStatus === "PENDING" ||
+              order.paymentStatus === "PAID"
+            ) {
+              (order.items || []).forEach((item) => {
+                if (item.productId) inactiveProductIds.add(item.productId);
+              });
+              // Also check productIds array if present
+              (order.productIds || []).forEach((pid) =>
+                inactiveProductIds.add(pid)
+              );
+            }
+          });
+          // Set isActive false for those products (in-memory)
+          const updatedProducts = productsData.map((p) => ({
+            ...p,
+            isActive: !inactiveProductIds.has(p.id ?? ""),
+          }));
+          // Only keep products with isActive true
+          const activeProducts = updatedProducts.filter(
+            (p) => p.isActive && p.status === "APPROVED"
           );
-          console.log("Fetched products:", productsData);
-          console.log("Approved products:", approvedProducts);
-          dispatch(setProducts(approvedProducts));
+          dispatch(setProducts(activeProducts));
+          setProductsWithActive(activeProducts);
         }
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -86,19 +122,17 @@ const Shop = () => {
       }
     };
     fetchProducts();
-  }, [dispatch]);
+  }, [dispatch, orders]);
 
   // Filter products by category and search query
   const filteredProducts = useMemo(() => {
-    if (!products || products.length === 0) {
-      console.log("No products available");
+    if (!productsWithActive || productsWithActive.length === 0) {
       return [];
     }
-
     console.log("Current category:", selectedCategory);
-    console.log("Total products before filtering:", products.length);
+    console.log("Total products before filtering:", productsWithActive.length);
 
-    const filtered = products.filter((p: Product) => {
+    const filtered = productsWithActive.filter((p: Product) => {
       try {
         // If category is "all" or undefined, show all products
         if (!selectedCategory || selectedCategory === "all") {
@@ -142,7 +176,7 @@ const Shop = () => {
 
     console.log("Filtered products:", filtered);
     return filtered;
-  }, [selectedCategory, products, searchQuery]);
+  }, [selectedCategory, productsWithActive, searchQuery]);
 
   // Validate page parameter
   useEffect(() => {
@@ -163,8 +197,12 @@ const Shop = () => {
   // Show no products found message
   if (filteredProducts.length === 0) {
     return (
-      <div className="max-w-screen-2xl mx-auto px-4 pt-12 pb-20">
-        <ShopBanner category={formatCategoryName(selectedCategory)} />
+      <div className="max-w-screen-2xl mx-auto px-4 pb-20">
+        <h1 className="text-4xl font-bold text-center mb-8 text-black">
+          {selectedCategory === "all"
+            ? "All Products"
+            : formatCategoryName(selectedCategory)}
+        </h1>
 
         {/* Search and Filter Section */}
         <div className="mb-8">
@@ -238,7 +276,7 @@ const Shop = () => {
                         className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
                           selectedCategory === "all"
                             ? "text-primary font-medium"
-                            : "text-gray-700"
+                            : "text-black"
                         }`}
                       >
                         All Products
@@ -301,8 +339,12 @@ const Shop = () => {
 
   // Render shop content
   return (
-    <div className="max-w-screen-2xl mx-auto px-4 pt-12 pb-20">
-      <ShopBanner category={formatCategoryName(selectedCategory)} />
+    <div className="max-w-screen-2xl mx-auto px-4 pb-20">
+      <h1 className="text-4xl font-bold text-center mb-8 text-black">
+        {selectedCategory === "all"
+          ? "All Products"
+          : formatCategoryName(selectedCategory)}
+      </h1>
 
       {/* Search and Filter Section */}
       <div className="mb-8">

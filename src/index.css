@@ -40,7 +40,7 @@ body {
   min-height: 100vh;
 
   /* 6) Keep your site's global font */
-  font-family: "Merriweather", serif;
+  font-family: "Poppins", sans-serif;
 }
 
 /* —————————————————————————————————————————— */
@@ -48,14 +48,20 @@ body {
 /* —————————————————————————————————————————— */
 
 .banner {
-  height: 800px;
+  height: 600px;
+  width: 100%;
   background: linear-gradient(
       0deg,
       rgba(0, 0, 0, 0.25) 0%,
       rgba(0, 0, 0, 0.15) 100%
     ),
     url("/src/assets/newbanner.jpg") lightgray 50% / cover no-repeat;
-  background-position: 10% 25%;
+  background-position: center top;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .shop-banner {

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "../hooks";
 import { toast } from "react-hot-toast";
 import { getCartByUserId, removeCartItem, Cart as CartType } from "../api/Cart";
+import { getProductById } from "../api/Products";
 import { formatPrice } from "../utils/formatPrice";
 import emptyCartGif from "../assets/cart.gif";
 
@@ -11,6 +12,9 @@ const Cart = () => {
   const { user } = useAppSelector((state) => state.auth);
   const [cart, setCart] = useState<CartType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sellerNames, setSellerNames] = useState<{
+    [productId: string]: string;
+  }>({});
 
   useEffect(() => {
     const fetchUserCart = async () => {
@@ -33,6 +37,29 @@ const Cart = () => {
 
     fetchUserCart();
   }, [user?.id]);
+
+  // Fetch seller names for each product in the cart
+  useEffect(() => {
+    const fetchSellerNames = async () => {
+      if (!cart || !cart.items) return;
+      const newSellerNames: { [productId: string]: string } = {};
+      await Promise.all(
+        cart.items.map(async (item) => {
+          if (!sellerNames[item.productId]) {
+            const product = await getProductById(item.productId);
+            if (product && product.sellerUsername) {
+              newSellerNames[item.productId] = product.sellerUsername;
+            }
+          } else {
+            newSellerNames[item.productId] = sellerNames[item.productId];
+          }
+        })
+      );
+      setSellerNames((prev) => ({ ...prev, ...newSellerNames }));
+    };
+    fetchSellerNames();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart]);
 
   const handleRemoveItem = async (productId: string) => {
     if (!user?.id) {
@@ -68,6 +95,18 @@ const Cart = () => {
   const handleCheckout = () => {
     if (!cart || !cart.items || cart.items.length === 0) {
       toast.error("Your cart is empty");
+      return;
+    }
+    // Validation: Only allow checkout if all items are from the same seller
+    const uniqueSellers = Array.from(
+      new Set(
+        cart.items.map((item) => sellerNames[item.productId]).filter(Boolean)
+      )
+    );
+    if (uniqueSellers.length > 1) {
+      toast.error(
+        "You can only checkout items from one seller at a time. Please remove items from other sellers."
+      );
       return;
     }
     navigate("/checkout");
@@ -134,6 +173,11 @@ const Cart = () => {
                 {/* Product Details */}
                 <div className="flex-grow">
                   <h3 className="font-medium text-gray-900">{item.title}</h3>
+                  {sellerNames[item.productId] && (
+                    <p className="text-sm text-gray-500 mb-1">
+                      Seller: {sellerNames[item.productId]}
+                    </p>
+                  )}
                   <p className="mt-1 text-primary font-medium">
                     {formatPrice(item.price)}
                   </p>

@@ -343,14 +343,7 @@ const Header = () => {
                     `}
                   />
                   {cartItemCount > 0 && (
-                    <span
-                      className="
-                        absolute -top-2 -right-2
-                        bg-red-500 text-white text-xs
-                        rounded-full w-5 h-5
-                        flex items-center justify-center
-                      "
-                    >
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                       {cartItemCount}
                     </span>
                   )}
@@ -363,6 +356,34 @@ const Header = () => {
                   "
                 >
                   Cart
+                </span>
+              </Link>
+
+              {/* Message Icon */}
+              <Link
+                to="/messages"
+                className="group relative"
+                aria-label="Messages"
+                onClick={(e) => handleNavigation(e, "/messages")}
+              >
+                <HiOutlineChatBubbleLeftRight
+                  className={`
+                    text-3xl transition-all duration-300
+                    ${
+                      location.pathname === "/messages"
+                        ? "text-sky-500 animate-pulse"
+                        : "text-gray-800 hover:text-sky-500"
+                    }
+                  `}
+                />
+                <span
+                  className="
+                    absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
+                    text-xs text-white group-hover:block
+                    -translate-x-1/2
+                  "
+                >
+                  Messages
                 </span>
               </Link>
 
@@ -447,34 +468,6 @@ const Header = () => {
                   </div>
                 )}
               </div>
-
-              {/* Chat Icon */}
-              <Link
-                to="/messages"
-                className="group relative"
-                aria-label="Messages"
-                onClick={(e) => handleNavigation(e, "/messages")}
-              >
-                <HiOutlineChatBubbleLeftRight
-                  className={`
-                    text-3xl transition-all duration-300
-                    ${
-                      location.pathname === "/messages"
-                        ? "text-sky-500 animate-pulse"
-                        : "text-gray-800 hover:text-sky-500"
-                    }
-                  `}
-                />
-                <span
-                  className="
-                    absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
-                    text-xs text-white group-hover:block
-                    -translate-x-1/2
-                  "
-                >
-                  Messages
-                </span>
-              </Link>
             </div>
           </div>
         </div>

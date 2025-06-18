@@ -137,7 +137,7 @@ const ProductItem = ({
               />
             </svg>
           </button>
-          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-secondaryBrown text-white">
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-white bg-opacity-80 text-black shadow flex items-center justify-center min-w-[48px]">
             {condition}
           </span>
         </div>
