@@ -375,7 +375,7 @@ const SellerOrderStatus = () => {
             {/* Chat with Admin button if DELIVERED */}
             {order.status === "DELIVERED" && loggedInUser?.id && (
               <button
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 relative"
+                className="mt-4 px-4 py-2 bg-black text-white rounded hover:bg-gray-800 relative"
                 onClick={() => setShowChat(true)}
               >
                 Chat with Admin
@@ -477,7 +477,7 @@ const SellerOrderStatus = () => {
             </div>
           )}
           <button
-            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+            className="mt-4 px-6 py-2 bg-black text-white rounded disabled:opacity-50"
             onClick={handleShipConfirm}
             disabled={!packageImage || uploading || shipLoading}
           >
@@ -653,7 +653,7 @@ const SellerOrderStatus = () => {
                 onFocus={() => setUnread(false)}
               />
               <button
-                className="bg-blue-600 text-white px-4 py-1 rounded disabled:opacity-50"
+                className="bg-black text-white px-4 py-1 rounded disabled:opacity-50"
                 onClick={handleSend}
                 disabled={loading || !input.trim()}
               >

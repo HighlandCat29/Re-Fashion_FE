@@ -85,7 +85,7 @@ const EditCategory = () => {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+              className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg"
             >
               Save Changes
             </button>

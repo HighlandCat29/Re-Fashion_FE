@@ -1,6 +1,7 @@
 import customFetch from "../../axios/custom";
 import { toast } from "react-hot-toast";
 import { AxiosError } from "axios";
+import defaultAvatar from "../../assets/default-avatar.webp";
 
 /** Types **/
 
@@ -56,7 +57,28 @@ export interface AdminUser {
 export const getUsers = async (): Promise<UserResponse[] | null> => {
   try {
     const response = await customFetch.get("/users");
-    return response.data.result;
+    const users: UserResponse[] = response.data.result;
+    // Automatically update users with null/empty profilePicture
+    users.forEach(async (user) => {
+      if (!user.profilePicture) {
+        const updatedUser = {
+          roleId: user.role.roleId,
+          email: user.email,
+          username: user.username,
+          fullName: user.fullName,
+          phoneNumber: user.phoneNumber,
+          address: user.address,
+          active: user.active,
+          profilePicture: defaultAvatar,
+        };
+        try {
+          await updateUser(user.id, updatedUser);
+        } catch (e) {
+          // Optionally log error
+        }
+      }
+    });
+    return users;
   } catch (error: unknown) {
     let errorMessage = "An unknown error occurred";
     if (error instanceof AxiosError) {

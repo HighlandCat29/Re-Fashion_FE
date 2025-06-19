@@ -122,7 +122,7 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
           />
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+            className="px-4 py-2 bg-black text-white rounded disabled:opacity-50"
             disabled={posting}
           >
             {posting ? "Posting…" : "Post Comment"}
@@ -131,7 +131,7 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
       ) : (
         <div className="text-sm text-gray-700">
           Please{" "}
-          <a href="/login" className="text-blue-600 hover:underline">
+          <a href="/login" className="text-black hover:underline">
             log in
           </a>{" "}
           to leave a comment.
@@ -211,7 +211,7 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
               key={p}
               onClick={() => setCurrentPage(p)}
               className={`px-3 py-1 rounded ${
-                currentPage === p ? "bg-blue-600 text-white" : "bg-gray-200"
+                currentPage === p ? "bg-black text-white" : "bg-gray-200"
               }`}
             >
               {p}

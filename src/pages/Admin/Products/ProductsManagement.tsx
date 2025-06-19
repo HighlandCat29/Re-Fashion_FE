@@ -84,7 +84,7 @@ const ProductsManagement = () => {
           </h1>
           <button
             onClick={() => navigate("/admin/products/add")}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow transition"
+            className="bg-black hover:bg-gray-800 text-white font-semibold px-4 py-2 rounded-lg shadow transition"
           >
             + Add Product
           </button>
@@ -177,7 +177,7 @@ const ProductsManagement = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => setSelectedProduct(product)}
-                          className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs"
+                          className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-black text-xs"
                         >
                           View Details
                         </button>

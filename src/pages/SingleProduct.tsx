@@ -149,6 +149,11 @@ const SingleProduct = () => {
       return;
     }
 
+    if (product.isActive === false) {
+      toast.error("This product is no longer available for purchase.");
+      return;
+    }
+
     if (
       !product.imageUrls ||
       product.imageUrls.length === 0 ||
@@ -338,7 +343,7 @@ const SingleProduct = () => {
             {!isOwner && userId && sellerProfile && (
               <button
                 onClick={() => setShowChat(true)}
-                className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="mt-2 px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
               >
                 Chat with Seller
               </button>
@@ -407,7 +412,7 @@ const SingleProduct = () => {
               <div className="space-y-4">
                 <div className="text-center text-gray-600">
                   Please{" "}
-                  <a href="/login" className="text-blue-600 hover:underline">
+                  <a href="/login" className="text-black hover:underline">
                     log in
                   </a>{" "}
                   to add items to cart or wishlist
@@ -421,6 +426,16 @@ const SingleProduct = () => {
               </div>
             )}
           </div>
+          {isOwner && product && (
+            <button
+              className="ml-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+              onClick={() =>
+                navigate("/feature-product", { state: { product } })
+              }
+            >
+              Feature Product
+            </button>
+          )}
         </div>
       </div>
 

@@ -375,7 +375,7 @@ const AddProducts = () => {
             name="isFeatured"
             checked={formData.isFeatured}
             onChange={handleChange}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            className="w-4 h-4 text-black border-gray-300 rounded focus:ring-blue-500"
           />
           <label className="text-sm font-medium">Featured Product</label>
           {formData.isFeatured && (
@@ -398,7 +398,7 @@ const AddProducts = () => {
             name="isActive"
             checked={formData.isActive}
             onChange={handleChange}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            className="w-4 h-4 text-black border-gray-300 rounded focus:ring-blue-500"
           />
           <label className="text-sm font-medium">Product is Active</label>
         </div>
@@ -413,7 +413,7 @@ const AddProducts = () => {
           </button>
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow transition"
+            className="bg-black hover:bg-gray-800 text-white font-semibold px-4 py-2 rounded-lg shadow transition"
             disabled={loading || uploadingImage}
           >
             {loading ? "Adding..." : "Add Product"}

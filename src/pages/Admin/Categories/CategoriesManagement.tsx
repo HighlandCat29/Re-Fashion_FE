@@ -47,7 +47,7 @@ const CategoriesManagement = () => {
           </h1>
           <button
             onClick={() => navigate("/admin/categories/add")}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow transition"
+            className="bg-black hover:bg-gray-800 text-white font-semibold px-4 py-2 rounded-lg shadow transition"
           >
             + Add Category
           </button>
@@ -95,7 +95,7 @@ const CategoriesManagement = () => {
                         onClick={() =>
                           navigate(`/admin/categories/edit/${cat.id}`)
                         }
-                        className="text-blue-600 hover:underline font-medium"
+                        className="text-black hover:underline font-medium"
                       >
                         Edit
                       </button>

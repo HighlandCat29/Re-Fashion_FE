@@ -248,7 +248,7 @@ const MessagePopup = ({
                       href={msg.message}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="underline text-blue-600"
+                      className="underline text-black"
                     >
                       {msg.message}
                     </a>
@@ -282,7 +282,7 @@ const MessagePopup = ({
             onFocus={() => setUnread(false)}
           />
           <button
-            className="bg-blue-600 text-white px-4 py-1 rounded disabled:opacity-50"
+            className="bg-black text-white px-4 py-1 rounded disabled:opacity-50"
             onClick={handleSend}
             disabled={loading || !input.trim()}
           >
@@ -840,7 +840,7 @@ const OrdersManagement = () => {
                       </button>
                       {order.sellerId && (
                         <button
-                          className="ml-4 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                          className="ml-4 px-3 py-1 bg-black text-white rounded hover:bg-gray-800"
                           onClick={() => setChatOrder(order)}
                         >
                           Chat with Seller

@@ -351,7 +351,7 @@ const UserProfile = () => {
                   setPreviewUrl(user?.profilePicture || null);
                 }
               }}
-              className="text-blue-600 hover:text-blue-800 font-medium"
+              className="text-black hover:text-gray-800 font-medium"
             >
               {editing ? "Cancel" : "Edit Profile"}
             </button>
@@ -487,7 +487,7 @@ const UserProfile = () => {
             <button
               type="submit"
               disabled={loadingProfile || uploadingImage}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loadingProfile ? "Saving..." : "Save Changes"}
             </button>
@@ -538,7 +538,7 @@ const UserProfile = () => {
                   </span>
                   <button
                     onClick={() => navigate(`/product/${product.id}`)}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="text-black hover:text-gray-800 text-sm font-medium"
                   >
                     View Details
                   </button>
@@ -630,7 +630,7 @@ const UserProfile = () => {
                   <div className="mt-4">
                     <Link
                       to={`/seller-order/${order.orderId}/status`}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                      className="text-black hover:text-gray-800 text-sm font-medium flex items-center gap-1"
                     >
                       <span>View Order Status</span>
                       <svg
@@ -731,7 +731,7 @@ const UserProfile = () => {
                 <div className="mt-4">
                   <Link
                     to={`/order/${order.orderId}/status`}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                    className="text-black hover:text-gray-800 text-sm font-medium flex items-center gap-1"
                   >
                     <span>View Order Status</span>
                     <svg

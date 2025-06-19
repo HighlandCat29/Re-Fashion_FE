@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getProductById, updateProduct, Product } from "../../../api/Products/adminIndex";
+import {
+  getProductById,
+  updateProduct,
+  Product,
+} from "../../../api/Products/adminIndex";
 import { getCategories, Category } from "../../../api/Categories";
 import { getAdminUsers, AdminUserResponse } from "../../../api/Users/index";
 import { toast } from "react-hot-toast";
@@ -355,7 +359,7 @@ const EditProducts = () => {
           <button
             type="submit"
             disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
+            className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded shadow"
           >
             {loading ? "Updating..." : "Update Product"}
           </button>

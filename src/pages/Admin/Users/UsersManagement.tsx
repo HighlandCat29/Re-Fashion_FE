@@ -47,7 +47,7 @@ const UserManagement = () => {
           <h1 className="text-3xl font-bold text-gray-800">User Management</h1>
           <button
             onClick={() => navigate("/admin/users/add")}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg shadow transition"
+            className="bg-black hover:bg-gray-800 text-white font-semibold px-4 py-2 rounded-lg shadow transition"
           >
             + Add User
           </button>
@@ -107,6 +107,16 @@ const UserManagement = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-800">
                       {user.role?.roleName}
+                      <button
+                        onClick={() =>
+                          navigate("/admin/messages", {
+                            state: { userId: user.id, username: user.username },
+                          })
+                        }
+                        className="ml-3 text-purple-600 hover:underline font-medium"
+                      >
+                        Chat
+                      </button>
                     </td>
                     <td className="px-6 py-4 text-sm space-x-3">
                       <button
@@ -117,7 +127,7 @@ const UserManagement = () => {
                       </button>
                       <button
                         onClick={() => navigate(`/admin/users/edit/${user.id}`)}
-                        className="text-blue-600 hover:underline font-medium"
+                        className="text-black hover:underline font-medium"
                       >
                         Edit
                       </button>

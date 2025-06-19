@@ -112,7 +112,7 @@ const SellProductList = () => {
                 <div className="mt-4 flex justify-between">
                   <button
                     onClick={() => navigate(`/edit-product/${product.id}`)}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="text-black hover:text-gray-800 text-sm font-medium"
                   >
                     Edit
                   </button>

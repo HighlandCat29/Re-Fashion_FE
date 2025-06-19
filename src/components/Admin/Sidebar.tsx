@@ -1,5 +1,16 @@
 import React, { useState } from "react";
-import { UserCircle, LogOut } from "lucide-react";
+import {
+  UserCircle,
+  LogOut,
+  MessageSquare,
+  LayoutDashboard,
+  Users as UsersIcon,
+  Package,
+  Folder,
+  ShoppingCart,
+  FileBarChart2,
+  Settings as SettingsIcon,
+} from "lucide-react";
 import { logout } from "../../api/Logout/index";
 import { useNavigate } from "react-router-dom";
 
@@ -17,14 +28,43 @@ const Sidebar: React.FC = () => {
   };
 
   const navItems = [
-    { label: "Dashboard", path: "/admin" },
-    { label: "Users", path: "/admin/users" },
-    { label: "Products", path: "/admin/products" },
-    { label: "Categories", path: "/admin/categories" },
-    { label: "Orders", path: "/admin/orders" },
-
-    { label: "Reports" },
-    { label: "Settings" },
+    {
+      label: "Dashboard",
+      path: "/admin",
+      icon: <LayoutDashboard size={20} className="mr-2" />,
+    },
+    {
+      label: "Users",
+      path: "/admin/users",
+      icon: <UsersIcon size={20} className="mr-2" />,
+    },
+    {
+      label: "Messages",
+      path: "/admin/messages",
+      icon: <MessageSquare size={20} className="mr-2" />,
+    },
+    {
+      label: "Products",
+      path: "/admin/products",
+      icon: <Package size={20} className="mr-2" />,
+    },
+    {
+      label: "Categories",
+      path: "/admin/categories",
+      icon: <Folder size={20} className="mr-2" />,
+    },
+    {
+      label: "Orders",
+      path: "/admin/orders",
+      icon: <ShoppingCart size={20} className="mr-2" />,
+    },
+    {
+      label: "Feature Management",
+      path: "/admin/feature-management",
+      icon: <FileBarChart2 size={20} className="mr-2" />,
+    },
+    { label: "Reports", icon: <FileBarChart2 size={20} className="mr-2" /> },
+    { label: "Settings", icon: <SettingsIcon size={20} className="mr-2" /> },
   ];
 
   return (
@@ -39,12 +79,13 @@ const Sidebar: React.FC = () => {
             <span
               key={item.label}
               onClick={() => handleNavClick(item.label, item.path)}
-              className={`px-2 py-1 rounded cursor-pointer transition ${
+              className={`flex items-center px-2 py-1 rounded cursor-pointer transition ${
                 activeItem === item.label
                   ? "bg-blue-100 text-blue-700 font-semibold"
                   : "hover:bg-gray-100"
               }`}
             >
+              {item.icon}
               {item.label}
             </span>
           ))}

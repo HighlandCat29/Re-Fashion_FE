@@ -24,6 +24,7 @@ import {
   BuyerOrderStatus,
   SellerOrderStatus,
 } from "./pages";
+import FeatureProduct from "./pages/Feature/FeatureProduct";
 import { checkoutAction, searchAction } from "./actions/index";
 import { shopCategoryLoader } from "./pages/Shop";
 import { loader as orderHistoryLoader } from "./pages/Order/OrderHistory";
@@ -47,6 +48,9 @@ import SingleBlogPage from "./pages/SingleBlogPage";
 import TermOfUse from "./components/Hardcode/TermOfUse";
 import PrivacyPolicy from "./components/Hardcode/PrivacyPolicy";
 import Messages from "./pages/Message/Messages";
+import AdminMessages from "./pages/Admin/Message/Message";
+import ConfirmFeature from "./pages/Feature/ConfirmFeature";
+import FeatureManagement from "./pages/Admin/Feature/FeatureManagement";
 
 const router = createBrowserRouter([
   {
@@ -164,6 +168,22 @@ const router = createBrowserRouter([
           </AuthGuard>
         ),
       },
+      {
+        path: "feature-product",
+        element: (
+          <AuthGuard>
+            <FeatureProduct />
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "feature/confirm",
+        element: (
+          <AuthGuard>
+            <ConfirmFeature />
+          </AuthGuard>
+        ),
+      },
     ],
   },
   { path: "blogs/:id", element: <SingleBlogPage /> },
@@ -186,6 +206,8 @@ const router = createBrowserRouter([
       { path: "products/add", element: <AddProducts /> },
       { path: "products/edit/:id", element: <EditProducts /> },
       { path: "orders", element: <OrdersManagement /> },
+      { path: "messages", element: <AdminMessages /> },
+      { path: "feature-management", element: <FeatureManagement /> },
     ],
   },
 ]);

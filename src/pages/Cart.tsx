@@ -92,7 +92,7 @@ const Cart = () => {
     }
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!cart || !cart.items || cart.items.length === 0) {
       toast.error("Your cart is empty");
       return;
@@ -106,6 +106,19 @@ const Cart = () => {
     if (uniqueSellers.length > 1) {
       toast.error(
         "You can only checkout items from one seller at a time. Please remove items from other sellers."
+      );
+      return;
+    }
+    // Validation: All products must be active
+    const productStatuses = await Promise.all(
+      cart.items.map(async (item) => {
+        const product = await getProductById(item.productId);
+        return product?.isActive !== false;
+      })
+    );
+    if (productStatuses.some((active) => !active)) {
+      toast.error(
+        "Some products in your cart are no longer available for purchase."
       );
       return;
     }

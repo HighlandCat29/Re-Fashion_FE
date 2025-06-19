@@ -312,7 +312,7 @@ const Checkout = () => {
                 type="checkbox"
                 checked={useNewAddress}
                 onChange={(e) => setUseNewAddress(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-black focus:ring-blue-500 border-gray-300 rounded"
               />
             </div>
 
@@ -340,7 +340,7 @@ const Checkout = () => {
 
             <button
               onClick={handleConfirmAddress}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               Confirm Address
             </button>

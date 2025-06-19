@@ -29,7 +29,7 @@ const CheckEmail = () => {
             onClick={() =>
               toast.success("Resend email functionality to be implemented.")
             }
-            className="bg-black hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md"
+            className="bg-black hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md"
           >
             Resend Verification Email
           </button>
