@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Message,
-  ChatRoom,
-  getChatMessages,
+  getConversation,
   sendMessage,
+  SendMessageRequest,
+  MessagePartner,
 } from "../../api/Message";
-import { format } from "date-fns";
+import { formatDate } from "../../utils/formatDate";
 
 interface ChatWindowProps {
-  chatRoom: ChatRoom;
+  partner: MessagePartner;
   onClose: () => void;
   currentUserId: string;
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
-  chatRoom,
+  partner,
   onClose,
   currentUserId,
 }) => {
@@ -25,18 +26,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const fetchedMessages = await getChatMessages(chatRoom.id);
-        setMessages(fetchedMessages);
+        const fetchedMessages = await getConversation(
+          currentUserId,
+          partner.id
+        );
+        setMessages(fetchedMessages || []);
       } catch (error) {
         console.error("Error fetching messages:", error);
       }
     };
 
     fetchMessages();
-    // Set up polling for new messages
     const interval = setInterval(fetchMessages, 5000);
     return () => clearInterval(interval);
-  }, [chatRoom.id]);
+  }, [currentUserId, partner.id]);
 
   useEffect(() => {
     scrollToBottom();
@@ -51,17 +54,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     if (!newMessage.trim()) return;
 
     try {
-      const messageData = {
+      const messageData: SendMessageRequest = {
         senderId: currentUserId,
-        receiverId:
-          chatRoom.participants.find((id) => id !== currentUserId) || "",
-        content: newMessage.trim(),
-        productId: chatRoom.productId,
+        receiverId: partner.id,
+        message: newMessage.trim(),
       };
 
       const sentMessage = await sendMessage(messageData);
-      setMessages((prev) => [...prev, sentMessage]);
-      setNewMessage("");
+      if (sentMessage) {
+        setMessages((prev) => [...prev, sentMessage]);
+        setNewMessage("");
+      }
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -70,7 +73,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   return (
     <div className="fixed bottom-0 right-4 w-96 h-[500px] bg-white rounded-t-lg shadow-lg flex flex-col">
       <div className="bg-primary text-white p-4 rounded-t-lg flex justify-between items-center">
-        <h3 className="font-semibold">Chat</h3>
+        <h3 className="font-semibold">Chat with {partner.username}</h3>
         <button onClick={onClose} className="text-white hover:text-gray-200">
           ×
         </button>
@@ -93,9 +96,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   : "bg-gray-100"
               }`}
             >
-              <p>{message.content}</p>
+              <p>{message.message}</p>
               <p className="text-xs mt-1 opacity-70">
-                {format(new Date(message.timestamp), "HH:mm")}
+                {formatDate(message.sentAt).split(",")[1]}
               </p>
             </div>
           </div>

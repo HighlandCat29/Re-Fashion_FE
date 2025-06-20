@@ -8,6 +8,7 @@ import {
 } from "../../../api/Products/adminIndex";
 import { toast } from "react-hot-toast";
 import { formatPrice } from "../../../utils/formatPrice";
+import ConfirmationModal from "../../../components/ConfirmationModal";
 
 const ProductsManagement = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -61,11 +62,11 @@ const ProductsManagement = () => {
 
   const handleDelete = async (product: Product) => {
     try {
-      if (!product.id || !product.sellerId) {
+      if (!product.id) {
         toast.error("Product ID or Seller ID is missing");
         return;
       }
-      await deleteProduct(product.sellerId, product.id);
+      await deleteProduct(product.id);
       await fetchAllData(); // Refresh the list after deletion
       setProductToDelete(null); // Close the confirmation dialog
       toast.success("Product deleted successfully");
@@ -341,31 +342,13 @@ const ProductsManagement = () => {
       )}
 
       {/* Delete Confirmation Modal */}
-      {productToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold mb-4">Confirm Delete</h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete "{productToDelete.title}"? This
-              action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => setProductToDelete(null)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(productToDelete)}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationModal
+        isOpen={!!productToDelete}
+        onClose={() => setProductToDelete(null)}
+        onConfirm={() => handleDelete(productToDelete!)}
+        title="Confirm Product Deletion"
+        message={`Are you sure you want to delete the product "${productToDelete?.title}"? This will permanently remove it.`}
+      />
     </div>
   );
 };

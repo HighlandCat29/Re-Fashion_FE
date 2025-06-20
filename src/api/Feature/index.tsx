@@ -17,6 +17,7 @@ export interface FeaturedPayment {
 export interface CreateFeaturedPaymentRequest {
   productId: string;
   sellerId: string;
+  amount: number;
   durationDays: number;
   transferProofImageUrl: string;
 }
@@ -158,8 +159,7 @@ export const confirmFeaturedPayment = async (
 ): Promise<FeaturedPayment | null> => {
   try {
     const response = await customFetch.patch<FeaturedPaymentResponse>(
-      `/featured-payments/${paymentId}/confirm?adminId=${adminId}&isConfirmed=${isConfirmed}`,
-      {}
+      `/featured-payments/${paymentId}/confirm?adminId=${adminId}&isConfirmed=${isConfirmed}`
     );
     toast.success("Featured payment confirmation updated!");
     return response.data.result;

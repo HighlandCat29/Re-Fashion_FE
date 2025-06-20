@@ -5,10 +5,14 @@ import {
   deleteAdminUser,
   AdminUserResponse,
 } from "../../../api/Users/index";
+import ConfirmationModal from "../../../components/ConfirmationModal";
 
 const UserManagement = () => {
   const [users, setUsers] = useState<AdminUserResponse[]>([]);
   const [selectedUser, setSelectedUser] = useState<AdminUserResponse | null>(
+    null
+  );
+  const [userToDelete, setUserToDelete] = useState<AdminUserResponse | null>(
     null
   );
   const [loading, setLoading] = useState(true);
@@ -30,13 +34,13 @@ const UserManagement = () => {
   };
 
   const handleDeleteUser = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      try {
-        await deleteAdminUser(id);
-        fetchAllUsers();
-      } catch (err) {
-        console.error("Delete failed:", err);
-      }
+    try {
+      await deleteAdminUser(id);
+      fetchAllUsers();
+      setUserToDelete(null);
+    } catch (err) {
+      console.error("Delete failed:", err);
+      alert("Failed to delete user.");
     }
   };
 
@@ -132,7 +136,7 @@ const UserManagement = () => {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDeleteUser(user.id)}
+                        onClick={() => setUserToDelete(user)}
                         className="text-red-600 hover:underline font-medium"
                       >
                         Delete
@@ -207,11 +211,25 @@ const UserManagement = () => {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
+        onConfirm={() => handleDeleteUser(userToDelete!.id)}
+        title="Confirm User Deletion"
+        message={`Are you sure you want to delete the user "${userToDelete?.username}"? This will permanently remove their account.`}
+      />
     </div>
   );
 };
 
-const Detail = ({ label, value }: { label: string; value: string }) => (
+const Detail = ({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | undefined;
+}) => (
   <div className="flex flex-col">
     <span className="text-gray-500 font-semibold">{label}</span>
     <span className="text-gray-800 break-words">{value || "-"}</span>

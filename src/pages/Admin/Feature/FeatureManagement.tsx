@@ -1,12 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { getAllFeaturedPayments, FeaturedPayment } from "../../../api/Feature";
+import {
+  getAllFeaturedPayments,
+  FeaturedPayment,
+  confirmFeaturedPayment,
+  deleteFeaturedPayment,
+} from "../../../api/Feature";
 import { useAppSelector } from "../../../hooks";
 import { formatPrice } from "../../../utils/formatPrice";
+import { formatDate } from "../../../utils/formatDate";
+import ConfirmationModal from "../../../components/ConfirmationModal";
 
 const statusColors: Record<string, string> = {
   PENDING: "bg-yellow-100 text-yellow-800",
   APPROVED: "bg-green-100 text-green-800",
   REJECTED: "bg-red-100 text-red-800",
+  PAID: "bg-blue-100 text-blue-800",
 };
 
 const FeatureManagement = () => {
@@ -17,6 +25,8 @@ const FeatureManagement = () => {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [search, setSearch] = useState("");
+  const [paymentToDelete, setPaymentToDelete] =
+    useState<FeaturedPayment | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -26,14 +36,45 @@ const FeatureManagement = () => {
     });
   }, [user]);
 
-  const filteredPayments = featuredPayments.filter((payment) => {
-    const matchesStatus =
-      statusFilter === "ALL" || payment.status === statusFilter;
-    const matchesSearch =
-      payment.sellerId.toLowerCase().includes(search.toLowerCase()) ||
-      payment.productId.toLowerCase().includes(search.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
+  const handleConfirm = async (paymentId: string) => {
+    if (!user?.id) return;
+    const confirmedPayment = await confirmFeaturedPayment(
+      paymentId,
+      user.id,
+      true
+    );
+    if (confirmedPayment) {
+      setFeaturedPayments((prevPayments) =>
+        prevPayments.map((p) => (p.id === paymentId ? confirmedPayment : p))
+      );
+    }
+  };
+
+  const handleDelete = async (paymentId: string) => {
+    if (!user?.id) return;
+    const success = await deleteFeaturedPayment(paymentId, user.id);
+    if (success) {
+      setFeaturedPayments((prevPayments) =>
+        prevPayments.filter((p) => p.id !== paymentId)
+      );
+    }
+    setPaymentToDelete(null); // Close modal
+  };
+
+  const filteredPayments = featuredPayments
+    .filter((payment) => {
+      const matchesStatus =
+        statusFilter === "ALL" || payment.status === statusFilter;
+      const matchesSearch =
+        payment.sellerId.toLowerCase().includes(search.toLowerCase()) ||
+        payment.productId.toLowerCase().includes(search.toLowerCase());
+      return matchesStatus && matchesSearch;
+    })
+    // Sort by latest paymentDate
+    .sort(
+      (a, b) =>
+        new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
+    );
 
   return (
     <div className="p-6">
@@ -55,6 +96,7 @@ const FeatureManagement = () => {
             <option value="PENDING">Pending</option>
             <option value="APPROVED">Approved</option>
             <option value="REJECTED">Rejected</option>
+            <option value="PAID">Paid</option>
           </select>
         </div>
         <div>
@@ -108,6 +150,9 @@ const FeatureManagement = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Proof
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
@@ -139,7 +184,7 @@ const FeatureManagement = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-800">
-                    {payment.paymentDate}
+                    {formatDate(payment.paymentDate)}
                   </td>
                   <td className="px-6 py-4 text-sm">
                     {payment.transferProofImageUrl ? (
@@ -158,12 +203,37 @@ const FeatureManagement = () => {
                       <span className="text-gray-400">No Image</span>
                     )}
                   </td>
+                  <td className="px-6 py-4 text-sm space-x-2">
+                    {payment.status === "PENDING" && (
+                      <button
+                        onClick={() => handleConfirm(payment.id)}
+                        className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                      >
+                        Confirm
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setPaymentToDelete(payment)}
+                      className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={!!paymentToDelete}
+        onClose={() => setPaymentToDelete(null)}
+        onConfirm={() => handleDelete(paymentToDelete!.id)}
+        title="Confirm Deletion"
+        message={`Are you sure you want to delete the featured payment for product ID: ${paymentToDelete?.productId}? This action cannot be undone.`}
+      />
     </div>
   );
 };

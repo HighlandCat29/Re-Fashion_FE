@@ -20,6 +20,7 @@ import {
   HiOutlineHeart,
   HiHeart,
 } from "react-icons/hi2";
+import { FeaturedProductsSection } from "../components";
 
 const SingleProduct = () => {
   const { id } = useParams<{ id: string }>();
@@ -441,6 +442,11 @@ const SingleProduct = () => {
 
       {/* Comments Section */}
       {product.id && <CommentSection productId={product.id} />}
+
+      {/* Featured Products Section */}
+      <div className="mt-16">
+        <FeaturedProductsSection />
+      </div>
 
       {/* Chat Popup */}
       {showChat && userId && sellerProfile && (

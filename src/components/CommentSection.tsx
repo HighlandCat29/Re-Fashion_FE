@@ -102,116 +102,141 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
   };
 
   return (
-    <div className="mt-8 space-y-4 border-t pt-6 bg-black bg-opacity-20 p-6 rounded-lg">
-      <h3 className="text-2xl font-semibold text-black">Comments</h3>
+    <div className="bg-white rounded-lg p-6 mt-8">
+      <h3 className="text-xl font-semibold text-gray-800 mb-4">
+        Community Comments ({comments.length})
+      </h3>
 
       {/* New comment form - only show if user is logged in */}
       {authUser ? (
-        <form onSubmit={handleSubmit} className="space-y-2">
-          <div className="text-sm text-gray-900">
-            Commenting as <strong>{displayName}</strong>
+        <form onSubmit={handleSubmit} className="mb-6">
+          <div className="flex items-start space-x-4">
+            <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
+              <span className="text-lg font-medium text-gray-600">
+                {displayName.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex-1">
+              <textarea
+                placeholder={`Commenting publicly as ${displayName}...`}
+                className="w-full bg-gray-100 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-black focus:ring-opacity-50 transition"
+                rows={3}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                disabled={posting}
+                required
+              />
+              <div className="flex justify-end mt-2">
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-transparent text-black font-semibold rounded-md border border-black hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 transition"
+                  disabled={posting || !content.trim()}
+                >
+                  {posting ? "Posting..." : "Post Comment"}
+                </button>
+              </div>
+            </div>
           </div>
-          <textarea
-            placeholder="Write a comment…"
-            className="w-full border rounded px-3 py-2"
-            rows={3}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            disabled={posting}
-            required
-          />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-black text-white rounded disabled:opacity-50"
-            disabled={posting}
-          >
-            {posting ? "Posting…" : "Post Comment"}
-          </button>
         </form>
       ) : (
-        <div className="text-sm text-gray-700">
-          Please{" "}
-          <a href="/login" className="text-black hover:underline">
-            log in
-          </a>{" "}
-          to leave a comment.
+        <div className="text-center py-4 border-y my-6">
+          <p className="text-gray-600">
+            <a
+              href="/login"
+              className="text-primary font-semibold hover:underline"
+            >
+              Log in
+            </a>{" "}
+            to join the discussion.
+          </p>
         </div>
       )}
 
       {/* Comments list */}
       {loading ? (
-        <p className="text-gray-100">Loading comments…</p>
-      ) : pagedComments.length === 0 ? (
-        <p className="text-gray-100">No comments yet.</p>
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto"></div>
+        </div>
+      ) : comments.length === 0 ? (
+        <div className="text-center py-8 border-t">
+          <p className="text-gray-500 mt-4">Be the first to comment!</p>
+        </div>
       ) : (
-        <ul className="space-y-4">
+        <div className="space-y-6 border-t pt-6">
           {pagedComments.map((c) => (
-            <li key={c.id} className="p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-start space-x-4">
-                {/* ─── Avatar ────────────────────────────── */}
-                <div className="flex-shrink-0">
-                  <div className="h-8 w-8 bg-gray-400 rounded-full flex items-center justify-center">
-                    <span className="text-white font-medium">
-                      {c.username.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+            <div key={c.id} className="flex items-start space-x-4">
+              <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
+                <span className="text-lg font-medium text-gray-600">
+                  {c.username.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-baseline space-x-2">
+                  <strong className="font-semibold text-gray-900">
+                    {c.username}
+                  </strong>
+                  <span className="text-xs text-gray-500">
+                    {formatDistanceToNow(
+                      parseISO(
+                        c.createdAt.endsWith("Z")
+                          ? c.createdAt
+                          : `${c.createdAt}Z`
+                      ),
+                      { addSuffix: true }
+                    )}
+                  </span>
                 </div>
-
-                {/* ─── Comment body ───────────────────────── */}
-                <div className="flex-1">
-                  {/* Username · time ago */}
-                  <div className="flex items-center space-x-2 text-sm text-gray-700">
-                    <strong className="text-gray-900">{c.username}</strong>
-                  </div>
-
-                  {/* The comment text */}
-                  <p className="mt-1 text-gray-800">{c.content}</p>
-
-                  {/* Like · Reply */}
-                  <div className="mt-2 flex items-center text-xs text-gray-500 space-x-1">
-                    <button className="hover:underline">Like</button>
-                    <span>·</span>
-                    <button className="hover:underline">Reply</button>
-                    <span>·</span>
-                    <span>
-                      {formatDistanceToNow(
-                        parseISO(
-                          c.createdAt.endsWith("Z")
-                            ? c.createdAt
-                            : `${c.createdAt}Z`
-                        ),
-                        { addSuffix: true }
-                      )}
-                    </span>
-                  </div>
+                <p className="mt-1 text-gray-700 whitespace-pre-wrap">
+                  {c.content}
+                </p>
+                <div className="mt-2 flex items-center text-sm text-gray-500 space-x-4">
+                  <button className="flex items-center space-x-1 hover:text-primary transition">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                      ></path>
+                    </svg>
+                    <span>Reply</span>
+                  </button>
                 </div>
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
       {/* Pagination */}
       {pageCount > 1 && (
-        <div className="flex justify-center items-center space-x-2">
+        <div className="flex justify-center items-center space-x-2 mt-8">
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="px-2 py-1 rounded disabled:opacity-50 text-gray-100"
+            className="px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-200 disabled:opacity-50 transition"
           >
-            ‹
+            ‹ Prev
           </button>
 
           {leftDots && (
-            <span className="px-2 text-gray-100 select-none">…</span>
+            <span className="px-2 text-gray-400 select-none">…</span>
           )}
 
           {pages.map((p) => (
             <button
               key={p}
               onClick={() => setCurrentPage(p)}
-              className={`px-3 py-1 rounded ${
-                currentPage === p ? "bg-black text-white" : "bg-gray-200"
+              className={`px-3 py-1 rounded-md transition ${
+                currentPage === p
+                  ? "bg-black text-white font-semibold"
+                  : "bg-white text-gray-700 hover:bg-gray-200"
               }`}
             >
               {p}
@@ -219,15 +244,15 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
           ))}
 
           {rightDots && (
-            <span className="px-2 text-gray-100 select-none">…</span>
+            <span className="px-2 text-gray-400 select-none">…</span>
           )}
 
           <button
             onClick={() => setCurrentPage((p) => Math.min(pageCount, p + 1))}
             disabled={currentPage === pageCount}
-            className="px-2 py-1 rounded disabled:opacity-50 text-gray-100"
+            className="px-3 py-1 rounded-md bg-white text-gray-700 hover:bg-gray-200 disabled:opacity-50 transition"
           >
-            ›
+            Next ›
           </button>
         </div>
       )}

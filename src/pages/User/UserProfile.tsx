@@ -18,6 +18,8 @@ import {
 } from "../../api/Orders/index";
 import { formatDate } from "../../utils/formatDate";
 import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../../config/cloudinary";
+import { getMyFeaturedPayments, FeaturedPayment } from "../../api/Feature";
+import { getProductById } from "../../api/Products";
 
 interface UserForm {
   username: string;
@@ -50,6 +52,13 @@ const UserProfile = () => {
   const [, setUserProfile] = useState<UserResponse | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [featuredPayments, setFeaturedPayments] = useState<FeaturedPayment[]>(
+    []
+  );
+  const [loadingFeaturedPayments, setLoadingFeaturedPayments] = useState(false);
+  const [featuredProducts, setFeaturedProducts] = useState<
+    Record<string, Product>
+  >({});
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -207,6 +216,55 @@ const UserProfile = () => {
     fetchUserOrders();
   }, [currentUserId]);
 
+  // Fetch User's Featured Payments
+  useEffect(() => {
+    if (!currentUserId) {
+      setFeaturedPayments([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchFeaturedPayments = async () => {
+      try {
+        const payments = await getMyFeaturedPayments(currentUserId);
+        if (isMounted && payments) {
+          setFeaturedPayments(payments);
+          const productPromises = payments.map((p) =>
+            getProductById(p.productId)
+          );
+          const products = await Promise.all(productPromises);
+          const productsMap = products.reduce((acc, product) => {
+            if (product) {
+              acc[product.id as string] = product;
+            }
+            return acc;
+          }, {} as Record<string, Product>);
+          setFeaturedProducts(productsMap);
+        }
+      } catch (err) {
+        console.error("Failed to load featured payments:", err);
+      }
+    };
+
+    const initialFetch = async () => {
+      setLoadingFeaturedPayments(true);
+      await fetchFeaturedPayments();
+      if (isMounted) {
+        setLoadingFeaturedPayments(false);
+      }
+    };
+
+    initialFetch();
+
+    const intervalId = setInterval(fetchFeaturedPayments, 10000); // Poll every 10 seconds
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [currentUserId]);
+
   // Debugging useEffect for orders state
   useEffect(() => {
     console.log("Orders state changed:", orders);
@@ -286,10 +344,12 @@ const UserProfile = () => {
     (order) => order.buyerId === currentUserId
   );
 
-  // Helper to get status color (matches OrdersManagement)
-  const getStatusColor = (status: Order["status"]) => {
-    const colors = {
+  const getStatusColor = (status: string) => {
+    const colors: { [key: string]: string } = {
       PENDING: "bg-yellow-100 text-yellow-800",
+      APPROVED: "bg-green-100 text-green-800",
+      REJECTED: "bg-red-100 text-red-800",
+      PAID: "bg-blue-100 text-blue-800",
       PROCESSING: "bg-blue-100 text-blue-800",
       SHIPPED: "bg-purple-100 text-purple-800",
       DELIVERED: "bg-green-100 text-green-800",
@@ -481,6 +541,71 @@ const UserProfile = () => {
             </p>
           </div>
         </section>
+
+        {/* Current Feature's Product */}
+        <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">
+            Current Feature's Product
+          </h3>
+          {loadingFeaturedPayments ? (
+            <p>Loading featured products...</p>
+          ) : featuredPayments.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredPayments.map((payment) => {
+                const product = featuredProducts[payment.productId];
+                if (!product) return null;
+
+                const paymentDate = new Date(payment.paymentDate);
+                const expiryDate = new Date(
+                  paymentDate.getTime() +
+                    payment.durationDays * 24 * 60 * 60 * 1000
+                );
+
+                return (
+                  <div
+                    key={payment.id}
+                    className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <img
+                      src={product.imageUrls?.[0] || "/default-image.jpg"}
+                      alt={product.title}
+                      className="w-full h-48 object-cover"
+                    />
+                    <div className="p-4">
+                      <h4 className="font-semibold text-lg text-gray-900 truncate">
+                        {product.title}
+                      </h4>
+                      <p className="text-gray-700 mt-1">
+                        {formatPrice(product.price)}
+                      </p>
+                      <div className="mt-2 text-sm text-gray-600">
+                        Status:{" "}
+                        <span
+                          className={`font-medium px-2 py-1 rounded-full text-xs ${getStatusColor(
+                            payment.status
+                          )}`}
+                        >
+                          {payment.status}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-sm text-gray-500">
+                        <p>Duration: {payment.durationDays} days</p>
+                        <p>Payment Date: {formatDate(payment.paymentDate)}</p>
+                        {payment.status === "PAID" && (
+                          <p>
+                            Ended Day: {formatDate(expiryDate.toISOString())}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-gray-500">You have no featured products yet.</p>
+          )}
+        </div>
 
         {editing && (
           <div className="flex justify-end gap-3 pt-4">

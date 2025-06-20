@@ -258,14 +258,9 @@ export const updateProduct = async (
 };
 
 // Delete a product
-export const deleteProduct = async (
-  userId: string,
-  productId: string
-): Promise<void> => {
+export const deleteProduct = async (productId: string): Promise<void> => {
   try {
-    const response = await customFetch.delete(
-      `/carts/${userId}/remove/${productId}`
-    );
+    const response = await customFetch.delete(`/products/${productId}`);
     if (
       response.status === 200 ||
       response.status === 1000 ||

@@ -15,6 +15,7 @@ import {
   UPLOAD_PRESET,
 } from "../../../config/cloudinary";
 import { Message } from "../../../api/Message";
+import ConfirmationModal from "../../../components/ConfirmationModal";
 
 // Helper to upload a single image to Cloudinary
 const uploadImageToCloudinary = async (file: File): Promise<string | null> => {
@@ -114,7 +115,6 @@ const MessagePopup = ({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [unread, setUnread] = useState(false);
   const [lastSeen, setLastSeen] = useState<number>(Date.now());
   const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
@@ -150,7 +150,7 @@ const MessagePopup = ({
             msgs.length > 0 &&
             new Date(msgs[msgs.length - 1].sentAt).getTime() > lastSeen
           ) {
-            setUnread(true);
+            // setUnread(true);
           }
         }
       });
@@ -183,7 +183,7 @@ const MessagePopup = ({
   // Mark as read when popup opens
   React.useEffect(() => {
     if (open) {
-      setUnread(false);
+      // setUnread(false);
       setLastSeen(Date.now());
     }
   }, [open, messages]);
@@ -279,7 +279,7 @@ const MessagePopup = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type a message..."
-            onFocus={() => setUnread(false)}
+            onFocus={() => setLastSeen(Date.now())}
           />
           <button
             className="bg-black text-white px-4 py-1 rounded disabled:opacity-50"
@@ -312,6 +312,7 @@ const OrdersManagement = () => {
     string | null
   >(null);
   const [chatOrder, setChatOrder] = useState<Order | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -472,11 +473,14 @@ const OrdersManagement = () => {
   };
 
   const handleDeleteOrder = async (orderId: string) => {
-    if (window.confirm("Are you sure you want to delete this order?")) {
-      const success = await deleteOrder(orderId);
-      if (success) {
-        setOrders(orders.filter((order) => order.orderId !== orderId));
-      }
+    try {
+      await deleteOrder(orderId);
+      toast.success("Order deleted successfully!");
+      fetchOrders(); // Refresh the list
+      setOrderToDelete(null); // Close modal
+    } catch (error) {
+      toast.error("Failed to delete order.");
+      console.error("Delete error:", error);
     }
   };
 
@@ -540,7 +544,7 @@ const OrdersManagement = () => {
     }) || [];
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">
           Orders Management
@@ -833,8 +837,8 @@ const OrdersManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
-                        onClick={() => handleDeleteOrder(order.orderId)}
-                        className="text-red-600 hover:text-red-900"
+                        onClick={() => setOrderToDelete(order)}
+                        className="text-red-500 hover:text-red-700 font-medium"
                       >
                         Delete
                       </button>
@@ -993,6 +997,14 @@ const OrdersManagement = () => {
           receiverId={chatOrder.sellerId}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={!!orderToDelete}
+        onClose={() => setOrderToDelete(null)}
+        onConfirm={() => handleDeleteOrder(orderToDelete!.orderId)}
+        title="Confirm Order Deletion"
+        message={`Are you sure you want to delete order #${orderToDelete?.orderId}? This is permanent.`}
+      />
     </div>
   );
 };

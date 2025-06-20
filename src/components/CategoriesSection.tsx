@@ -6,9 +6,9 @@ import { getProducts, Product } from "../api/Products/adminIndex";
 import toast from "react-hot-toast";
 
 interface CategoryCard {
-  title: string;  // e.g. "Suits & Blazers"
-  image: string;  // e.g. first element of product.imageUrls[] (full URL)
-  link: string;   // e.g. "suits-and-blazers"
+  title: string; // e.g. "Suits & Blazers"
+  image: string; // e.g. first element of product.imageUrls[] (full URL)
+  link: string; // e.g. "suits-and-blazers"
 }
 
 // A helper to turn "Suits & Blazers" into "suits-and-blazers"
@@ -42,7 +42,7 @@ const CategoriesSection: React.FC = () => {
 
         activeProducts.forEach((p) => {
           const rawName = p.categoryName!.trim(); // we know it's a non‐empty string
-          const catSlug = slugify(rawName);       // e.g. "suits-and-blazers"
+          const catSlug = slugify(rawName); // e.g. "suits-and-blazers"
 
           if (catSlug === "") {
             // in case slugify produced an empty string, skip
@@ -63,22 +63,22 @@ const CategoriesSection: React.FC = () => {
         });
 
         // 3) Convert the map into CategoryCard[]
-        const cats: CategoryCard[] = Array.from(
-          mapSlugToImage.entries()
-        ).map(([slug, thumbnailUrl]) => {
-          // We want the “title” to show the original categoryName (not the slug).
-          // To do that, find ANY product whose slugified name === slug.
-          // (Since map keys came from activeProducts in order, the first time they appeared is fine.)
-          const originalName = activeProducts.find(
-            (p) => slugify(p.categoryName!) === slug
-          )!.categoryName!;
+        const cats: CategoryCard[] = Array.from(mapSlugToImage.entries()).map(
+          ([slug, thumbnailUrl]) => {
+            // We want the “title” to show the original categoryName (not the slug).
+            // To do that, find ANY product whose slugified name === slug.
+            // (Since map keys came from activeProducts in order, the first time they appeared is fine.)
+            const originalName = activeProducts.find(
+              (p) => slugify(p.categoryName!) === slug
+            )!.categoryName!;
 
-          return {
-            title: originalName, // e.g. "Suits & Blazers"
-            image: thumbnailUrl, // from the first matching product’s imageUrls[0]
-            link: slug,          // e.g. "suits-and-blazers"
-          };
-        });
+            return {
+              title: originalName, // e.g. "Suits & Blazers"
+              image: thumbnailUrl, // from the first matching product’s imageUrls[0]
+              link: slug, // e.g. "suits-and-blazers"
+            };
+          }
+        );
 
         setCategories(cats);
       } catch (err) {

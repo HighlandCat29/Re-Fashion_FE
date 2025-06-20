@@ -5,10 +5,14 @@ import {
   Category,
   deleteCategory,
 } from "../../../api/Categories/index";
+import ConfirmationModal from "../../../components/ConfirmationModal";
 
 const CategoriesManagement = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
+    null
+  );
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,19 +29,18 @@ const CategoriesManagement = () => {
       setLoading(false);
     }
   };
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this category?")) {
-      try {
-        await deleteCategory(id);
-        fetchAllCategories();
 
-        setCategories((prev) => prev.filter((cat) => cat.id !== id));
-      } catch (err) {
-        console.error("Failed to delete category:", err);
-        alert("Failed to delete category.");
-      }
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteCategory(id);
+      fetchAllCategories();
+      setCategoryToDelete(null); // Close modal
+    } catch (err) {
+      console.error("Failed to delete category:", err);
+      alert("Failed to delete category.");
     }
   };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto bg-white p-6 rounded-xl shadow-md">
@@ -100,7 +103,7 @@ const CategoriesManagement = () => {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(cat.id)}
+                        onClick={() => setCategoryToDelete(cat)}
                         className="text-red-600 hover:underline font-medium"
                       >
                         Delete
@@ -113,6 +116,14 @@ const CategoriesManagement = () => {
           </div>
         )}
       </div>
+
+      <ConfirmationModal
+        isOpen={!!categoryToDelete}
+        onClose={() => setCategoryToDelete(null)}
+        onConfirm={() => handleDelete(categoryToDelete!.id)}
+        title="Confirm Category Deletion"
+        message={`Are you sure you want to delete the category "${categoryToDelete?.name}"? This action cannot be undone.`}
+      />
     </div>
   );
 };

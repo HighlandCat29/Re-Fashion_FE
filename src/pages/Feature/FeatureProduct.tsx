@@ -18,13 +18,14 @@ const FeatureProduct = () => {
   const [transferProofImageUrl, setTransferProofImageUrl] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  const featureFee = product ? Math.round(product.price * 0.1) : 0;
+  const amount = featureFee;
+
   if (!product || !user) {
     toast.error("Product or user not found");
     navigate("/shop");
     return null;
   }
-
-  const featureFee = Math.round(product.price * 0.1);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,6 +64,7 @@ const FeatureProduct = () => {
       sellerId: user.id,
       durationDays,
       transferProofImageUrl,
+      amount,
     };
     console.log("Submitting featured payment:", req);
     try {
@@ -111,7 +113,13 @@ const FeatureProduct = () => {
           <label className="block font-medium mb-1">
             Feature Fee (10% of price)
           </label>
-          <div className="text-lg font-bold">{formatPrice(featureFee)}</div>
+          <input
+            type="number"
+            min={featureFee}
+            value={amount}
+            readOnly
+            className="text-lg font-bold border rounded px-2 py-1 w-full max-w-xs bg-gray-100 cursor-not-allowed"
+          />
         </div>
         <div className="mb-4">
           <label className="block font-medium mb-1">

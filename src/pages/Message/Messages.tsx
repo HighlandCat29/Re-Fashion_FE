@@ -7,6 +7,7 @@ import {
   getMessagePartners,
   MessagePartner,
 } from "../../api/Message";
+import { formatDate } from "../../utils/formatDate";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
@@ -246,9 +247,21 @@ const Messages = () => {
                           >
                             <p>{msg.message}</p>
                             <p className="text-xs mt-1 opacity-70">
-                              {new Date(msg.sentAt).toLocaleTimeString()}
+                              {formatDate(msg.sentAt).split(",")[1]}
                             </p>
                           </div>
+                          {isCurrentUser && (
+                            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                              {selectedPartner &&
+                                selectedPartner.profilePicture && (
+                                  <img
+                                    src={selectedPartner.profilePicture}
+                                    alt={selectedPartner.username}
+                                    className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                                  />
+                                )}
+                            </div>
+                          )}
                         </div>
                       );
                     })
