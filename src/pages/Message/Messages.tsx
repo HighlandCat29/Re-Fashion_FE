@@ -7,6 +7,7 @@ import {
   getMessagePartners,
   MessagePartner,
 } from "../../api/Message";
+import { getUserById } from "../../api/Users";
 import { formatDate } from "../../utils/formatDate";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -25,9 +26,29 @@ const Messages = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [currentUserProfile, setCurrentUserProfile] = useState<string>("");
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const prevMessagesLengthRef = useRef<number>(0);
   const [autoScroll, setAutoScroll] = useState(true);
+
+  // Fetch current user's profile picture
+  useEffect(() => {
+    if (!user?.id) {
+      navigate("/login");
+      return;
+    }
+    const fetchCurrentUserProfile = async () => {
+      try {
+        const userData = await getUserById(user.id);
+        if (userData?.profilePicture) {
+          setCurrentUserProfile(userData.profilePicture);
+        }
+      } catch (error) {
+        console.error("Error fetching current user profile:", error);
+      }
+    };
+    fetchCurrentUserProfile();
+  }, [user?.id, navigate]);
 
   // Fetch only message partners (users the current user has chatted with)
   useEffect(() => {
@@ -186,11 +207,19 @@ const Messages = () => {
                 {/* Chat Header */}
                 <div className="p-4 border-b">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                      <span className="text-lg font-medium text-gray-600">
-                        {selectedPartner.username.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
+                    {selectedPartner.profilePicture ? (
+                      <img
+                        src={selectedPartner.profilePicture}
+                        alt={selectedPartner.username}
+                        className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                        <span className="text-lg font-medium text-gray-600">
+                          {selectedPartner.username.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
                     <div>
                       <h2 className="font-semibold">
                         {selectedPartner.username}
@@ -252,14 +281,17 @@ const Messages = () => {
                           </div>
                           {isCurrentUser && (
                             <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                              {selectedPartner &&
-                                selectedPartner.profilePicture && (
-                                  <img
-                                    src={selectedPartner.profilePicture}
-                                    alt={selectedPartner.username}
-                                    className="w-8 h-8 rounded-full object-cover border border-gray-200"
-                                  />
-                                )}
+                              {currentUserProfile ? (
+                                <img
+                                  src={currentUserProfile}
+                                  alt="You"
+                                  className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                                />
+                              ) : (
+                                <span className="text-sm font-medium text-gray-600">
+                                  U
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>

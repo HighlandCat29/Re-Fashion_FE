@@ -5,10 +5,11 @@ import { useAppSelector } from "../../hooks";
 import { getUserById, UserResponse } from "../../api/Users";
 import { createOrder, OrderItem } from "../../api/Orders";
 import { getCartByUserId, Cart, removeCartItem } from "../../api/Cart";
-import { getProductById } from "../../api/Products";
+import { getProductById, Product } from "../../api/Products";
 import { formatPrice } from "../../utils/formatPrice";
 import paymentImage from "../../assets/Payment.jpg";
 import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../../config/cloudinary";
+import { MessagePopup } from "../../components/MessagePopup";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -18,9 +19,14 @@ const Checkout = () => {
   const [useNewAddress, setUseNewAddress] = useState(false);
   const [newAddress, setNewAddress] = useState("");
   const [cart, setCart] = useState<Cart | null>(null);
+  const [productDetails, setProductDetails] = useState<Record<string, Product>>(
+    {}
+  );
   const [confirmedAddress, setConfirmedAddress] = useState("");
   const [paymentScreenshotUrl, setPaymentScreenshotUrl] = useState<string>("");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [sellerProfile, setSellerProfile] = useState<UserResponse | null>(null);
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,6 +51,28 @@ const Checkout = () => {
 
         if (cartData) {
           setCart(cartData);
+          if (cartData.items.length > 0) {
+            const productIds = cartData.items.map((item) => item.productId);
+            const productPromises = productIds.map((id) => getProductById(id));
+            const products = await Promise.all(productPromises);
+
+            const details: Record<string, Product> = {};
+            products.forEach((product) => {
+              if (product && product.id) {
+                details[product.id] = product;
+              }
+            });
+            setProductDetails(details);
+
+            const firstValidProduct = cartData.items
+              .map((item) => details[item.productId])
+              .find((p) => p !== undefined);
+
+            if (firstValidProduct && firstValidProduct.sellerId) {
+              const sellerData = await getUserById(firstValidProduct.sellerId);
+              setSellerProfile(sellerData);
+            }
+          }
         }
       } catch (error) {
         toast.error("Failed to load data");
@@ -74,7 +102,6 @@ const Checkout = () => {
     if (!loggedInUser?.id || !cart) return;
 
     try {
-      // Remove each item from the cart
       for (const item of cart.items) {
         await removeCartItem(loggedInUser.id, item.productId);
       }
@@ -95,7 +122,7 @@ const Checkout = () => {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("upload_preset", UPLOAD_PRESET);
-      formData.append("cloud_name", "dnrxylpid"); // Replace with your actual Cloudinary cloud name if different
+      formData.append("cloud_name", "dnrxylpid");
 
       const response = await fetch(CLOUDINARY_UPLOAD_URL, {
         method: "POST",
@@ -111,7 +138,7 @@ const Checkout = () => {
     } catch (error) {
       console.error("Image upload error:", error);
       toast.error("Failed to upload payment screenshot.");
-      setPaymentScreenshotUrl(""); // Clear URL on error
+      setPaymentScreenshotUrl("");
     } finally {
       setUploadingImage(false);
     }
@@ -131,7 +158,6 @@ const Checkout = () => {
     const shippingAddressToSend = confirmedAddress;
 
     try {
-      // Fetch sellerId for each item to include in orderItems and for the overall order
       const productPromises = cart.items.map((item) =>
         getProductById(item.productId)
       );
@@ -140,7 +166,6 @@ const Checkout = () => {
       let firstSellerId: string = "";
       const orderItems: OrderItem[] = [];
 
-      // Filter out null products and process valid ones
       const validProducts = products.filter(
         (product): product is NonNullable<typeof product> => product !== null
       );
@@ -190,7 +215,6 @@ const Checkout = () => {
 
       const order = await createOrder(orderData);
       if (order) {
-        // Clear the cart after successful order
         await clearCart();
         toast.success("Order placed successfully!");
         navigate("/order-confirmation", {
@@ -223,13 +247,9 @@ const Checkout = () => {
       <h1 className="text-2xl font-bold mb-8">Checkout</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Order Summary and Address */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Order Summary Section */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-
-            {/* Buyer Information */}
             <div className="mb-6">
               <h3 className="text-lg font-medium mb-2">Buyer Information</h3>
               <div className="bg-gray-50 p-4 rounded-md">
@@ -245,172 +265,185 @@ const Checkout = () => {
                 </p>
               </div>
             </div>
-
-            {/* Shipping Address */}
-            <div className="mb-6">
-              <h3 className="text-lg font-medium mb-2">Shipping Address</h3>
-              <div className="bg-gray-50 p-4 rounded-md">
-                <p>{confirmedAddress || "No address confirmed yet"}</p>
-              </div>
-            </div>
-
-            {/* Order Items */}
-            <div className="mb-6">
-              <h3 className="text-lg font-medium mb-2">Order Items</h3>
+            <div>
+              <h3 className="text-lg font-medium mb-2">Items in Cart</h3>
               <div className="space-y-4">
-                {cart?.items.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between bg-gray-50 p-4 rounded-md"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <img
-                        src={item.productImage}
-                        alt={item.title}
-                        className="w-16 h-16 object-cover rounded-md"
-                      />
-                      <div>
-                        <p className="font-medium">{item.title}</p>
+                {cart.items.map((item) => {
+                  const product = productDetails[item.productId];
+                  return (
+                    <div
+                      key={item.productId}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-md"
+                    >
+                      <div className="flex items-center">
+                        <img
+                          src={product?.imageUrls[0] || ""}
+                          alt={item.title}
+                          className="w-16 h-16 rounded object-cover mr-4"
+                        />
+                        <div>
+                          <h4 className="font-medium">{item.title}</h4>
+                          <p className="text-gray-600">
+                            {formatPrice(item.price)}
+                          </p>
+                        </div>
                       </div>
+                      <span className="font-semibold">
+                        {formatPrice(item.price)}
+                      </span>
                     </div>
-                    <p className="font-medium">{formatPrice(item.price)}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
-
-            {/* Payment Information */}
-            <div className="mb-6">
-              <h3 className="text-lg font-medium mb-2">Payment Information</h3>
-              <div className="bg-gray-50 p-4 rounded-md">
-                <div className="flex justify-between mb-2">
-                  <span>Subtotal:</span>
-                  <span>{formatPrice(cart?.total || 0)}</span>
+            <div className="mt-6 pt-6 border-t">
+              <div className="flex justify-between">
+                <span className="font-medium">Subtotal</span>
+                <span>{formatPrice(cart.total)}</span>
+              </div>
+              <div className="flex justify-between mt-2 items-center">
+                <span className="font-medium">Shipping</span>
+                <div className="text-right">
+                  <span className="text-sm">
+                    Shipping is according to Seller
+                  </span>
+                  <p className="text-xs text-gray-500">
+                    Chat with Seller to determine shipping price
+                  </p>
                 </div>
-                <div className="flex justify-between mb-2">
-                  <span>Shipping:</span>
-                  <span>Free</span>
+              </div>
+              {sellerProfile && (
+                <div className="flex justify-end mt-2">
+                  <button
+                    onClick={() => setShowChat(true)}
+                    className="px-4 py-2 bg-black text-white text-sm rounded-md hover:bg-gray-800 transition"
+                  >
+                    Chat with Seller
+                  </button>
                 </div>
-                <div className="border-t pt-2 mt-2">
-                  <div className="flex justify-between font-bold">
-                    <span>Total:</span>
-                    <span>{formatPrice(cart?.total || 0)}</span>
-                  </div>
-                </div>
+              )}
+              <div className="flex justify-between font-bold text-xl mt-4">
+                <span>Total</span>
+                <span>{formatPrice(cart.total)}</span>
               </div>
             </div>
           </div>
-
-          {/* Address Confirmation Form */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">Shipping Address</h2>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Use New Address
-              </label>
-              <input
-                type="checkbox"
-                checked={useNewAddress}
-                onChange={(e) => setUseNewAddress(e.target.checked)}
-                className="h-4 w-4 text-black focus:ring-blue-500 border-gray-300 rounded"
-              />
+            <h2 className="text-xl font-semibold mb-4">Shipping Information</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="address"
+                    checked={!useNewAddress}
+                    onChange={() => setUseNewAddress(false)}
+                    className="mr-2"
+                  />
+                  Use existing address: {user?.address}
+                </label>
+              </div>
+              <div>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="address"
+                    checked={useNewAddress}
+                    onChange={() => setUseNewAddress(true)}
+                    className="mr-2"
+                  />
+                  Use a new address
+                </label>
+                {useNewAddress && (
+                  <input
+                    type="text"
+                    value={newAddress}
+                    onChange={handleAddressChange}
+                    className="mt-2 w-full p-2 border rounded"
+                    placeholder="Enter new address"
+                  />
+                )}
+              </div>
+              <button
+                onClick={handleConfirmAddress}
+                className="w-full mt-4 px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
+              >
+                Confirm Address
+              </button>
+              {confirmedAddress && (
+                <div className="mt-4 p-4 bg-green-100 text-green-800 rounded">
+                  Shipping to: <strong>{confirmedAddress}</strong>
+                </div>
+              )}
             </div>
-
-            {useNewAddress ? (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  New Shipping Address
-                </label>
-                <input
-                  type="text"
-                  value={newAddress}
-                  onChange={handleAddressChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  placeholder="Enter your new shipping address"
-                />
-              </div>
-            ) : (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Current Address
-                </label>
-                <p className="text-gray-600">{user?.address}</p>
-              </div>
-            )}
-
-            <button
-              onClick={handleConfirmAddress}
-              className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              Confirm Address
-            </button>
           </div>
         </div>
-
-        {/* Right Column - Payment Section */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-md p-6 sticky top-6">
-            <h2 className="text-xl font-semibold mb-4">Payment Information</h2>
-            <div className="mb-6">
+        <div className="lg:col-span-1 space-y-8">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
+            <p className="text-gray-600 mb-4">
+              Please transfer the total amount to the following account and
+              upload a screenshot of your payment.
+            </p>
+            <div className="text-center">
               <img
                 src={paymentImage}
-                alt="Payment Instructions"
-                className="w-full rounded-lg shadow-md mb-4"
+                alt="Payment QR Code"
+                className="w-48 h-48 mx-auto"
               />
-              <div className="space-y-2 text-center mb-4">
-                <p className="font-medium">Ngân hàng: VCB</p>
-                <p className="font-medium">Tên tài khoản: THAI BINH DUONG</p>
-                <p className="font-medium">Số tài khoản: 1031513945</p>
-              </div>
             </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="mt-4 text-center space-y-2">
+              <p className="font-medium">Ngân hàng: VCB</p>
+              <p className="font-medium">Tên tài khoản: THAI BINH DUONG</p>
+              <p className="font-medium">Số tài khoản: 1031513945</p>
+            </div>
+            <div className="mt-4">
+              <label
+                htmlFor="payment-screenshot"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Upload Payment Screenshot
               </label>
               <input
                 type="file"
+                id="payment-screenshot"
                 accept="image/*"
                 onChange={handlePaymentScreenshotChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-black file:text-white hover:file:bg-gray-800"
                 disabled={uploadingImage}
               />
               {uploadingImage && (
-                <p className="mt-2 text-sm text-blue-500">Uploading image...</p>
+                <p className="mt-2 text-sm text-gray-500">Uploading...</p>
               )}
-            </div>
-
-            {/* Payment Screenshot Preview */}
-            {paymentScreenshotUrl && (
-              <div className="mb-6">
-                <h3 className="text-lg font-medium mb-2">
-                  Payment Confirmation
-                </h3>
-                <div className="bg-gray-50 p-4 rounded-md">
+              {paymentScreenshotUrl && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium">Screenshot Preview:</p>
                   <img
                     src={paymentScreenshotUrl}
-                    alt="Payment Screenshot"
-                    className="w-full rounded-md"
+                    alt="Payment Screenshot Preview"
+                    className="mt-2 w-full h-auto rounded-md"
                   />
                 </div>
-              </div>
-            )}
-
-            {/* Place Order Button */}
-            <button
-              onClick={handleSubmit}
-              disabled={!confirmedAddress || !paymentScreenshotUrl}
-              className={`w-full px-6 py-3 rounded-md text-white font-medium ${
-                !confirmedAddress || !paymentScreenshotUrl
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-              }`}
-            >
-              Place Order
-            </button>
+              )}
+            </div>
           </div>
+          <button
+            onClick={handleSubmit}
+            className="w-full py-3 bg-black text-white rounded-lg font-semibold text-lg hover:bg-gray-800 transition"
+          >
+            Place Order
+          </button>
         </div>
       </div>
+      {showChat && loggedInUser && sellerProfile && (
+        <MessagePopup
+          open={showChat}
+          onClose={() => setShowChat(false)}
+          senderId={loggedInUser.id}
+          receiverId={sellerProfile.id}
+          receiverName={sellerProfile.username}
+        />
+      )}
     </div>
   );
 };

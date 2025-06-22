@@ -19,6 +19,7 @@ import {
   HiOutlineShoppingCart,
   HiOutlineHeart,
   HiHeart,
+  HiArrowLeft,
 } from "react-icons/hi2";
 import { FeaturedProductsSection } from "../components";
 
@@ -32,34 +33,16 @@ const SingleProduct = () => {
   const [loading, setLoading] = useState(true);
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserResponse | null>(null);
   const [sellerProfile, setSellerProfile] = useState<UserResponse | null>(null);
   const [showChat, setShowChat] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [returnToOrderUrl, setReturnToOrderUrl] = useState<string | null>(null);
 
   const {
     wishlist: localWishlist,
     addToWishlist: addToLocalWishlist,
     removeFromWishlist: removeFromLocalWishlist,
   } = useWishlist();
-
-  // Fetch user profile to get username
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!userId) return;
-
-      try {
-        const data = await getUserById(userId);
-        if (data) {
-          setUserProfile(data);
-        }
-      } catch (err) {
-        console.error("Error fetching user profile:", err);
-      }
-    };
-
-    fetchUserProfile();
-  }, [userId]);
 
   // Fetch seller profile
   useEffect(() => {
@@ -100,17 +83,7 @@ const SingleProduct = () => {
         setProduct(data);
 
         // Check if the current user is the owner
-        const ownerCheck = {
-          userId,
-          sellerId: data.sellerId,
-          userUsername: userProfile?.username,
-          sellerUsername: data.sellerUsername,
-          isOwner: userProfile?.username === data.sellerUsername,
-          productId: data.id,
-          productTitle: data.title,
-        };
-        console.log("Owner Check Details:", ownerCheck);
-        setIsOwner(ownerCheck.isOwner);
+        setIsOwner(!!userId && userId === data.sellerId);
 
         // Check if product is in wishlist
         if (userId) {
@@ -134,7 +107,18 @@ const SingleProduct = () => {
     };
 
     fetchProduct();
-  }, [id, userId, userProfile, localWishlist, navigate]);
+  }, [id, userId, localWishlist, navigate]);
+
+  useEffect(() => {
+    const lastOrderPage = localStorage.getItem("lastOrderPage");
+    if (lastOrderPage && lastOrderPage.includes("/order/")) {
+      setReturnToOrderUrl(lastOrderPage);
+    }
+    // Cleanup function to run when the component unmounts
+    return () => {
+      localStorage.removeItem("lastOrderPage");
+    };
+  }, []);
 
   const handleAddToCart = async () => {
     if (!product) return;
@@ -224,6 +208,12 @@ const SingleProduct = () => {
     navigate(`/edit-product/${product.id}`);
   };
 
+  const handleReturnToOrder = () => {
+    if (returnToOrderUrl) {
+      navigate(returnToOrderUrl);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -248,11 +238,22 @@ const SingleProduct = () => {
     "Is Owner:",
     isOwner,
     "Is Active:",
-    product?.isActive
+    product.isActive
   );
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {returnToOrderUrl && (
+        <div className="mb-6">
+          <button
+            onClick={handleReturnToOrder}
+            className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-primary transition-colors"
+          >
+            <HiArrowLeft className="w-5 h-5" />
+            Return to Order Details
+          </button>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Product Images */}
         <div className="space-y-4">

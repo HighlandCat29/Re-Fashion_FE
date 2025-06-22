@@ -710,24 +710,34 @@ const UserProfile = () => {
                     Shipping Address: {order.shippingAddress}
                   </p>
                   <div className="flex items-center justify-between mt-3">
-                    <span
-                      className={`px-2 py-1 rounded text-sm ${getStatusColor(
-                        order.status
-                      )}`}
-                    >
-                      {order.status}
-                    </span>
-                    <span
-                      className={`ml-2 px-2 py-1 rounded text-sm ${
-                        order.paymentStatus === "PAID"
-                          ? "bg-green-100 text-green-800"
-                          : order.paymentStatus === "PENDING"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {order.paymentStatus || "N/A"}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-500 mb-1">
+                        Order Status:
+                      </span>
+                      <span
+                        className={`px-2 py-1 rounded text-sm ${getStatusColor(
+                          order.status
+                        )}`}
+                      >
+                        {order.status}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs text-gray-500 mb-1">
+                        Payment Status:
+                      </span>
+                      <span
+                        className={`px-2 py-1 rounded text-sm ${
+                          order.paymentStatus === "PAID"
+                            ? "bg-green-100 text-green-800"
+                            : order.paymentStatus === "PENDING"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {order.paymentStatus || "N/A"}
+                      </span>
+                    </div>
                   </div>
                   <h4 className="mt-3 text-md font-semibold">Items:</h4>
                   <ul className="list-disc list-inside ml-4 text-gray-700">
@@ -811,24 +821,34 @@ const UserProfile = () => {
                   Shipping Address: {order.shippingAddress}
                 </p>
                 <div className="flex items-center justify-between mt-3">
-                  <span
-                    className={`px-2 py-1 rounded text-sm ${getStatusColor(
-                      order.status
-                    )}`}
-                  >
-                    {order.status}
-                  </span>
-                  <span
-                    className={`ml-2 px-2 py-1 rounded text-sm ${
-                      order.paymentStatus === "PAID"
-                        ? "bg-green-100 text-green-800"
-                        : order.paymentStatus === "PENDING"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {order.paymentStatus || "N/A"}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 mb-1">
+                      Order Status:
+                    </span>
+                    <span
+                      className={`px-2 py-1 rounded text-sm ${getStatusColor(
+                        order.status
+                      )}`}
+                    >
+                      {order.status}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-xs text-gray-500 mb-1">
+                      Payment Status:
+                    </span>
+                    <span
+                      className={`ml-2 px-2 py-1 rounded text-sm ${
+                        order.paymentStatus === "PAID"
+                          ? "bg-green-100 text-green-800"
+                          : order.paymentStatus === "PENDING"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {order.paymentStatus || "N/A"}
+                    </span>
+                  </div>
                 </div>
                 <h4 className="mt-3 text-md font-semibold">Items:</h4>
                 <ul className="list-disc list-inside ml-4 text-gray-700">

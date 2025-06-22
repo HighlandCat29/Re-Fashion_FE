@@ -44,7 +44,6 @@ const FeatureProduct = () => {
       if (!data.secure_url)
         throw new Error(data.error?.message || "Failed to upload image");
       setTransferProofImageUrl(data.secure_url);
-      toast.success("Payment screenshot uploaded successfully!");
     } catch (error) {
       toast.error("Failed to upload payment screenshot.");
       setTransferProofImageUrl("");

@@ -51,7 +51,6 @@ export const createFeaturedPayment = async (
       "/featured-payments",
       data
     );
-    toast.success("Featured payment created successfully!");
     return response.data.result;
   } catch (error) {
     if (error instanceof AxiosError) {

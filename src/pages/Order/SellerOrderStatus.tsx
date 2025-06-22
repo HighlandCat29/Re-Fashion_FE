@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getOrderById,
@@ -14,6 +14,9 @@ import { formatPrice } from "../../utils/formatPrice";
 import { formatDate } from "../../utils/formatDate";
 import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../../config/cloudinary";
 import { Message } from "../../api/Message";
+import { HiArrowLeft } from "react-icons/hi2";
+
+const ADMIN_USER_ID = "0e274421-7d98-4864-97e7-20dc05852138";
 
 const SellerOrderStatus = () => {
   const { orderId } = useParams();
@@ -36,6 +39,14 @@ const SellerOrderStatus = () => {
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const prevMessagesLength = React.useRef<number>(0);
+
+  const handleProductClick = (productId: string) => {
+    navigate(`/product/${productId}`);
+  };
+
+  useEffect(() => {
+    localStorage.setItem("lastOrderPage", window.location.pathname);
+  }, []);
 
   React.useEffect(() => {
     const fetchOrder = async () => {
@@ -150,7 +161,7 @@ const SellerOrderStatus = () => {
   // Typing indicator logic using localStorage
   React.useEffect(() => {
     if (!showChat || !loggedInUser?.id) return;
-    const typingKey = `typing-${loggedInUser.id}-to-0e274421-7d98-4864-97e7-20dc05852138`;
+    const typingKey = `typing-${loggedInUser.id}-to-${ADMIN_USER_ID}`;
     if (input) {
       localStorage.setItem(typingKey, "true");
       setIsTyping(false); // Don't show for self
@@ -168,10 +179,7 @@ const SellerOrderStatus = () => {
   const fetchMessages = React.useCallback(() => {
     if (!loggedInUser?.id) return;
     import("../../api/Message").then(({ getConversation }) => {
-      getConversation(
-        loggedInUser.id,
-        "0e274421-7d98-4864-97e7-20dc05852138"
-      ).then((msgs) => {
+      getConversation(loggedInUser.id, ADMIN_USER_ID).then((msgs) => {
         if (msgs) {
           setMessages(msgs);
           // Unread badge logic
@@ -187,18 +195,13 @@ const SellerOrderStatus = () => {
     });
     // Typing indicator: check if admin is typing
     if (loggedInUser?.id) {
-      const typingKey = `typing-0e274421-7d98-4864-97e7-20dc05852138-to-${loggedInUser.id}`;
+      const typingKey = `typing-${ADMIN_USER_ID}-to-${loggedInUser.id}`;
       setIsTyping(localStorage.getItem(typingKey) === "true");
     }
   }, [loggedInUser?.id, showChat, lastSeen]);
 
   React.useEffect(() => {
-    if (
-      showChat &&
-      loggedInUser &&
-      loggedInUser.id &&
-      "0e274421-7d98-4864-97e7-20dc05852138"
-    ) {
+    if (showChat && loggedInUser && loggedInUser.id && ADMIN_USER_ID) {
       fetchMessages(); // Initial fetch
       intervalRef.current = setInterval(fetchMessages, 2000); // Poll every 2 seconds
     }
@@ -231,7 +234,7 @@ const SellerOrderStatus = () => {
     const { sendMessage } = await import("../../api/Message");
     const msg = await sendMessage({
       senderId: loggedInUser.id,
-      receiverId: "0e274421-7d98-4864-97e7-20dc05852138",
+      receiverId: ADMIN_USER_ID,
       message: input,
     });
     if (msg) {
@@ -253,6 +256,15 @@ const SellerOrderStatus = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white rounded-2xl shadow-lg mt-8">
+      <div className="mb-6">
+        <button
+          onClick={() => navigate("/user-profile")}
+          className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-primary transition-colors"
+        >
+          <HiArrowLeft className="w-5 h-5" />
+          Return to Profile
+        </button>
+      </div>
       <h2 className="text-2xl font-bold mb-8">Order Status (Seller View)</h2>
 
       {/* Order Status Roadmap */}
@@ -517,19 +529,34 @@ const SellerOrderStatus = () => {
         {/* Order Items */}
         <div className="mt-6">
           <h4 className="text-lg font-semibold mb-3">Order Items</h4>
-          <ul className="space-y-2">
-            {order.items?.map((item: OrderItem, index: number) => (
-              <li
-                key={index}
-                className="flex justify-between items-center p-2 bg-gray-50 rounded"
-              >
-                <span>
-                  {item.productName} (x{item.quantity})
-                </span>
-                <span className="font-medium">{formatPrice(item.price)}</span>
-              </li>
-            ))}
-          </ul>
+          <table className="table-auto w-full">
+            <thead>
+              <tr>
+                <th className="p-3 text-left">Product Name</th>
+                <th className="p-3 text-left">Price</th>
+                <th className="p-3 text-left">Product</th>
+              </tr>
+            </thead>
+            <tbody>
+              {order.items?.map((item: OrderItem, index: number) => (
+                <tr
+                  key={index}
+                  className="border-b border-gray-200 hover:bg-gray-50 cursor-pointer"
+                  onClick={() => handleProductClick(item.productId)}
+                >
+                  <td className="p-3">{item.productName}</td>
+                  <td className="p-3">{formatPrice(item.price)}</td>
+                  <td className="p-3">
+                    <img
+                      src={item.productImage}
+                      alt={item.productName}
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         {/* Payment Screenshot, Shipped Package Image, and Delivery Confirmation Image */}

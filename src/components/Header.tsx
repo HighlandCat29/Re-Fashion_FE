@@ -214,17 +214,43 @@ const Header = () => {
       >
         <div className="container mx-auto px-4">
           <div className="relative flex h-24 items-center justify-between">
-            {/* ───── Sidebar Toggle (Left) ───── */}
-            <button
-              aria-label="Toggle Sidebar"
-              className="
-                text-3xl text-gray-800 hover:text-sky-500
-                transition-colors duration-200
-              "
-              onClick={() => setIsSidebarOpen(true)}
-            >
-              <HiBars3 />
-            </button>
+            {/* ───── Left Side: Sidebar Toggle + Return to Cart ───── */}
+            <div className="flex items-center gap-4">
+              <button
+                aria-label="Toggle Sidebar"
+                className="
+                  text-3xl text-gray-800 hover:text-sky-500
+                  transition-colors duration-200
+                "
+                onClick={() => setIsSidebarOpen(true)}
+              >
+                <HiBars3 />
+              </button>
+
+              {/* ───── Return to Cart (only on checkout page) ───── */}
+              {location.pathname === "/checkout" && (
+                <button
+                  onClick={() => navigate("/cart")}
+                  className="flex items-center text-gray-600 hover:text-black transition-colors"
+                >
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                    />
+                  </svg>
+                  Return to Cart
+                </button>
+              )}
+            </div>
 
             {/* ───── Centered Logo ───── */}
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">

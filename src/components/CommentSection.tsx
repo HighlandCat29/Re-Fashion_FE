@@ -111,10 +111,18 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
       {authUser ? (
         <form onSubmit={handleSubmit} className="mb-6">
           <div className="flex items-start space-x-4">
-            <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
-              <span className="text-lg font-medium text-gray-600">
-                {displayName.charAt(0).toUpperCase()}
-              </span>
+            <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+              {profile?.profilePicture ? (
+                <img
+                  src={profile.profilePicture}
+                  alt={displayName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-lg font-medium text-gray-600">
+                  {displayName.charAt(0).toUpperCase()}
+                </span>
+              )}
             </div>
             <div className="flex-1">
               <textarea
@@ -163,54 +171,69 @@ export const CommentSection: React.FC<Props> = ({ productId }) => {
         </div>
       ) : (
         <div className="space-y-6 border-t pt-6">
-          {pagedComments.map((c) => (
-            <div key={c.id} className="flex items-start space-x-4">
-              <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-lg font-medium text-gray-600">
-                  {c.username.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-baseline space-x-2">
-                  <strong className="font-semibold text-gray-900">
-                    {c.username}
-                  </strong>
-                  <span className="text-xs text-gray-500">
-                    {formatDistanceToNow(
-                      parseISO(
-                        c.createdAt.endsWith("Z")
-                          ? c.createdAt
-                          : `${c.createdAt}Z`
-                      ),
-                      { addSuffix: true }
-                    )}
-                  </span>
+          {pagedComments.map((c) => {
+            const isCurrentUserComment =
+              profile && c.username === profile.username;
+            const avatar = isCurrentUserComment ? profile.profilePicture : null;
+            const name = c.username;
+
+            return (
+              <div key={c.id} className="flex items-start space-x-4">
+                <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                  {avatar ? (
+                    <img
+                      src={avatar}
+                      alt={name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-lg font-medium text-gray-600">
+                      {name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
-                <p className="mt-1 text-gray-700 whitespace-pre-wrap">
-                  {c.content}
-                </p>
-                <div className="mt-2 flex items-center text-sm text-gray-500 space-x-4">
-                  <button className="flex items-center space-x-1 hover:text-primary transition">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                      ></path>
-                    </svg>
-                    <span>Reply</span>
-                  </button>
+                <div className="flex-1">
+                  <div className="flex items-baseline space-x-2">
+                    <strong className="font-semibold text-gray-900">
+                      {name}
+                    </strong>
+                    <span className="text-xs text-gray-500">
+                      {formatDistanceToNow(
+                        parseISO(
+                          c.createdAt.endsWith("Z")
+                            ? c.createdAt
+                            : `${c.createdAt}Z`
+                        ),
+                        { addSuffix: true }
+                      )}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-gray-700 whitespace-pre-wrap">
+                    {c.content}
+                  </p>
+                  <div className="mt-2 flex items-center text-sm text-gray-500 space-x-4">
+                    <button className="flex items-center space-x-1 hover:text-primary transition">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                        ></path>
+                      </svg>
+                      <span>Reply</span>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

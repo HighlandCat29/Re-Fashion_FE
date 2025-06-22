@@ -108,25 +108,6 @@ export const getUserById = async (id: string): Promise<UserResponse | null> => {
   }
 };
 
-// Get user by username
-export const getUserByUsername = async (
-  username: string
-): Promise<UserResponse | null> => {
-  try {
-    const response = await customFetch.get(`/users/${username}`);
-    return response.data.result;
-  } catch (error: unknown) {
-    let errorMessage = "An unknown error occurred";
-    if (error instanceof AxiosError) {
-      errorMessage = error.response?.data?.message || error.message;
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    toast.error("Failed to fetch user by username: " + errorMessage);
-    return null;
-  }
-};
-
 // Get all admin users
 export const getAdminUsers = async (): Promise<AdminUserResponse[] | null> => {
   try {

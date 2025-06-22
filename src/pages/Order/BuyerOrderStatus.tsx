@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getOrdersByBuyerID, Order, OrderItem } from "../../api/Orders";
 import { toast } from "react-hot-toast";
@@ -7,6 +7,7 @@ import { formatPrice } from "../../utils/formatPrice";
 import { formatDate } from "../../utils/formatDate";
 import { CLOUDINARY_UPLOAD_URL, UPLOAD_PRESET } from "../../config/cloudinary";
 import { deliveryConfirm } from "../../api/Orders";
+import { HiArrowLeft } from "react-icons/hi2";
 
 // Helper to get status color (matches OrdersManagement)
 const getStatusColor = (status: Order["status"]) => {
@@ -29,6 +30,14 @@ const BuyerOrderStatus = () => {
   const [receiveImage, setReceiveImage] = React.useState<string>("");
   const [uploading, setUploading] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
+
+  const handleProductClick = (productId: string) => {
+    navigate(`/product/${productId}`);
+  };
+
+  useEffect(() => {
+    localStorage.setItem("lastOrderPage", window.location.pathname);
+  }, []);
 
   React.useEffect(() => {
     const fetchOrder = async () => {
@@ -118,6 +127,15 @@ const BuyerOrderStatus = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white rounded-2xl shadow-lg mt-8">
+      <div className="mb-6">
+        <button
+          onClick={() => navigate("/user-profile")}
+          className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-primary transition-colors"
+        >
+          <HiArrowLeft className="w-5 h-5" />
+          Return to Profile
+        </button>
+      </div>
       <h2 className="text-2xl font-bold mb-8">Order Status</h2>
 
       {/* Order Status Roadmap */}
@@ -300,85 +318,105 @@ const BuyerOrderStatus = () => {
         </div>
       </div>
 
-      {/* Order Details Card */}
-      <div className="border rounded-lg p-6 hover:shadow-md transition-shadow">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className="font-medium text-lg">Order ID: {order.orderId}</h3>
-            <p className="text-gray-600">
-              Seller: {order.sellerName || "Unknown Seller"}
-            </p>
+      {/* Order Details */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Order ID:</span>
+              <span>{order.orderId}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Order Date:</span>
+              <span>{formatDate(order.createdAt)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Seller:</span>
+              <span>{order.sellerName}</span>
+            </div>
+            <div className="flex justify-between font-bold text-base mt-2">
+              <span>Total:</span>
+              <span>{formatPrice(order.totalAmount)}</span>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <p className="text-gray-600">Order Date</p>
-            <p className="font-medium">{formatDate(order.createdAt)}</p>
-          </div>
-          <div>
-            <p className="text-gray-600">Total Amount</p>
-            <p className="font-medium text-primary">
-              {formatPrice(order.totalAmount)}
-            </p>
-          </div>
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Order Items</h3>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2">Product</th>
+                <th className="text-right py-2">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {order.items?.map((item: OrderItem, index: number) => (
+                <tr
+                  key={index}
+                  className="border-b hover:bg-gray-50 cursor-pointer"
+                  onClick={() => handleProductClick(item.productId)}
+                >
+                  <td className="py-2 flex items-center">
+                    <img
+                      src={item.productImage}
+                      alt={item.productName}
+                      className="w-12 h-12 object-cover rounded mr-4"
+                    />
+                    <span>{item.productName}</span>
+                  </td>
+                  <td className="text-right py-2">{formatPrice(item.price)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Shipping Information */}
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold mb-4">Shipping Information</h3>
+        <div className="flex items-center gap-4">
           <div>
             <p className="text-gray-600">Shipping Address</p>
             <p className="font-medium">{order.shippingAddress}</p>
           </div>
         </div>
+      </div>
 
-        {/* Order Items */}
-        <div className="mt-6">
-          <h4 className="text-lg font-semibold mb-3">Order Items</h4>
-          <ul className="space-y-2">
-            {order.items?.map((item: OrderItem, index: number) => (
-              <li
-                key={index}
-                className="flex justify-between items-center p-2 bg-gray-50 rounded"
-              >
-                <span>
-                  {item.productName} (x{item.quantity})
-                </span>
-                <span className="font-medium">{formatPrice(item.price)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Payment Screenshot, Shipped Package Image, and Delivery Confirmation Image */}
-        <div className="mt-6 flex flex-wrap gap-8 items-start">
-          {order.paymentScreenshotUrl && (
-            <div>
-              <p className="text-gray-600 mb-2">Payment Screenshot:</p>
-              <img
-                src={order.paymentScreenshotUrl}
-                alt="Payment Screenshot"
-                className="w-32 h-32 object-cover rounded-md shadow"
-              />
-            </div>
-          )}
-          {order.sellerPackageImageUrl && (
-            <div>
-              <p className="text-gray-600 mb-2">Shipped Package Image:</p>
-              <img
-                src={order.sellerPackageImageUrl}
-                alt="Shipped Package"
-                className="w-32 h-32 object-cover rounded-md shadow"
-              />
-            </div>
-          )}
-          {order.buyerPackageImageUrl && (
-            <div>
-              <p className="text-gray-600 mb-2">Delivery Confirmation Image:</p>
-              <img
-                src={order.buyerPackageImageUrl}
-                alt="Delivery Confirmation"
-                className="w-32 h-32 object-cover rounded-md shadow"
-              />
-            </div>
-          )}
-        </div>
+      {/* Payment Screenshot, Shipped Package Image, and Delivery Confirmation Image */}
+      <div className="mt-6 flex flex-wrap gap-8 items-start">
+        {order.paymentScreenshotUrl && (
+          <div>
+            <p className="text-gray-600 mb-2">Payment Screenshot:</p>
+            <img
+              src={order.paymentScreenshotUrl}
+              alt="Payment Screenshot"
+              className="w-32 h-32 object-cover rounded-md shadow"
+            />
+          </div>
+        )}
+        {order.sellerPackageImageUrl && (
+          <div>
+            <p className="text-gray-600 mb-2">Shipped Package Image:</p>
+            <img
+              src={order.sellerPackageImageUrl}
+              alt="Shipped Package"
+              className="w-32 h-32 object-cover rounded-md shadow"
+            />
+          </div>
+        )}
+        {order.buyerPackageImageUrl && (
+          <div>
+            <p className="text-gray-600 mb-2">Delivery Confirmation Image:</p>
+            <img
+              src={order.buyerPackageImageUrl}
+              alt="Delivery Confirmation"
+              className="w-32 h-32 object-cover rounded-md shadow"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
