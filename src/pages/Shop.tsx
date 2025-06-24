@@ -273,11 +273,10 @@ const Shop = () => {
                           setSelectedCategory("all");
                           setIsFilterOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                          selectedCategory === "all"
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${selectedCategory === "all"
                             ? "text-primary font-medium"
                             : "text-black"
-                        }`}
+                          }`}
                       >
                         All Products
                       </button>
@@ -297,11 +296,10 @@ const Shop = () => {
                               setSelectedCategory(slugify(cat.name));
                               setIsFilterOpen(false);
                             }}
-                            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                              selectedCategory === slugify(cat.name)
+                            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${selectedCategory === slugify(cat.name)
                                 ? "text-primary font-medium"
                                 : "text-gray-700"
-                            }`}
+                              }`}
                           >
                             {cat.name}
                           </button>
@@ -323,8 +321,8 @@ const Shop = () => {
             {!selectedCategory || selectedCategory === "all"
               ? "We couldn't find any products matching your search."
               : `We couldn't find any products in the ${formatCategoryName(
-                  selectedCategory
-                )} category.`}
+                selectedCategory
+              )} category.`}
           </p>
           <button
             onClick={() => setSelectedCategory("all")}
@@ -415,11 +413,10 @@ const Shop = () => {
                         setSelectedCategory("all");
                         setIsFilterOpen(false);
                       }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                        selectedCategory === "all"
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${selectedCategory === "all"
                           ? "text-primary font-medium"
                           : "text-gray-700"
-                      }`}
+                        }`}
                     >
                       All Products
                     </button>
@@ -439,11 +436,10 @@ const Shop = () => {
                             setSelectedCategory(slugify(cat.name));
                             setIsFilterOpen(false);
                           }}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                            selectedCategory === slugify(cat.name)
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${selectedCategory === slugify(cat.name)
                               ? "text-primary font-medium"
                               : "text-gray-700"
-                          }`}
+                            }`}
                         >
                           {cat.name}
                         </button>
