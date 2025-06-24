@@ -130,7 +130,7 @@ const WishlistPage: React.FC = () => {
           <p className="text-gray-600 text-lg">Your wishlist is empty</p>
           <button
             onClick={() => navigate("/shop")}
-            className="mt-4 px-6 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+            className="mt-4 px-6 py-2 bg-black text-white rounded-md hover:bg-gray-900 transition-colors"
           >
             Browse Products
           </button>

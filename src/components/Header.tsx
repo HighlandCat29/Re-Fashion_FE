@@ -485,6 +485,13 @@ const Header = () => {
                     >
                       My Profile
                     </Link>
+                    <Link
+                      to="/manage-selling-buying"
+                      onClick={() => setShowProfileDropdown(false)}
+                      className="block px-4 py-2 text-sm text-green-700 hover:bg-green-50"
+                    >
+                      Manage Selling/Buying Product
+                    </Link>
                     <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
