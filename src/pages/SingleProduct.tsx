@@ -22,6 +22,9 @@ import {
   HiArrowLeft,
 } from "react-icons/hi2";
 import { FeaturedProductsSection } from "../components";
+import { getSellerProfile } from "../api/Users";
+import { deleteProduct } from "../api/Products/index";
+import ConfirmationModal from "../components/ConfirmationModal";
 
 const SingleProduct = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +40,7 @@ const SingleProduct = () => {
   const [showChat, setShowChat] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [returnToOrderUrl, setReturnToOrderUrl] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const {
     wishlist: localWishlist,
@@ -206,6 +210,19 @@ const SingleProduct = () => {
   const handleEdit = () => {
     if (!product?.id) return;
     navigate(`/edit-product/${product.id}`);
+  };
+
+  const handleDelete = async () => {
+    if (!product || !product.id) return;
+    try {
+      await deleteProduct(product.id);
+      toast.success("Product deleted successfully!");
+      navigate("/user-profile"); // Redirect after deletion
+    } catch (error) {
+      toast.error("Failed to delete product.");
+    } finally {
+      setIsDeleteModalOpen(false);
+    }
   };
 
   const handleReturnToOrder = () => {
@@ -429,14 +446,22 @@ const SingleProduct = () => {
             )}
           </div>
           {isOwner && product && (
-            <button
-              className="ml-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-              onClick={() =>
-                navigate("/feature-product", { state: { product } })
-              }
-            >
-              Feature Product
-            </button>
+            <div className="flex space-x-4 mt-4">
+              <button
+                className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
+                onClick={() =>
+                  navigate("/feature-product", { state: { product } })
+                }
+              >
+                Feature Product
+              </button>
+              <button
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+                onClick={() => setIsDeleteModalOpen(true)}
+              >
+                Delete Product
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -459,6 +484,15 @@ const SingleProduct = () => {
           receiverName={sellerProfile.username}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Confirm Deletion"
+        message="Are you sure you want to delete this product? This action cannot be undone."
+      />
     </div>
   );
 };

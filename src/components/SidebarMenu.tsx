@@ -3,7 +3,7 @@ import { HiXMark } from "react-icons/hi2";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppSelector } from "../hooks";
 import { logout } from "../api/Logout/index";
-import { isAuthenticated } from "../utils/auth";
+import { isAuthenticated, ADMIN_USER_ID } from "../utils/auth";
 import { toast } from "react-hot-toast";
 import {
   Home,
@@ -13,6 +13,7 @@ import {
   Heart,
   LogOut,
   LogIn,
+  MessageCircle,
 } from "lucide-react";
 
 const SidebarMenu = ({
@@ -152,7 +153,20 @@ const SidebarMenu = ({
             </nav>
             {/* Logout button at the bottom */}
             {loginStatus && (
-              <div className="absolute bottom-0 left-0 w-full px-4 pb-6">
+              <div className="absolute bottom-0 left-0 w-full px-4 pb-6 flex flex-col gap-2">
+                {/* Chat with Admin button */}
+                <button
+                  onClick={() => {
+                    setIsSidebarOpen(false);
+                    navigate("/messages", {
+                      state: { adminId: ADMIN_USER_ID },
+                    });
+                  }}
+                  className="w-full flex items-center px-3 py-3 rounded transition font-semibold text-lg text-blue-600 hover:bg-blue-50 hover:text-blue-800 mb-2"
+                >
+                  <MessageCircle size={24} className="mr-3" />
+                  Chat with Admin
+                </button>
                 <button
                   onClick={handleLogoutClick}
                   className="w-full flex items-center px-3 py-3 rounded transition font-semibold text-lg text-red-600 hover:bg-red-50 hover:text-red-800"

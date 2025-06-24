@@ -10,7 +10,7 @@ import {
 import { getUserById } from "../../api/Users";
 import { formatDate } from "../../utils/formatDate";
 import { toast } from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { AxiosError } from "axios";
 
 type PartnerPreview = MessagePartner & { lastMessage?: Message };
@@ -18,6 +18,7 @@ type PartnerPreview = MessagePartner & { lastMessage?: Message };
 const Messages = () => {
   const { user } = useAppSelector((state) => state.auth);
   const navigate = useNavigate();
+  const location = useLocation();
   const [partners, setPartners] = useState<PartnerPreview[]>([]);
   const [selectedPartner, setSelectedPartner] = useState<PartnerPreview | null>(
     null
@@ -62,6 +63,33 @@ const Messages = () => {
         const partners = await getMessagePartners(user.id);
         if (partners) {
           setPartners(partners);
+          // If coming from sidebar with adminId, select admin as partner if present
+          const adminId = location.state?.adminId;
+          if (adminId && user.id !== adminId) {
+            let adminPartner = partners.find((p) => p.id === adminId);
+            if (adminPartner) {
+              setSelectedPartner(adminPartner);
+              return;
+            } else {
+              // Admin not in partners, auto-create conversation
+              const { sendMessage } = await import("../../api/Message");
+              await sendMessage({
+                senderId: user.id,
+                receiverId: adminId,
+                message: "Hello Admin!",
+              });
+              // Refetch partners after sending message
+              const updatedPartners = await getMessagePartners(user.id);
+              if (updatedPartners) {
+                setPartners(updatedPartners);
+                adminPartner = updatedPartners.find((p) => p.id === adminId);
+                if (adminPartner) {
+                  setSelectedPartner(adminPartner);
+                  return;
+                }
+              }
+            }
+          }
           if (partners.length > 0) {
             setSelectedPartner(partners[0]);
           }
@@ -74,6 +102,7 @@ const Messages = () => {
       }
     };
     fetchPartners();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, navigate]);
 
   // Fetch messages for selected partner

@@ -1,5 +1,7 @@
 import { toast } from "react-hot-toast";
 
+export const ADMIN_USER_ID = "0e274421-7d98-4864-97e7-20dc05852138";
+
 export const handleTokenExpiration = () => {
   // Clear auth data
   localStorage.removeItem("authToken");
