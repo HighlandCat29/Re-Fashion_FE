@@ -22,7 +22,6 @@ import {
   HiArrowLeft,
 } from "react-icons/hi2";
 import { FeaturedProductsSection } from "../components";
-import { getSellerProfile } from "../api/Users";
 import { deleteProduct } from "../api/Products/index";
 import ConfirmationModal from "../components/ConfirmationModal";
 

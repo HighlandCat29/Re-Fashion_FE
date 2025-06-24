@@ -51,6 +51,7 @@ import Messages from "./pages/Message/Messages";
 import AdminMessages from "./pages/Admin/Message/Message";
 import ConfirmFeature from "./pages/Feature/ConfirmFeature";
 import FeatureManagement from "./pages/Admin/Feature/FeatureManagement";
+import OrderManage from "./pages/Order/OrderManage";
 
 const router = createBrowserRouter([
   {
@@ -181,6 +182,14 @@ const router = createBrowserRouter([
         element: (
           <AuthGuard>
             <ConfirmFeature />
+          </AuthGuard>
+        ),
+      },
+      {
+        path: "manage-selling-buying",
+        element: (
+          <AuthGuard>
+            <OrderManage />
           </AuthGuard>
         ),
       },

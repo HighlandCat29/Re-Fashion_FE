@@ -7,6 +7,7 @@ import {
   HiOutlineChatBubbleLeftRight,
   HiOutlineUser,
   HiOutlineMagnifyingGlass,
+  HiOutlineBell,
 } from "react-icons/hi2";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
@@ -18,6 +19,8 @@ import { useAppSelector } from "../hooks";
 import { getUserWishlists } from "../api/Whishlists";
 import { isAuthenticated } from "../utils/auth";
 import { toast } from "react-hot-toast";
+import NoticePopup from "./Notice";
+import { getUserNotices, markNoticeAsRead, Notice } from "../api/Notice";
 
 
 const Header = () => {
@@ -32,6 +35,11 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [showNoticePopup, setShowNoticePopup] = useState(false);
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [loadingNotices, setLoadingNotices] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const noticeRef = useRef<HTMLDivElement>(null);
 
   // Calculate total items in cart
   const cartItemCount = productsInCart.length;
@@ -83,6 +91,36 @@ const Header = () => {
       window.removeEventListener("wishlistUpdated", handleWishlistUpdate);
     };
   }, [user?.id, localWishlist]);
+
+  // Fetch user notices
+  useEffect(() => {
+    if (showNoticePopup && user?.id) {
+      setLoadingNotices(true);
+      getUserNotices(user.id)
+        .then((data) => {
+          setNotices(data || []);
+          setUnreadCount((data || []).filter((n) => !n.read).length);
+        })
+        .finally(() => setLoadingNotices(false));
+    }
+  }, [showNoticePopup, user?.id]);
+
+  // Update unread count when notices change
+  useEffect(() => {
+    setUnreadCount(notices.filter((n) => !n.read).length);
+  }, [notices]);
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    if (!showNoticePopup) return;
+    const handleClick = (e: MouseEvent) => {
+      if (noticeRef.current && !noticeRef.current.contains(e.target as Node)) {
+        setShowNoticePopup(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showNoticePopup]);
 
   const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     // If we're already on "/", scroll to top
@@ -192,6 +230,22 @@ const Header = () => {
       e.preventDefault();
       navigate("/login");
       toast.error("Please login to access this feature");
+    }
+  };
+
+  const handleNoticeIconClick = () => {
+    setShowNoticePopup((prev) => !prev);
+  };
+
+  const handleMarkAsRead = async (noticeId: string) => {
+    const notice = notices.find((n) => n.id === noticeId);
+    if (notice && !notice.read) {
+      const success = await markNoticeAsRead(noticeId);
+      if (success) {
+        setNotices((prev) =>
+          prev.map((n) => (n.id === noticeId ? { ...n, read: true } : n))
+        );
+      }
     }
   };
 
@@ -409,14 +463,38 @@ const Header = () => {
                 </span>
               </Link>
 
-              {/* Sell Product Button */}
-              <Link
-                to="sell-product-list"
-                className="hidden lg:block px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary hover:text-white transition-colors duration-300"
-                onClick={(e) => handleNavigation(e, "/sell-product")}
-              >
-                Sell Product
-              </Link>
+              {/* Notice Icon */}
+              <div className="relative" ref={noticeRef}>
+                <button
+                  className="group relative"
+                  aria-label="Notifications"
+                  onClick={handleNoticeIconClick}
+                >
+                  <HiOutlineBell className="text-3xl text-gray-800 hover:text-blue-500 transition-colors duration-200" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                  <span
+                    className="
+                      absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
+                      text-xs text-white group-hover:block
+                      -translate-x-1/2
+                    "
+                  >
+                    Notifications
+                  </span>
+                </button>
+                {showNoticePopup && (
+                  <NoticePopup
+                    notices={notices}
+                    loading={loadingNotices}
+                    onMarkAsRead={handleMarkAsRead}
+                    onClose={() => setShowNoticePopup(false)}
+                  />
+                )}
+              </div>
 
               {/* User Icon & Dropdown */}
               <div className="relative" ref={dropdownRef}>
@@ -480,6 +558,13 @@ const Header = () => {
                       className="block px-4 py-2 text-sm text-gray-800 hover:bg-sky-50"
                     >
                       My Profile
+                    </Link>
+                    <Link
+                      to="/manage-selling-buying"
+                      onClick={() => setShowProfileDropdown(false)}
+                      className="block px-4 py-2 text-sm text-green-700 hover:bg-green-50"
+                    >
+                      Manage Selling/Buying Product
                     </Link>
                     <button
                       onClick={handleLogout}

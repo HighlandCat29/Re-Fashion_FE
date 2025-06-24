@@ -14,6 +14,7 @@ import {
   LogOut,
   LogIn,
   MessageCircle,
+  PlusCircle,
 } from "lucide-react";
 
 const SidebarMenu = ({
@@ -148,6 +149,19 @@ const SidebarMenu = ({
                     {item.icon}
                     {item.label}
                   </Link>
+                  {/* Insert Sell Product button right after Wishlist */}
+                  {item.label === "Wishlist" && loginStatus && (
+                    <button
+                      onClick={() => {
+                        setIsSidebarOpen(false);
+                        navigate("/sell-product-list");
+                      }}
+                      className="w-full flex items-center px-3 py-3 rounded transition font-semibold text-lg text-primary hover:bg-blue-100 hover:text-blue-700 mb-2"
+                    >
+                      <PlusCircle size={24} className="mr-3" />
+                      Sell Product
+                    </button>
+                  )}
                 </div>
               ))}
             </nav>

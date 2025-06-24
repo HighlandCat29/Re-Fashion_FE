@@ -1,6 +1,6 @@
 import { toast } from "react-hot-toast";
 
-export const ADMIN_USER_ID = "0e274421-7d98-4864-97e7-20dc05852138";
+export const ADMIN_USER_ID = "897c3620-37f7-42d9-b7e0-201981c18b56";
 
 export const handleTokenExpiration = () => {
   // Clear auth data

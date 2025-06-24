@@ -49,9 +49,19 @@ const Login = () => {
         navigate("/user-profile");
       }
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "An error occurred";
-      toast.error("Login failed: " + errorMessage);
+      // Try to get a specific error message from the backend
+      type ErrorWithResponse = { response?: { data?: { message?: string } } };
+      const backendMessage = (error as ErrorWithResponse)?.response?.data
+        ?.message;
+      if (backendMessage === "User is not exist") {
+        toast.error("Invalid email or password");
+      } else if (backendMessage) {
+        toast.error(backendMessage);
+      } else if (error instanceof Error) {
+        toast.error("Login failed: " + error.message);
+      } else {
+        toast.error("Login failed: An error occurred");
+      }
     }
   };
 
