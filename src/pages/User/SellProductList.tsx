@@ -52,7 +52,7 @@ const SellProductList = () => {
           onClick={() => navigate("/sell-product")}
           className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 transition-colors"
         >
-          Add New Product
+          Sell New Product
         </button>
       </div>
 

@@ -79,9 +79,17 @@ const OrderManage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6 text-gray-900">
-        Manage Selling/Buying Product
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">
+          Manage Selling/Buying Product
+        </h1>
+        <button
+          className="px-6 py-2 bg-black text-white rounded-full font-semibold hover:bg-gray-900 transition"
+          onClick={() => navigate("/sell-product-list")}
+        >
+          Sell Product
+        </button>
+      </div>
       <div className="flex gap-4 mb-8">
         {TABS.map((tab) => (
           <button
