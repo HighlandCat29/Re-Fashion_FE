@@ -52,6 +52,9 @@ import AdminMessages from "./pages/Admin/Message/Message";
 import ConfirmFeature from "./pages/Feature/ConfirmFeature";
 import FeatureManagement from "./pages/Admin/Feature/FeatureManagement";
 import OrderManage from "./pages/Order/OrderManage";
+import ForgotPassword from "./pages/Login/ForgotPassword";
+import ResetPassword from "./pages/Login/ResetPassword";
+
 
 const router = createBrowserRouter([
   {
@@ -70,6 +73,8 @@ const router = createBrowserRouter([
       { path: "/terms-of-use", element: <TermOfUse /> },
       { path: "/privacy-policy", element: <PrivacyPolicy /> },
       { path: "home-collection", element: <HomeCollectionSection /> },
+      { path: "forgot-password", element: <ForgotPassword /> },
+      { path: "reset-password", element: <ResetPassword /> },
 
       // Protected routes
       {
