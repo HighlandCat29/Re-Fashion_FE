@@ -65,6 +65,12 @@ const FeatureProduct = () => {
     return null;
   }
 
+  if (!product.isActive || (product as { isSold?: boolean }).isSold) {
+    toast.error("You can only feature products that are active and not sold.");
+    navigate("/shop");
+    return null;
+  }
+
   if (loading) {
     return (
       <div className="max-w-xl mx-auto p-6 bg-white rounded shadow mt-8">

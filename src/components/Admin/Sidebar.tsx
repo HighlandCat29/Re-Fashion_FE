@@ -9,7 +9,7 @@ import {
   Folder,
   ShoppingCart,
   FileBarChart2,
-  Settings as SettingsIcon,
+  // Settings as SettingsIcon,
 } from "lucide-react";
 import { logout } from "../../api/Logout/index";
 import { useNavigate } from "react-router-dom";
@@ -63,8 +63,8 @@ const Sidebar: React.FC = () => {
       path: "/admin/feature-management",
       icon: <FileBarChart2 size={20} className="mr-2" />,
     },
-    { label: "Reports", icon: <FileBarChart2 size={20} className="mr-2" /> },
-    { label: "Settings", icon: <SettingsIcon size={20} className="mr-2" /> },
+    // { label: "Reports", icon: <FileBarChart2 size={20} className="mr-2" /> },
+    // { label: "Settings", icon: <SettingsIcon size={20} className="mr-2" /> },
   ];
 
   return (

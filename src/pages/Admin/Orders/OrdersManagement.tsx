@@ -4,7 +4,6 @@ import {
   updateOrderStatus,
   updatePaymentStatus,
   Order,
-  deleteOrder,
   adminRefund,
 } from "../../../api/Orders";
 import { toast } from "react-hot-toast";
@@ -15,7 +14,6 @@ import {
   UPLOAD_PRESET,
 } from "../../../config/cloudinary";
 import { Message } from "../../../api/Message";
-import ConfirmationModal from "../../../components/ConfirmationModal";
 
 // Helper to upload a single image to Cloudinary
 const uploadImageToCloudinary = async (file: File): Promise<string | null> => {
@@ -312,7 +310,6 @@ const OrdersManagement = () => {
     string | null
   >(null);
   const [chatOrder, setChatOrder] = useState<Order | null>(null);
-  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -469,18 +466,6 @@ const OrdersManagement = () => {
       toast.error("Failed to update payment status");
     } finally {
       setUpdatingPaymentStatus(null);
-    }
-  };
-
-  const handleDeleteOrder = async (orderId: string) => {
-    try {
-      await deleteOrder(orderId);
-      toast.success("Order deleted successfully!");
-      fetchOrders(); // Refresh the list
-      setOrderToDelete(null); // Close modal
-    } catch (error) {
-      toast.error("Failed to delete order.");
-      console.error("Delete error:", error);
     }
   };
 
@@ -836,12 +821,6 @@ const OrdersManagement = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => setOrderToDelete(order)}
-                        className="text-red-500 hover:text-red-700 font-medium"
-                      >
-                        Delete
-                      </button>
                       {order.sellerId && (
                         <button
                           className="ml-4 px-3 py-1 bg-black text-white rounded hover:bg-gray-800"
@@ -997,14 +976,6 @@ const OrdersManagement = () => {
           receiverId={chatOrder.sellerId}
         />
       )}
-
-      <ConfirmationModal
-        isOpen={!!orderToDelete}
-        onClose={() => setOrderToDelete(null)}
-        onConfirm={() => handleDeleteOrder(orderToDelete!.orderId)}
-        title="Confirm Order Deletion"
-        message={`Are you sure you want to delete order #${orderToDelete?.orderId}? This is permanent.`}
-      />
     </div>
   );
 };

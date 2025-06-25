@@ -6,6 +6,7 @@ import { getCartByUserId, removeCartItem, Cart as CartType } from "../api/Cart";
 import { getProductById } from "../api/Products";
 import { formatPrice } from "../utils/formatPrice";
 import emptyCartGif from "../assets/cart.gif";
+import { getOrdersByBuyerID } from "../api/Orders";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -60,6 +61,44 @@ const Cart = () => {
     fetchSellerNames();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart]);
+
+  useEffect(() => {
+    const validateCart = async () => {
+      if (!user?.id || !cart || !cart.items) return;
+      let removedCount = 0;
+      // Get all productIds in user's orders
+      const orders = await getOrdersByBuyerID(user.id);
+      let orderedProductIds: string[] = [];
+      if (orders) {
+        orderedProductIds = orders.flatMap((order) =>
+          order.items ? order.items.map((item) => item.productId) : []
+        );
+      }
+      // For each cart item, check if isSold or in order
+      for (const item of cart.items) {
+        const fullProduct = await getProductById(item.productId);
+        if (!fullProduct) continue;
+        const isSold = (fullProduct as { isSold?: boolean }).isSold === true;
+        const isOrdered = orderedProductIds.includes(item.productId);
+        if (isSold || isOrdered) {
+          removedCount++;
+          await removeCartItem(user.id, item.productId);
+        }
+      }
+      if (removedCount > 0) {
+        // Refresh cart
+        const updatedCart = await getCartByUserId(user.id);
+        setCart(updatedCart);
+        toast(
+          "Some unavailable or ordered products were removed from your cart."
+        );
+      }
+    };
+    if (cart && cart.items && cart.items.length > 0) {
+      validateCart();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, cart && cart.items && cart.items.length]);
 
   const handleRemoveItem = async (productId: string) => {
     if (!user?.id) {

@@ -230,6 +230,14 @@ const SingleProduct = () => {
     }
   };
 
+  const handleFeatureProduct = () => {
+    if ((product as { isFeature?: boolean }).isFeature) {
+      toast.error("This product is already featured.");
+      return;
+    }
+    navigate("/feature-product", { state: { product } });
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -418,12 +426,34 @@ const SingleProduct = () => {
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={handleEdit}
-                    className="w-full bg-black text-white py-3 px-6 rounded-lg hover:bg-gray-800 transition-colors"
-                  >
-                    Edit Product
-                  </button>
+                  <div className="flex space-x-4 mt-4">
+                    {!(product as { isSold?: boolean }).isSold &&
+                      !(product as { isSold?: boolean; isFeature?: boolean })
+                        .isFeature && (
+                        <button
+                          className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
+                          onClick={handleFeatureProduct}
+                        >
+                          Feature Product
+                        </button>
+                      )}
+                    {!(product as { isSold?: boolean }).isSold && (
+                      <>
+                        <button
+                          onClick={handleEdit}
+                          className="flex-1 px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors"
+                        >
+                          Edit Product
+                        </button>
+                        <button
+                          className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+                          onClick={() => setIsDeleteModalOpen(true)}
+                        >
+                          Delete Product
+                        </button>
+                      </>
+                    )}
+                  </div>
                 )}
               </>
             ) : (
@@ -444,24 +474,6 @@ const SingleProduct = () => {
               </div>
             )}
           </div>
-          {isOwner && product && (
-            <div className="flex space-x-4 mt-4">
-              <button
-                className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition"
-                onClick={() =>
-                  navigate("/feature-product", { state: { product } })
-                }
-              >
-                Feature Product
-              </button>
-              <button
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-                onClick={() => setIsDeleteModalOpen(true)}
-              >
-                Delete Product
-              </button>
-            </div>
-          )}
         </div>
       </div>
 

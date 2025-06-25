@@ -7,6 +7,7 @@ import { useAppSelector } from "../hooks";
 import { useWishlist } from "../components/WishlistContext";
 import { toast } from "react-hot-toast";
 import { formatPrice } from "../utils/formatPrice";
+import { getOrdersByBuyerID } from "../api/Orders";
 
 const WishlistPage: React.FC = () => {
   const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
@@ -88,6 +89,50 @@ const WishlistPage: React.FC = () => {
 
     fetchWishlistProducts();
   }, [user?.id, navigate, localWishlist]);
+
+  useEffect(() => {
+    const validateWishlist = async () => {
+      let removedCount = 0;
+      let orderedProductIds: string[] = [];
+      if (user?.id) {
+        // Get all productIds in user's orders
+        const orders = await getOrdersByBuyerID(user.id);
+        if (orders) {
+          orderedProductIds = orders.flatMap((order) =>
+            order.items ? order.items.map((item) => item.productId) : []
+          );
+        }
+      }
+      // For each product, check if isSold or in order
+      const validProducts: Product[] = [];
+      for (const product of wishlistProducts) {
+        const fullProduct = await getProductById(product.id!);
+        if (!fullProduct) continue;
+        const isSold = fullProduct.isSold === true;
+        const isOrdered = orderedProductIds.includes(product.id!);
+        if (isSold || isOrdered) {
+          removedCount++;
+          if (user?.id) {
+            await removeFromWishlist(user.id, product.id!);
+          } else {
+            removeFromLocalWishlist(product.id!);
+          }
+        } else {
+          validProducts.push(product);
+        }
+      }
+      if (removedCount > 0) {
+        setWishlistProducts(validProducts);
+        toast(
+          "Some unavailable or ordered products were removed from your wishlist."
+        );
+      }
+    };
+    if (wishlistProducts.length > 0) {
+      validateWishlist();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, wishlistProducts.length]);
 
   const handleRemoveFromWishlist = async (productId: string) => {
     if (!user?.id) {
