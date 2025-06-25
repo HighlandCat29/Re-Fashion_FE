@@ -1,36 +1,46 @@
-import { HiChevronUp } from "react-icons/hi2";
-import Button from "./Button";
-import { useNavigate } from "react-router-dom";
+// src/components/ShowingPagination.tsx
 import { useAppSelector } from "../hooks";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-const ShowingPagination = ({
-  page,
-  category,
-  setCurrentPage,
-}: {
-  page: number;
-  category: string;
-  setCurrentPage: (page: number) => void;
-}) => {
-  const { totalProducts, showingProducts } = useAppSelector(state => state.shop);
+export default function ShowingPagination() {
+  const { totalProducts, showingProducts } = useAppSelector(s => s.shop);
+  const [searchParams] = useSearchParams();
+  const pageParam = parseInt(searchParams.get("page") || "1", 10);
+  const ITEMS_PER_PAGE = 16;
+  const pageCount = Math.ceil(totalProducts / ITEMS_PER_PAGE);
+  const currentPage = Math.min(Math.max(pageParam, 1), pageCount || 1);
   const navigate = useNavigate();
+
+  if (pageCount <= 1) return null;
+
   return (
-    <div className="px-5 max-[400px]:px-3 mt-12 mb-24">
-      <div className="flex flex-col gap-6 justify-center items-center w-1/2 mx-auto max-sm:w-3/4 max-sm:gap-5">
-        <p className="text-xl max-sm:text-lg">Showing { showingProducts } of { totalProducts }</p>
-        <Button
-          text="View More"
-          mode="white"
-          onClick={() => {
-            setCurrentPage(page + 1);
-            navigate(`/shop${category ? `/${category}` : ""}?page=${page + 1}`);
-          }}
-        />
-        <a href="#gridTop" className="flex justify-center items-center text-xl gap-2 max-sm:text-lg">
-          Back to Top <HiChevronUp />
-        </a>
-      </div>
-    </div>
+    <nav className="py-8 flex justify-center space-x-2">
+      <button
+        onClick={() => navigate(`?page=${currentPage - 1}`)}
+        disabled={currentPage === 1}
+        className="px-3 py-1 border rounded disabled:opacity-50"
+      >
+        ‹ Prev
+      </button>
+
+      {Array.from({ length: pageCount }, (_, i) => i + 1).map(p => (
+        <button
+          key={p}
+          onClick={() => navigate(`?page=${p}`)}
+          className={`px-3 py-1 border rounded ${p === currentPage ? "bg-primary text-white" : ""
+            }`}
+        >
+          {p}
+        </button>
+      ))}
+
+      <button
+        onClick={() => navigate(`?page=${currentPage + 1}`)}
+        disabled={currentPage === pageCount}
+        className="px-3 py-1 border rounded disabled:opacity-50"
+      >
+        Next ›
+      </button>
+    </nav>
   );
-};
-export default ShowingPagination;
+}
