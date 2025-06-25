@@ -107,11 +107,15 @@ const Shop = () => {
           // Set isActive false for those products (in-memory)
           const updatedProducts = productsData.map((p) => ({
             ...p,
-            isActive: !inactiveProductIds.has(p.id ?? ""),
+            isActive:
+              !inactiveProductIds.has(p.id ?? "") && p.isActive !== false,
           }));
-          // Only keep products with isActive true
+          // Only keep products with isActive true and not sold
           const activeProducts = updatedProducts.filter(
-            (p) => p.isActive && p.status === "APPROVED"
+            (p) =>
+              p.isActive &&
+              p.status === "APPROVED" &&
+              (p as { isSold?: boolean }).isSold !== true
           );
           dispatch(setProducts(activeProducts));
           setProductsWithActive(activeProducts);

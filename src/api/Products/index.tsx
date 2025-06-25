@@ -24,6 +24,7 @@ export interface Product {
   sellerCreatedAt?: string;
   sellerTotalSales?: number;
   sellerRating?: number;
+  isSold?: boolean;
 }
 
 // API response format for a single product
