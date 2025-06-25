@@ -159,45 +159,68 @@ const Shop = () => {
       </h1>
 
       {/* — Search & Filter bar — */}
-      <div className="mb-8 max-w-4xl mx-auto flex gap-4">
-        <input
-          type="text"
-          placeholder="Search products..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
-        />
-        <button
-          onClick={() => setIsFilterOpen((o) => !o)}
-          className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-        >
-          Filter
-        </button>
-        {isFilterOpen && (
-          <div className="absolute mt-2 w-48 bg-white border rounded shadow-lg">
-            <button
-              onClick={() => {
-                setSelectedCategory("all");
-                setIsFilterOpen(false);
-              }}
-              className="block w-full px-4 py-2 hover:bg-gray-100"
-            >
-              All Products
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => {
-                  setSelectedCategory(slugify(cat.name));
-                  setIsFilterOpen(false);
-                }}
-                className="block w-full px-4 py-2 hover:bg-gray-100"
-              >
-                {cat.name}
-              </button>
-            ))}
+      <div className="mb-8 max-w-4xl mx-auto overflow-visible">
+        <div className="flex gap-4 items-center">
+          {/* Search input */}
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Search products…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
           </div>
-        )}
+
+          {/* Filter button + dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsFilterOpen((o) => !o)}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none"
+            >
+              Filter
+            </button>
+
+            {isFilterOpen && (
+              <div
+                className="
+            absolute top-full
+            right-0
+            sm:left-0 sm:right-auto
+            mt-2 w-48
+            bg-white border rounded-lg shadow-lg
+            z-50
+          "
+              >
+                <button
+                  onClick={() => {
+                    setSelectedCategory("all");
+                    setIsFilterOpen(false);
+                    navigate(`/shop?category=all`);
+                  }}
+                  className="block w-full px-4 py-2 hover:bg-gray-100"
+                >
+                  All Products
+                </button>
+
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      const slug = slugify(cat.name);
+                      setSelectedCategory(slug);
+                      setIsFilterOpen(false);
+                      navigate(`/shop?category=${slug}`);
+                    }}
+                    className="block w-full px-4 py-2 hover:bg-gray-100"
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* — Grid of 16 items — */}
