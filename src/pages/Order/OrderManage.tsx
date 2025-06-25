@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAppSelector } from "../../hooks";
 import { getMyFeaturedPayments } from "../../api/Feature";
 import {
@@ -310,14 +310,26 @@ const OrderManage = () => {
                     ))}
                   </ul>
                   <div className="mt-4">
-                    <button
-                      onClick={() =>
-                        navigate(`/buyer-order/${order.orderId}/status`)
-                      }
-                      className="text-black hover:bg-black hover:text-white text-sm font-medium px-3 py-1 rounded transition-colors"
+                    <Link
+                      to={`/order/${order.orderId}/status`}
+                      className="text-black hover:text-gray-800 text-sm font-medium flex items-center gap-1"
                     >
-                      View Order Status
-                    </button>
+                      <span>View Order Status</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </Link>
                   </div>
                 </div>
               ))}
