@@ -11,6 +11,7 @@ export interface Role {
   description: string;
   active: boolean;
 }
+
 export interface UserResponse {
   id: string;
   username: string;
@@ -25,6 +26,7 @@ export interface UserResponse {
   active: boolean;
   verificationToken: string;
 }
+
 export interface AdminUserResponse {
   id: string;
   username: string;
@@ -171,7 +173,6 @@ export const updateAdminUser = async (
   user: AdminUser
 ): Promise<AdminUserResponse> => {
   try {
-    console.log(user);
     const response = await customFetch.put(`/admin/users/${id}`, user);
     if ([200, 1000, 1073741824].includes(response.status)) {
       toast.success("Admin user updated successfully!");
@@ -188,15 +189,16 @@ export const updateAdminUser = async (
     throw error;
   }
 };
+
+// Update generic user
 export const updateUser = async (
   id: string,
   user: AdminUser
 ): Promise<AdminUserResponse> => {
   try {
-    console.log(user);
     const response = await customFetch.put(`/users/${id}`, user);
     if ([200, 1000, 1073741824].includes(response.status)) {
-      toast.success("Admin user updated successfully!");
+      toast.success("User updated successfully!");
     }
     return response.data.result;
   } catch (error: unknown) {
@@ -206,7 +208,7 @@ export const updateUser = async (
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }
-    toast.error("Failed to update admin user: " + errorMessage);
+    toast.error("Failed to update user: " + errorMessage);
     throw error;
   }
 };
@@ -247,4 +249,63 @@ export const getRoles = async (): Promise<Role[]> => {
       active: true,
     },
   ];
+};
+
+// ────────────────────────────────────────────────────────────────────────────────
+// New auth endpoints: forgot/reset password
+// ────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Trigger sending a reset-link email.
+ * POST /users/forgot-password?email=…
+ */
+export const forgotPassword = async (
+  email: string
+): Promise<void> => {
+  try {
+    await customFetch.post(
+      "/users/forgot-password",
+      {},
+      { params: { email } }
+    );
+    toast.success(
+      "If that email exists, you’ll receive reset instructions."
+    );
+  } catch (error: unknown) {
+    let msg = "Failed to send reset email.";
+    if (error instanceof AxiosError) {
+      msg = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      msg = error.message;
+    }
+    toast.error(msg);
+    throw error;
+  }
+};
+
+/**
+ * Complete the password change using the token from the email link.
+ * POST /users/reset-password?token=…&newPassword=…
+ */
+export const resetPassword = async (
+  token: string,
+  newPassword: string
+): Promise<void> => {
+  try {
+    await customFetch.post(
+      "/users/reset-password",
+      {},
+      { params: { token, newPassword } }
+    );
+    toast.success("Password has been reset. Please log in.");
+  } catch (error: unknown) {
+    let msg = "Failed to reset password.";
+    if (error instanceof AxiosError) {
+      msg = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      msg = error.message;
+    }
+    toast.error(msg);
+    throw error;
+  }
 };
