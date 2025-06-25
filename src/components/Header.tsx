@@ -22,6 +22,7 @@ import { toast } from "react-hot-toast";
 import NoticePopup from "./Notice";
 import { getUserNotices, markNoticeAsRead, Notice } from "../api/Notice";
 
+
 const Header = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -259,10 +260,9 @@ const Header = () => {
         className={`
           fixed top-0 inset-x-0 z-50
           transition-colors duration-300 ease-in-out
-          ${
-            isScrolled
-              ? "bg-white/90 backdrop-blur-md shadow-lg"
-              : "bg-transparent"
+          ${isScrolled
+            ? "bg-white/90 backdrop-blur-md shadow-lg"
+            : "bg-transparent"
           }
         `}
       >
@@ -272,10 +272,7 @@ const Header = () => {
             <div className="flex items-center gap-4">
               <button
                 aria-label="Toggle Sidebar"
-                className="
-                  text-3xl text-gray-800 hover:text-sky-500
-                  transition-colors duration-200
-                "
+                className="text-3xl text-gray-800 hover:text-sky-500 transition-colors duration-200"
                 onClick={() => setIsSidebarOpen(true)}
               >
                 <HiBars3 />
@@ -311,23 +308,23 @@ const Header = () => {
               <Link
                 to="/"
                 onClick={handleLogoClick}
-                className="flex items-center gap-2 group"
+                className="
+      flex items-center gap-2 group
+      transform transition-transform duration-200
+      max-[416px]:scale-[0.8]
+    "
                 aria-label="Refashion Home"
               >
                 <img
                   src={RefashionIcon}
                   alt="Refashion Logo"
-                  className="h-15 w-15 object-contain transition-transform duration-200 group-hover:scale-110"
+                  className="h-15 w-15 object-contain group-hover:scale-110 transition-transform duration-200"
                 />
                 <div className="flex flex-col items-start leading-tight">
                   <div className="flex -space-x-0">
                     <span className="text-sky-500 font-bold text-5xl">Re</span>
-                    <span className="text-orange-400 font-bold text-5xl">
-                      fa
-                    </span>
-                    <span className="text-lime-400 font-bold text-5xl">
-                      shion
-                    </span>
+                    <span className="text-orange-400 font-bold text-5xl">fa</span>
+                    <span className="text-lime-400 font-bold text-5xl">shion</span>
                   </div>
                   <p className="text-sm font-medium text-amber-900 -mt-1">
                     From student for student
@@ -336,8 +333,10 @@ const Header = () => {
               </Link>
             </div>
 
+
+
             {/* ───── Right Icons ───── */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 invisible xl:visible">
               {/* Search Icon */}
               <Link
                 to="/shop"
@@ -373,10 +372,9 @@ const Header = () => {
                   <HiOutlineHeart
                     className={`
                       text-3xl transition-all duration-300
-                      ${
-                        location.pathname === "/wishlist"
-                          ? "text-red-500 animate-pulse"
-                          : "text-gray-800 hover:text-sky-500"
+                      ${location.pathname === "/wishlist"
+                        ? "text-red-500 animate-pulse"
+                        : "text-gray-800 hover:text-sky-500"
                       }
                     `}
                   />
@@ -415,10 +413,9 @@ const Header = () => {
                   <HiOutlineShoppingBag
                     className={`
                       text-3xl transition-all duration-300
-                      ${
-                        location.pathname === "/cart"
-                          ? "text-purple-500 animate-bounce"
-                          : "text-gray-800 hover:text-sky-500"
+                      ${location.pathname === "/cart"
+                        ? "text-purple-500 animate-bounce"
+                        : "text-gray-800 hover:text-sky-500"
                       }
                     `}
                   />
@@ -449,10 +446,9 @@ const Header = () => {
                 <HiOutlineChatBubbleLeftRight
                   className={`
                     text-3xl transition-all duration-300
-                    ${
-                      location.pathname === "/messages"
-                        ? "text-sky-500 animate-pulse"
-                        : "text-gray-800 hover:text-sky-500"
+                    ${location.pathname === "/messages"
+                      ? "text-sky-500 animate-pulse"
+                      : "text-gray-800 hover:text-sky-500"
                     }
                   `}
                 />

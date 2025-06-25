@@ -4,6 +4,7 @@ import {
   LoaderFunctionArgs,
   useLoaderData,
   useSearchParams,
+  useNavigate,
 } from "react-router-dom";
 import { ShopPageContent } from "../components";
 import { useEffect, useMemo, useState } from "react";
@@ -13,13 +14,13 @@ import { getCategories, Category } from "../api/Categories/index";
 import { useAppDispatch, useAppSelector } from "../hooks";
 import { setProducts } from "../features/shop/shopSlice";
 import { getAllOrders, Order } from "../api/Orders";
+import ShowingPagination from "../components/ShowingPagination";
 
 export const shopCategoryLoader = async ({ params }: LoaderFunctionArgs) => {
   const { category } = params;
   return category || "all";
 };
 
-// Helper function to turn "Suits & Blazers" into "suits-and-blazers"
 const slugify = (str: string | undefined | null): string => {
   if (!str) return "";
   return str
@@ -29,16 +30,19 @@ const slugify = (str: string | undefined | null): string => {
     .replace(/^-+|-+$/g, "");
 };
 
-// Helper function to format category name for display
 const formatCategoryName = (category: string | undefined | null): string => {
   if (!category || category === "all") return "All Products";
   return category.replace(/-/g, " ");
 };
 
+const ITEMS_PER_PAGE = 16;
+
 const Shop = () => {
   const category = useLoaderData() as string;
   const [searchParams] = useSearchParams();
-  const page = parseInt(searchParams.get("page") || "1", 10);
+  const navigate = useNavigate();
+  const rawPage = parseInt(searchParams.get("page") || "1", 10);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(category);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -50,146 +54,94 @@ const Shop = () => {
   const dispatch = useAppDispatch();
   const { products } = useAppSelector((state) => state.shop);
 
-  // Fetch categories
+  // — fetch categories —
   useEffect(() => {
-    const fetchCategories = async () => {
+    (async () => {
       try {
         setIsLoadingCategories(true);
-        const categoriesData = await getCategories();
-        if (categoriesData) {
-          setCategories(categoriesData);
-        }
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-        toast.error("Failed to load categories. Please try again later.");
+        const cats = await getCategories();
+        if (cats) setCategories(cats);
+      } catch {
+        toast.error("Failed to load categories");
       } finally {
         setIsLoadingCategories(false);
       }
-    };
-    fetchCategories();
+    })();
   }, []);
 
-  // Fetch all orders for validation
+  // — fetch orders —
   useEffect(() => {
-    const fetchOrders = async () => {
+    (async () => {
       try {
-        const allOrders = await getAllOrders();
-        if (allOrders) setOrders(allOrders);
-      } catch (error) {
-        console.error("Error fetching orders:", error);
+        const all = await getAllOrders();
+        if (all) setOrders(all);
+      } catch {
+        console.error("Orders error");
       }
-    };
-    fetchOrders();
+    })();
   }, []);
 
-  // Fetch products and apply isActive logic
+  // — fetch products & mark inactive —
   useEffect(() => {
-    const fetchProducts = async () => {
+    (async () => {
       try {
-        const productsData = await getProducts();
-        if (productsData) {
-          // Find all productIds in orders with paymentStatus PENDING or PAID
-          const inactiveProductIds = new Set<string>();
-          orders.forEach((order) => {
-            if (
-              order.paymentStatus === "PENDING" ||
-              order.paymentStatus === "PAID"
-            ) {
-              (order.items || []).forEach((item) => {
-                if (item.productId) inactiveProductIds.add(item.productId);
-              });
-              // Also check productIds array if present
-              (order.productIds || []).forEach((pid) =>
-                inactiveProductIds.add(pid)
-              );
-            }
-          });
-          // Set isActive false for those products (in-memory)
-          const updatedProducts = productsData.map((p) => ({
-            ...p,
-            isActive:
-              !inactiveProductIds.has(p.id ?? "") && p.isActive !== false,
-          }));
-          // Only keep products with isActive true and not sold
-          const activeProducts = updatedProducts.filter(
-            (p) =>
-              p.isActive &&
-              p.status === "APPROVED" &&
-              (p as { isSold?: boolean }).isSold !== true
-          );
-          dispatch(setProducts(activeProducts));
-          setProductsWithActive(activeProducts);
-        }
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        toast.error("Failed to load products. Please try again later.");
+        const prods = await getProducts();
+        if (!prods) return;
+        const inactive = new Set<string>();
+        orders.forEach((o) => {
+          if (o.paymentStatus === "PENDING" || o.paymentStatus === "PAID") {
+            (o.items || []).forEach((i) => i.productId && inactive.add(i.productId));
+            (o.productIds || []).forEach((id) => inactive.add(id));
+          }
+        });
+        const updated = prods.map((p) => ({
+          ...p,
+          isActive: !inactive.has(p.id ?? ""),
+        }));
+        const active = updated.filter((p) => p.isActive && p.status === "APPROVED");
+        dispatch(setProducts(active));
+        setProductsWithActive(active);
+      } catch {
+        toast.error("Failed to load products");
       }
-    };
-    fetchProducts();
+    })();
   }, [dispatch, orders]);
 
-  // Filter products by category and search query
+  // — filtered list —
   const filteredProducts = useMemo(() => {
-    if (!productsWithActive || productsWithActive.length === 0) {
-      return [];
-    }
-    console.log("Current category:", selectedCategory);
-    console.log("Total products before filtering:", productsWithActive.length);
-
-    const filtered = productsWithActive.filter((p: Product) => {
-      try {
-        // If category is "all" or undefined, show all products
-        if (!selectedCategory || selectedCategory === "all") {
-          if (!searchQuery) return true;
-
-          const searchLower = searchQuery.toLowerCase();
-          const matchesSearch =
-            (p.title?.toLowerCase() || "").includes(searchLower) ||
-            (p.description?.toLowerCase() || "").includes(searchLower) ||
-            (p.brand?.toLowerCase() || "").includes(searchLower);
-
-          return matchesSearch;
-        }
-
-        // Filter by category
-        const productSlug = slugify(p.categoryName);
-        const categorySlug = selectedCategory?.toLowerCase() || "";
-        console.log("Product category:", p.categoryName);
-        console.log("Product slug:", productSlug);
-        console.log("Category slug:", categorySlug);
-
-        const matchesCategory = productSlug === categorySlug;
-
-        // If there's a search query, also check if the product matches the search
-        if (searchQuery) {
-          const searchLower = searchQuery.toLowerCase();
-          const matchesSearch =
-            (p.title?.toLowerCase() || "").includes(searchLower) ||
-            (p.description?.toLowerCase() || "").includes(searchLower) ||
-            (p.brand?.toLowerCase() || "").includes(searchLower);
-
-          return matchesCategory && matchesSearch;
-        }
-
-        return matchesCategory;
-      } catch (error) {
-        console.error("Error filtering product:", error);
-        return false;
+    return productsWithActive.filter((p) => {
+      // search-only if "all"
+      if (!selectedCategory || selectedCategory === "all") {
+        if (!searchQuery) return true;
+        const s = searchQuery.toLowerCase();
+        return (
+          p.title?.toLowerCase().includes(s) ||
+          p.description?.toLowerCase().includes(s) ||
+          p.brand?.toLowerCase().includes(s)
+        );
       }
+      // category match
+      const slug = slugify(p.categoryName);
+      if (slug !== selectedCategory) return false;
+      if (!searchQuery) return true;
+      const s = searchQuery.toLowerCase();
+      return (
+        p.title?.toLowerCase().includes(s) ||
+        p.description?.toLowerCase().includes(s) ||
+        p.brand?.toLowerCase().includes(s)
+      );
     });
+  }, [productsWithActive, selectedCategory, searchQuery]);
 
-    console.log("Filtered products:", filtered);
-    return filtered;
-  }, [selectedCategory, productsWithActive, searchQuery]);
+  // — clamp page & slice —
+  const pageCount = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE) || 1;
+  const currentPage = Math.min(Math.max(rawPage, 1), pageCount);
+  const pagedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
-  // Validate page parameter
-  useEffect(() => {
-    if (isNaN(page) || page < 1) {
-      toast.error("Invalid page number. Showing page 1.");
-    }
-  }, [page]);
-
-  // Show loading spinner
+  // — early loading spinner —
   if (!products || products.length === 0) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -198,276 +150,64 @@ const Shop = () => {
     );
   }
 
-  // Show no products found message
-  if (filteredProducts.length === 0) {
-    return (
-      <div className="max-w-screen-2xl mx-auto px-4 pb-20">
-        <h1 className="text-4xl font-bold text-center mb-8 text-black">
-          {selectedCategory === "all"
-            ? "All Products"
-            : formatCategoryName(selectedCategory)}
-        </h1>
-
-        {/* Search and Filter Section */}
-        <div className="mb-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex gap-4 items-center">
-              {/* Search Input */}
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                )}
-              </div>
-
-              {/* Filter Button */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsFilterOpen(!isFilterOpen)}
-                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-gray-600"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="text-gray-600">Filter</span>
-                </button>
-
-                {/* Filter Dropdown */}
-                {isFilterOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
-                    <div className="px-4 py-2 border-b border-gray-200">
-                      <h3 className="text-sm font-medium text-gray-900">
-                        Categories
-                      </h3>
-                    </div>
-                    <div className="max-h-60 overflow-y-auto">
-                      <button
-                        onClick={() => {
-                          setSelectedCategory("all");
-                          setIsFilterOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                          selectedCategory === "all"
-                            ? "text-primary font-medium"
-                            : "text-black"
-                        }`}
-                      >
-                        All Products
-                      </button>
-                      {isLoadingCategories ? (
-                        <div className="px-4 py-2 text-sm text-gray-500">
-                          Loading categories...
-                        </div>
-                      ) : categories.length === 0 ? (
-                        <div className="px-4 py-2 text-sm text-gray-500">
-                          No categories available
-                        </div>
-                      ) : (
-                        categories.map((cat) => (
-                          <button
-                            key={cat.id}
-                            onClick={() => {
-                              setSelectedCategory(slugify(cat.name));
-                              setIsFilterOpen(false);
-                            }}
-                            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                              selectedCategory === slugify(cat.name)
-                                ? "text-primary font-medium"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            {cat.name}
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-semibold text-gray-800">
-            No products found
-          </h2>
-          <p className="text-gray-600 mt-2">
-            {!selectedCategory || selectedCategory === "all"
-              ? "We couldn't find any products matching your search."
-              : `We couldn't find any products in the ${formatCategoryName(
-                  selectedCategory
-                )} category.`}
-          </p>
-          <button
-            onClick={() => setSelectedCategory("all")}
-            className="mt-4 text-primary hover:text-primary-dark transition-colors"
-          >
-            View all products
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Render shop content
   return (
     <div className="max-w-screen-2xl mx-auto px-4 pb-20">
-      <h1 className="text-4xl font-bold text-center mb-8 text-black">
+      <h1 className="text-4xl font-bold text-center mb-8">
         {selectedCategory === "all"
           ? "All Products"
           : formatCategoryName(selectedCategory)}
       </h1>
 
-      {/* Search and Filter Section */}
-      <div className="mb-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex gap-4 items-center">
-            {/* Search Input */}
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              )}
-            </div>
-
-            {/* Filter Button */}
-            <div className="relative">
+      {/* — Search & Filter bar — */}
+      <div className="mb-8 max-w-4xl mx-auto flex gap-4">
+        <input
+          type="text"
+          placeholder="Search products..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary"
+        />
+        <button
+          onClick={() => setIsFilterOpen((o) => !o)}
+          className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+        >
+          Filter
+        </button>
+        {isFilterOpen && (
+          <div className="absolute mt-2 w-48 bg-white border rounded shadow-lg">
+            <button
+              onClick={() => {
+                setSelectedCategory("all");
+                setIsFilterOpen(false);
+              }}
+              className="block w-full px-4 py-2 hover:bg-gray-100"
+            >
+              All Products
+            </button>
+            {categories.map((cat) => (
               <button
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                key={cat.id}
+                onClick={() => {
+                  setSelectedCategory(slugify(cat.name));
+                  setIsFilterOpen(false);
+                }}
+                className="block w-full px-4 py-2 hover:bg-gray-100"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-gray-600"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span className="text-gray-600">Filter</span>
+                {cat.name}
               </button>
-
-              {/* Filter Dropdown */}
-              {isFilterOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
-                  <div className="px-4 py-2 border-b border-gray-200">
-                    <h3 className="text-sm font-medium text-gray-900">
-                      Categories
-                    </h3>
-                  </div>
-                  <div className="max-h-60 overflow-y-auto">
-                    <button
-                      onClick={() => {
-                        setSelectedCategory("all");
-                        setIsFilterOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                        selectedCategory === "all"
-                          ? "text-primary font-medium"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      All Products
-                    </button>
-                    {isLoadingCategories ? (
-                      <div className="px-4 py-2 text-sm text-gray-500">
-                        Loading categories...
-                      </div>
-                    ) : categories.length === 0 ? (
-                      <div className="px-4 py-2 text-sm text-gray-500">
-                        No categories available
-                      </div>
-                    ) : (
-                      categories.map((cat) => (
-                        <button
-                          key={cat.id}
-                          onClick={() => {
-                            setSelectedCategory(slugify(cat.name));
-                            setIsFilterOpen(false);
-                          }}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                            selectedCategory === slugify(cat.name)
-                              ? "text-primary font-medium"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          {cat.name}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+            ))}
           </div>
-        </div>
+        )}
       </div>
 
-      <ShopPageContent
-        category={formatCategoryName(selectedCategory)}
-        page={page}
-        products={filteredProducts}
-      />
+      {/* — Grid of 16 items — */}
+      <ShopPageContent category="" page={currentPage} products={pagedProducts} />
+
+      {/* — Pagination controls — */}
+      <ShowingPagination />
     </div>
   );
+
 };
 
 export default Shop;
