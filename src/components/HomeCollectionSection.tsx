@@ -5,52 +5,30 @@ import { useAppDispatch } from "../hooks";
 import { getProducts } from "../api/Products/index";
 import { setProducts } from "../features/shop/shopSlice";
 import toast from "react-hot-toast";
-import { getAllOrders } from "../api/Orders";
 
 const HomeCollectionSection = () => {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    const fetchProductsAndOrders = async () => {
+    const fetchProducts = async () => {
       try {
-        const [productsData, allOrders] = await Promise.all([
-          getProducts(),
-          getAllOrders(),
-        ]);
+        const productsData = await getProducts();
         if (productsData) {
-          // Find all productIds in orders with paymentStatus PENDING or PAID
-          const inactiveProductIds = new Set<string>();
-          (allOrders || []).forEach((order) => {
-            if (
-              order.paymentStatus === "PENDING" ||
-              order.paymentStatus === "PAID"
-            ) {
-              (order.items || []).forEach((item) => {
-                if (item.productId) inactiveProductIds.add(item.productId);
-              });
-              (order.productIds || []).forEach((pid) =>
-                inactiveProductIds.add(pid)
-              );
-            }
-          });
-          // Set isActive false for those products (in-memory)
-          const updatedProducts = productsData.map((p) => ({
-            ...p,
-            isActive: !inactiveProductIds.has(p.id ?? ""),
-          }));
-          // Only keep products with isActive true and status APPROVED, limit to 6
-          const activeProducts = updatedProducts
-            .filter((p) => p.isActive && p.status === "APPROVED")
-            .slice(0, 6);
+          // Only keep products with isActive true, isSold false, and status APPROVED
+          const activeProducts = productsData.filter(
+            (p) =>
+              p.isActive &&
+              p.status === "APPROVED" &&
+              (p as { isSold?: boolean }).isSold === false
+          );
           dispatch(setProducts(activeProducts));
         }
       } catch (error) {
-        console.error("Error fetching products or orders:", error);
+        console.error("Error fetching products:", error);
         toast.error("Failed to load products");
       }
     };
-
-    fetchProductsAndOrders();
+    fetchProducts();
   }, [dispatch]);
 
   return (
