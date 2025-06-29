@@ -1,64 +1,41 @@
-import {
-  ProductGrid,
-  ProductGridWrapper,
-  ShopFilterAndSort,
-  ShowingPagination,
-} from "../components";
+// src/components/ShopPageContent.tsx
 import { useState, useMemo } from "react";
+import { ProductGrid, ProductGridWrapper, ShopFilterAndSort } from "../components";
 import { Product } from "../api/Products";
 
 type Props = {
   category: string;
   page: number;
   products: Product[];
+  totalProducts: number;
 };
 
-const ITEMS_PER_PAGE = 6;
+const ShopPageContent = ({ category, page, products, totalProducts }: Props) => {
+  const [sortCriteria, setSortCriteria] = useState("");
 
-const ShopPageContent = ({ category, page, products }: Props) => {
-  const [sortCriteria, setSortCriteria] = useState<string>("");
-  const [currentPage, setCurrentPage] = useState(page);
-
-  // Sort products
-  const sorted = [...products];
   const sortedProducts = useMemo(() => {
+    const sorted = [...products];
     if (sortCriteria === "price-asc") {
       sorted.sort((a, b) => a.price - b.price);
     } else if (sortCriteria === "price-desc") {
-      sorted.sort((a, b) => b.price - b.price);
+      sorted.sort((a, b) => b.price - a.price);
     }
     return sorted;
   }, [products, sortCriteria]);
-
-  // Paginate products
-  const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    return sortedProducts.slice(startIndex, endIndex);
-  }, [sortedProducts, currentPage]);
-
-  // Calculate total filtered products and products shown on current page
-  const totalFilteredProducts = sortedProducts.length;
 
   return (
     <>
       <ShopFilterAndSort
         sortCriteria={sortCriteria}
         setSortCriteria={setSortCriteria}
-        currentPage={currentPage}
-        itemsPerPage={ITEMS_PER_PAGE}
-        totalFilteredProducts={totalFilteredProducts}
+        currentPage={page}
+        itemsPerPage={products.length}
+        totalFilteredProducts={totalProducts}
       />
 
       <ProductGridWrapper>
-        <ProductGrid products={paginatedProducts} />
+        <ProductGrid products={sortedProducts} />
       </ProductGridWrapper>
-
-      <ShowingPagination
-        page={currentPage}
-        category={category}
-        setCurrentPage={setCurrentPage}
-      />
     </>
   );
 };
