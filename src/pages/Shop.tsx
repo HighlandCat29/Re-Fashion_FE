@@ -25,11 +25,16 @@ export const shopCategoryLoader = async ({ params }: LoaderFunctionArgs) => {
 const slugify = (str: string | undefined | null): string => {
   if (!str) return "";
   return str
+    .normalize("NFKD")
+    .replace(/[’']/g, "")               // remove apostrophes (both smart & straight)
+    .replace(/[^\x00-\x7F]/g, "")       // remove non-ASCII
     .toLowerCase()
     .replace(/\s*&\s*/g, " and ")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 };
+
+
 
 const formatCategoryName = (category: string | undefined | null): string => {
   if (!category || category === "all") return "All Products";
@@ -114,6 +119,12 @@ const Shop = () => {
         p.brand?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const catSlug = slugify(p.categoryName);
+      console.log({
+        selectedCategory,
+        rawCategory: p.categoryName,
+        slugifiedCategory: catSlug,
+        matches: catSlug === selectedCategory
+      });
       const matchesCategory =
         !selectedCategory || selectedCategory === "all" || catSlug === selectedCategory;
 
@@ -125,7 +136,7 @@ const Shop = () => {
   const currentPage = Math.min(Math.max(rawPage, 1), pageCount);
   const pagedProducts = filteredProducts.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    currentPage * ITEMS_PER_PAGE,
   );
 
   return (
@@ -133,8 +144,9 @@ const Shop = () => {
       <h1 className="text-4xl font-bold text-center mb-8">
         {selectedCategory === "all"
           ? "All Products"
-          : formatCategoryName(selectedCategory)}
+          : categories.find((cat) => slugify(cat.name) === selectedCategory)?.name || "Unknown Category"}
       </h1>
+
 
       <div className="mb-8">
         <input
