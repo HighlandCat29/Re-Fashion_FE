@@ -12,9 +12,10 @@ const Landing: React.FC = () => {
   return (
     <>
       <Banner />
+      <CategoriesSection />
       <FeaturedProductsSection />
       <HomeCollectionSection />
-      <CategoriesSection />
+
     </>
   );
 };
