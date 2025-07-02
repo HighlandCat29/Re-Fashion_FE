@@ -16,7 +16,6 @@ import { setProducts } from "../features/shop/shopSlice";
 
 const ITEMS_PER_PAGE = 16;
 
-// ✅ EXPORT: This is what was missing!
 export const shopCategoryLoader = async ({ params }: LoaderFunctionArgs) => {
   const { category } = params;
   return category || "all";
@@ -26,15 +25,13 @@ const slugify = (str: string | undefined | null): string => {
   if (!str) return "";
   return str
     .normalize("NFKD")
-    .replace(/[’']/g, "")               // remove apostrophes (both smart & straight)
-    .replace(/[^\x00-\x7F]/g, "")       // remove non-ASCII
+    .replace(/[’']/g, "")
+    .replace(/[^\x00-\x7F]/g, "")
     .toLowerCase()
     .replace(/\s*&\s*/g, " and ")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 };
-
-
 
 const formatCategoryName = (category: string | undefined | null): string => {
   if (!category || category === "all") return "All Products";
@@ -47,7 +44,8 @@ const Shop = () => {
   const navigate = useNavigate();
   const rawPage = parseInt(searchParams.get("page") || "1", 10);
 
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const initialQuery = searchParams.get("search") || "";
+  const [searchQuery, setSearchQuery] = useState<string>(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState<string>(category);
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -55,6 +53,11 @@ const Shop = () => {
 
   const dispatch = useAppDispatch();
   const { products } = useAppSelector((state) => state.shop);
+
+  useEffect(() => {
+    const q = searchParams.get("search") || "";
+    setSearchQuery(q);
+  }, [searchParams]);
 
   useEffect(() => {
     (async () => {
@@ -119,12 +122,6 @@ const Shop = () => {
         p.brand?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const catSlug = slugify(p.categoryName);
-      console.log({
-        selectedCategory,
-        rawCategory: p.categoryName,
-        slugifiedCategory: catSlug,
-        matches: catSlug === selectedCategory
-      });
       const matchesCategory =
         !selectedCategory || selectedCategory === "all" || catSlug === selectedCategory;
 
@@ -144,9 +141,9 @@ const Shop = () => {
       <h1 className="text-4xl font-bold text-center mb-8">
         {selectedCategory === "all"
           ? "All Products"
-          : categories.find((cat) => slugify(cat.name) === selectedCategory)?.name || "Unknown Category"}
+          : categories.find((cat) => slugify(cat.name) === selectedCategory)?.name ||
+          "Unknown Category"}
       </h1>
-
 
       <div className="mb-8">
         <input

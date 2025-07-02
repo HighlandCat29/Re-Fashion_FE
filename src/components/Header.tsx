@@ -21,6 +21,9 @@ import { isAuthenticated } from "../utils/auth";
 import { toast } from "react-hot-toast";
 import NoticePopup from "./Notice";
 import { getUserNotices, markNoticeAsRead, Notice } from "../api/Notice";
+import { TERipple } from 'tw-elements-react';
+
+
 
 
 const Header = () => {
@@ -41,10 +44,11 @@ const Header = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const noticeRef = useRef<HTMLDivElement>(null);
 
-  // Calculate total items in cart
+  // Search input for header
+  const [searchInput, setSearchInput] = useState("");
+
   const cartItemCount = productsInCart.length;
 
-  // Update wishlist count when local wishlist changes or user logs in/out
   useEffect(() => {
     const updateWishlistCount = async () => {
       if (user?.id) {
@@ -53,20 +57,16 @@ const Header = () => {
           if (response?.result) {
             setWishlistCount(response.result.length);
           }
-        } catch (error) {
-          console.error("Failed to fetch wishlist count:", error);
-          // Reset wishlist count if token is expired
+        } catch {
           setWishlistCount(0);
         }
       } else {
         setWishlistCount(localWishlist.length);
       }
     };
-
     updateWishlistCount();
   }, [user?.id, localWishlist]);
 
-  // Listen for custom event when wishlist is updated
   useEffect(() => {
     const handleWishlistUpdate = () => {
       if (user?.id) {
@@ -76,23 +76,15 @@ const Header = () => {
               setWishlistCount(response.result.length);
             }
           })
-          .catch((error) => {
-            console.error("Failed to fetch wishlist count:", error);
-            // Reset wishlist count if token is expired
-            setWishlistCount(0);
-          });
+          .catch(() => setWishlistCount(0));
       } else {
         setWishlistCount(localWishlist.length);
       }
     };
-
     window.addEventListener("wishlistUpdated", handleWishlistUpdate);
-    return () => {
-      window.removeEventListener("wishlistUpdated", handleWishlistUpdate);
-    };
+    return () => window.removeEventListener("wishlistUpdated", handleWishlistUpdate);
   }, [user?.id, localWishlist]);
 
-  // Fetch user notices
   useEffect(() => {
     if (showNoticePopup && user?.id) {
       setLoadingNotices(true);
@@ -105,12 +97,10 @@ const Header = () => {
     }
   }, [showNoticePopup, user?.id]);
 
-  // Update unread count when notices change
   useEffect(() => {
     setUnreadCount(notices.filter((n) => !n.read).length);
   }, [notices]);
 
-  // Close popup when clicking outside
   useEffect(() => {
     if (!showNoticePopup) return;
     const handleClick = (e: MouseEvent) => {
@@ -123,23 +113,17 @@ const Header = () => {
   }, [showNoticePopup]);
 
   const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    // If we're already on "/", scroll to top
     if (location.pathname === "/") {
-      e.preventDefault(); // prevent re‐navigation
+      e.preventDefault();
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      // Otherwise, navigate to "/" normally
       navigate("/");
     }
   };
 
-  // Close dropdown if clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowProfileDropdown(false);
       }
     };
@@ -147,20 +131,15 @@ const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Update login state & close dropdown on route change
   useEffect(() => {
     const user = localStorage.getItem("user");
-    const isUserLoggedIn = !!user;
-    setIsLoggedIn(isUserLoggedIn);
+    setIsLoggedIn(!!user);
     setShowProfileDropdown(false);
-
-    // Reset wishlist count when user logs in/out
-    if (!isUserLoggedIn) {
+    if (!user) {
       setWishlistCount(0);
     }
   }, [location]);
 
-  // Add token expiration check
   useEffect(() => {
     const checkTokenExpiration = () => {
       const user = localStorage.getItem("user");
@@ -168,15 +147,11 @@ const Header = () => {
         setWishlistCount(0);
         return;
       }
-
       try {
         const userData = JSON.parse(user);
         if (userData.token) {
           const tokenExpiration = new Date(userData.tokenExpiration).getTime();
-          const currentTime = new Date().getTime();
-
-          if (currentTime >= tokenExpiration) {
-            // Token expired, reset wishlist count
+          if (new Date().getTime() >= tokenExpiration) {
             setWishlistCount(0);
             localStorage.removeItem("user");
             setIsLoggedIn(false);
@@ -184,27 +159,18 @@ const Header = () => {
             navigate("/login");
           }
         }
-      } catch (error) {
-        console.error("Error checking token expiration:", error);
+      } catch {
         setWishlistCount(0);
       }
     };
-
-    // Check token expiration every minute
     const intervalId = setInterval(checkTokenExpiration, 60000);
-    checkTokenExpiration(); // Initial check
-
+    checkTokenExpiration();
     return () => clearInterval(intervalId);
   }, [navigate]);
 
-  // Track scroll, toggle background glow
   useEffect(() => {
     const onScroll = () => {
-      if (window.scrollY > 20) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
@@ -221,11 +187,7 @@ const Header = () => {
   ) => {
     if (
       !isAuthenticated() &&
-      path !== "/login" &&
-      path !== "/register" &&
-      path !== "/search" &&
-      path !== "/shop" &&
-      path !== "/news"
+      !["/login", "/register", "/search", "/shop", "/news"].includes(path)
     ) {
       e.preventDefault();
       navigate("/login");
@@ -249,82 +211,49 @@ const Header = () => {
     }
   };
 
-  // Don't render header on /admin routes
-  if (location.pathname.startsWith("/admin")) {
-    return null;
-  }
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      navigate(`/shop?search=${encodeURIComponent(searchInput)}`);
+    }
+  };
+
+  if (location.pathname.startsWith("/admin")) return null;
 
   return (
     <>
       <header
-        className={`
-          fixed top-0 inset-x-0 z-50
-          transition-colors duration-300 ease-in-out
-          ${isScrolled
-            ? "bg-white/90 backdrop-blur-md shadow-lg"
-            : "bg-transparent"
-          }
-        `}
+        className={`fixed top-0 inset-x-0 z-50 transition-colors duration-300 ease-in-out ${isScrolled ? "bg-white/90 backdrop-blur-md shadow-lg" : "bg-transparent"
+          }`}
       >
         <div className="container mx-auto px-4">
-          <div className="relative flex h-24 items-center justify-between">
-            {/* ───── Left Side: Sidebar Toggle + Return to Cart ───── */}
+          <div className="relative flex h-24 items-center">
+
+            {/* Left: Sidebar + Logo */}
             <div className="flex items-center gap-4">
               <button
                 aria-label="Toggle Sidebar"
-                className="text-3xl text-gray-800 hover:text-sky-500 transition-colors duration-200"
+                className="text-3xl text-gray-800 hover:text-sky-500"
                 onClick={() => setIsSidebarOpen(true)}
               >
                 <HiBars3 />
               </button>
-
-              {/* ───── Return to Cart (only on checkout page) ───── */}
-              {location.pathname === "/checkout" && (
-                <button
-                  onClick={() => navigate("/cart")}
-                  className="flex items-center text-gray-600 hover:text-black transition-colors"
-                >
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                    />
-                  </svg>
-                  Return to Cart
-                </button>
-              )}
-            </div>
-
-            {/* ───── Centered Logo ───── */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
               <Link
                 to="/"
                 onClick={handleLogoClick}
-                className="
-      flex items-center gap-2 group
-      transform transition-transform duration-200
-      max-[416px]:scale-[0.8]
-    "
+                className="flex items-center gap-2 group transform transition-transform max-[416px]:scale-[0.8]"
                 aria-label="Refashion Home"
               >
                 <img
                   src={RefashionIcon}
                   alt="Refashion Logo"
-                  className="h-15 w-15 object-contain group-hover:scale-110 transition-transform duration-200"
+                  className="h-14 w-14 object-contain group-hover:scale-110 transition-transform duration-200"
                 />
+
                 <div className="flex flex-col items-start leading-tight">
                   <div className="flex -space-x-0">
-                    <span className="text-sky-500 font-bold text-5xl">Re</span>
-                    <span className="text-orange-400 font-bold text-5xl">fa</span>
-                    <span className="text-lime-400 font-bold text-5xl">shion</span>
+                    <span className="text-sky-500 font-bold text-4xl">Re</span>
+                    <span className="text-orange-400 font-bold text-4xl">fa</span>
+                    <span className="text-lime-400 font-bold text-4xl">shion</span>
                   </div>
                   <p className="text-sm font-medium text-amber-900 -mt-1">
                     From student for student
@@ -333,258 +262,103 @@ const Header = () => {
               </Link>
             </div>
 
-
-
-            {/* ───── Right Icons ───── */}
-            <div className="flex items-center gap-6 invisible xl:visible">
-              {/* Search Icon */}
-              <Link
-                to="/shop"
-                className="group relative"
-                aria-label="Shop"
-                onClick={(e) => handleNavigation(e, "/shop")}
-              >
-                <HiOutlineMagnifyingGlass
+            {/* Center: Search */}
+            <div className="hidden xl:flex flex-1 justify-center mt-3">
+              <div className="relative mb-4 flex w-full max-w-4xl flex-wrap items-stretch">
+                <input
+                  type="search"
                   className="
-                    text-4xl text-gray-800 hover:text-sky-500
-                    transition-colors duration-200
-                  "
+        relative m-0 -mr-0.5 block w-[1px] min-w-0 flex-auto 
+        rounded-l border border-neutral-300 bg-white 
+        px-3 h-[42px]
+        text-base font-normal leading-[1.6] 
+        text-neutral-700 outline-none transition duration-200 
+        ease-in-out focus:z-[3] focus:border-sky-400 
+        focus:text-neutral-700 focus:shadow-[inset_0_0_0_1px_rgb(56,189,248)]
+      "
+                  placeholder="Search"
+                  aria-label="Search"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
                 />
-                <span
-                  className="
-                    absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
-                    text-xs text-white group-hover:block
-                    -translate-x-1/2
-                  "
-                >
-                  Search
-                </span>
-              </Link>
-
-              {/* Wishlist Icon */}
-              <Link
-                to="/wishlist"
-                className="group relative"
-                aria-label="Wishlist"
-                onClick={(e) => handleNavigation(e, "/wishlist")}
-              >
-                <div className="relative">
-                  <HiOutlineHeart
-                    className={`
-                      text-3xl transition-all duration-300
-                      ${location.pathname === "/wishlist"
-                        ? "text-red-500 animate-pulse"
-                        : "text-gray-800 hover:text-sky-500"
-                      }
-                    `}
-                  />
-                  {wishlistCount > 0 && (
-                    <span
-                      className="
-                      absolute -top-2 -right-2
-                      bg-red-500 text-white text-xs
-                      rounded-full w-5 h-5
-                      flex items-center justify-center
-                    "
-                    >
-                      {wishlistCount}
-                    </span>
-                  )}
-                </div>
-                <span
-                  className="
-                    absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
-                    text-xs text-white group-hover:block
-                    -translate-x-1/2
-                  "
-                >
-                  Wishlist
-                </span>
-              </Link>
-
-              {/* Cart Icon */}
-              <Link
-                to="/cart"
-                className="group relative"
-                aria-label="Cart"
-                onClick={(e) => handleNavigation(e, "/cart")}
-              >
-                <div className="relative">
-                  <HiOutlineShoppingBag
-                    className={`
-                      text-3xl transition-all duration-300
-                      ${location.pathname === "/cart"
-                        ? "text-purple-500 animate-bounce"
-                        : "text-gray-800 hover:text-sky-500"
-                      }
-                    `}
-                  />
-                  {cartItemCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {cartItemCount}
-                    </span>
-                  )}
-                </div>
-                <span
-                  className="
-                    absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
-                    text-xs text-white group-hover:block
-                    -translate-x-1/2
-                  "
-                >
-                  Cart
-                </span>
-              </Link>
-
-              {/* Message Icon */}
-              <Link
-                to="/messages"
-                className="group relative"
-                aria-label="Messages"
-                onClick={(e) => handleNavigation(e, "/messages")}
-              >
-                <HiOutlineChatBubbleLeftRight
-                  className={`
-                    text-3xl transition-all duration-300
-                    ${location.pathname === "/messages"
-                      ? "text-sky-500 animate-pulse"
-                      : "text-gray-800 hover:text-sky-500"
-                    }
-                  `}
-                />
-                <span
-                  className="
-                    absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
-                    text-xs text-white group-hover:block
-                    -translate-x-1/2
-                  "
-                >
-                  Messages
-                </span>
-              </Link>
-
-              {/* Notice Icon */}
-              <div className="relative" ref={noticeRef}>
-                <button
-                  className="group relative"
-                  aria-label="Notifications"
-                  onClick={handleNoticeIconClick}
-                >
-                  <HiOutlineBell className="text-3xl text-gray-800 hover:text-blue-500 transition-colors duration-200" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {unreadCount}
-                    </span>
-                  )}
-                  <span
+                <TERipple>
+                  <button
                     className="
-                      absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
-                      text-xs text-white group-hover:block
-                      -translate-x-1/2
-                    "
+          relative z-[2] rounded-r bg-orange-500 px-5 
+          h-[42px]
+          text-white text-xl hover:bg-orange-600 transition-colors duration-200 
+          flex items-center justify-center
+        "
+                    type="button"
+                    onClick={() => navigate(`/shop?search=${encodeURIComponent(searchInput)}`)}
                   >
-                    Notifications
-                  </span>
-                </button>
-                {showNoticePopup && (
-                  <NoticePopup
-                    notices={notices}
-                    loading={loadingNotices}
-                    onMarkAsRead={handleMarkAsRead}
-                    onClose={() => setShowNoticePopup(false)}
-                  />
-                )}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"
+                      />
+                    </svg>
+                  </button>
+                </TERipple>
               </div>
+            </div>
 
-              {/* User Icon & Dropdown */}
+
+
+
+            {/* Right: Icons */}
+            <div className="flex items-center gap-6 invisible xl:visible">
+
+              <Link to="/wishlist" className="group relative" onClick={(e) => handleNavigation(e, "/wishlist")}>
+                <HiOutlineHeart className={`text-3xl ${location.pathname === "/wishlist" ? "text-red-500 animate-pulse" : "text-gray-800 hover:text-sky-500"}`} />
+                {wishlistCount > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{wishlistCount}</span>}
+              </Link>
+              <Link to="/cart" className="group relative" onClick={(e) => handleNavigation(e, "/cart")}>
+                <HiOutlineShoppingBag className={`text-3xl ${location.pathname === "/cart" ? "text-purple-500 animate-bounce" : "text-gray-800 hover:text-sky-500"}`} />
+                {cartItemCount > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{cartItemCount}</span>}
+              </Link>
+              <Link to="/messages" className="group relative" onClick={(e) => handleNavigation(e, "/messages")}>
+                <HiOutlineChatBubbleLeftRight className={`text-3xl ${location.pathname === "/messages" ? "text-sky-500 animate-pulse" : "text-gray-800 hover:text-sky-500"}`} />
+              </Link>
+              <div className="relative" ref={noticeRef}>
+                <button className="group relative" onClick={handleNoticeIconClick}>
+                  <HiOutlineBell className="text-3xl text-gray-800 hover:text-blue-500" />
+                  {unreadCount > 0 && <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{unreadCount}</span>}
+                </button>
+                {showNoticePopup && <NoticePopup notices={notices} loading={loadingNotices} onMarkAsRead={handleMarkAsRead} onClose={() => setShowNoticePopup(false)} />}
+              </div>
               <div className="relative" ref={dropdownRef}>
                 {isLoggedIn ? (
-                  <button
-                    className="group relative"
-                    aria-label="User Menu"
-                    onClick={() => setShowProfileDropdown((prev) => !prev)}
-                  >
-                    <HiOutlineUser
-                      className="
-                        text-3xl text-gray-800 hover:text-sky-500
-                        transition-colors duration-200
-                      "
-                    />
-                    <span
-                      className="
-                        absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
-                        text-xs text-white group-hover:block
-                        -translate-x-1/2
-                      "
-                    >
-                      Profile
-                    </span>
+                  <button className="group relative" onClick={() => setShowProfileDropdown((prev) => !prev)}>
+                    <HiOutlineUser className="text-3xl text-gray-800 hover:text-sky-500" />
                   </button>
                 ) : (
-                  <Link
-                    to="/login"
-                    className="group relative"
-                    aria-label="Login"
-                  >
-                    <HiOutlineUser
-                      className="
-                        text-3xl text-gray-800 hover:text-sky-500
-                        transition-colors duration-200
-                      "
-                    />
-                    <span
-                      className="
-                        absolute left-1/2 -bottom-8 hidden rounded bg-gray-800 px-2 py-1
-                        text-xs text-white group-hover:block
-                        -translate-x-1/2
-                      "
-                    >
-                      Login
-                    </span>
-                  </Link>
+                  <Link to="/login" className="group relative"><HiOutlineUser className="text-3xl text-gray-800 hover:text-sky-500" /></Link>
                 )}
-
-                {/* Dropdown (logged in) */}
                 {isLoggedIn && showProfileDropdown && (
-                  <div
-                    className="
-                      absolute right-0 mt-2 w-48 rounded-md
-                      bg-white border border-gray-200 shadow-lg z-50
-                    "
-                  >
-                    <Link
-                      to="/user-profile"
-                      onClick={() => setShowProfileDropdown(false)}
-                      className="block px-4 py-2 text-sm text-gray-800 hover:bg-sky-50"
-                    >
-                      My Profile
-                    </Link>
-                    <Link
-                      to="/manage-selling-buying"
-                      onClick={() => setShowProfileDropdown(false)}
-                      className="block px-4 py-2 text-sm text-green-700 hover:bg-green-50"
-                    >
-                      Manage Selling/Buying Product
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      Logout
-                    </button>
+                  <div className="absolute right-0 mt-2 w-48 rounded-md bg-white border border-gray-200 shadow-lg z-50">
+                    <Link to="/user-profile" onClick={() => setShowProfileDropdown(false)} className="block px-4 py-2 text-sm text-gray-800 hover:bg-sky-50">My Profile</Link>
+                    <Link to="/manage-selling-buying" onClick={() => setShowProfileDropdown(false)} className="block px-4 py-2 text-sm text-green-700 hover:bg-green-50">Manage Selling/Buying Product</Link>
+                    <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Logout</button>
                   </div>
                 )}
               </div>
             </div>
+
           </div>
         </div>
       </header>
 
-      {/* SidebarMenu stays here, it will slide over content */}
-      <SidebarMenu
-        isSidebarOpen={isSidebarOpen}
-        setIsSidebarOpen={setIsSidebarOpen}
-      />
+      <SidebarMenu isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
     </>
   );
 };
